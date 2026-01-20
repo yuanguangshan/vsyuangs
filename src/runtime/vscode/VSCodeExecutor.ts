@@ -58,12 +58,76 @@ export class VSCodeExecutor {
         return path.join(workspaceFolder, filePath);
     }
 
-    // 处理 Diff 应用
+    // 处理 Diff 应用 (三阶段执行：Pre-Exec / Exec / Post-Exec)
     static async applyDiff(diff: string): Promise<string> {
-        // 这是一个复杂的逻辑，通常需要一个 diff parser
-        // 为了演示，我们先输出一个通知
-        vscode.window.showInformationMessage("Agent requested a code diff. Applying...");
-        // 实际上可以调用 git 命令或者使用 workspace.applyEdit
-        return "Diff application initiated.";
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        if (!workspaceRoot) {
+            throw new Error("No workspace opened.");
+        }
+
+        try {
+            // --- Phase 1: Pre-Exec (Snapshot/Validation) ---
+            const status = await this.execCommand("git status --porcelain", workspaceRoot);
+            if (status.trim().length > 0) {
+                const choice = await vscode.window.showWarningMessage(
+                    "Working tree is dirty. Apply diff anyway?",
+                    { modal: true },
+                    "Stash and Continue", "Abort"
+                );
+                if (choice === "Stash and Continue") {
+                    await this.execCommand("git stash", workspaceRoot);
+                } else {
+                    throw new Error("Execution aborted due to dirty working tree.");
+                }
+            }
+
+            const preHash = (await this.execCommand("git rev-parse HEAD", workspaceRoot)).trim();
+
+            // --- Phase 2: Exec (Application) ---
+            await this.execCommandWithInput("git apply --index", diff, workspaceRoot);
+
+            // --- Phase 3: Post-Exec (Validation & Commit) ---
+            const changedFiles = (await this.execCommand("git diff --name-only HEAD", workspaceRoot))
+                .trim()
+                .split("\n")
+                .filter(f => f.length > 0);
+
+            const commitMessage = `Agent: Applied semantic code change\n\n- Files: ${changedFiles.join(", ")}`;
+            await this.execCommand(`git commit -m "${commitMessage}"`, workspaceRoot);
+
+            const postHash = (await this.execCommand("git rev-parse HEAD", workspaceRoot)).trim();
+
+            vscode.window.showInformationMessage(`Successfully applied change: ${postHash.substring(0, 7)}`);
+
+            return `[SUCCESS] Applied 3-phase execution.\n- Snapshot: ${preHash.substring(0, 7)}\n- Commit: ${postHash.substring(0, 7)}\n- Files: ${changedFiles.length}`;
+
+        } catch (error: any) {
+            vscode.window.showErrorMessage(`Diff failed: ${error.message}`);
+            // Rollback if possible (git reset --hard)
+            return `[FAILED] ${error.message}`;
+        }
+    }
+
+    private static async execCommand(command: string, cwd: string): Promise<string> {
+        const { exec } = require('child_process');
+        return new Promise((resolve, reject) => {
+            exec(command, { cwd }, (error: any, stdout: string, stderr: string) => {
+                if (error) reject(new Error(stderr || error.message));
+                else resolve(stdout);
+            });
+        });
+    }
+
+    private static async execCommandWithInput(command: string, input: string, cwd: string): Promise<string> {
+        const { exec } = require('child_process');
+        return new Promise((resolve, reject) => {
+            const child = exec(command, { cwd }, (error: any, stdout: string, stderr: string) => {
+                if (error) reject(new Error(stderr || error.message));
+                else resolve(stdout);
+            });
+            child.stdin.write(input);
+            child.stdin.end();
+        });
     }
 }
+

@@ -21,9 +21,10 @@ export class LLMAdapter {
 
 JSON SCHEMA:
 {
-  "action_type": "tool_call" | "shell_cmd" | "answer",
+  "action_type": "tool_call" | "shell_cmd" | "code_diff" | "answer",
   "reasoning": "thought process",
   "tool_name": "list_files" | "read_file",
+  "diff": "unified diff string",
   "parameters": {},
   "command": "shell string",
   "content": "final answer string"
