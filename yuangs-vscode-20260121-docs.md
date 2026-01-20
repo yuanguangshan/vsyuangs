@@ -1,14 +1,14 @@
 # Project Documentation
 
-- **Generated at:** 2026-01-21 05:31:45
+- **Generated at:** 2026-01-21 05:48:20
 - **Root Dir:** `.`
 - **File Count:** 75
-- **Total Size:** 371.27 KB
+- **Total Size:** 386.63 KB
 
 <a name="toc"></a>
 ## 📂 扫描目录
 - [.gitignore](#📄-gitignore) (19 lines, 0.17 KB)
-- [CHANGELOG.md](#📄-changelogmd) (27 lines, 1.33 KB)
+- [CHANGELOG.md](#📄-changelogmd) (78 lines, 3.18 KB)
 - [asconfig.json](#📄-asconfigjson) (22 lines, 0.51 KB)
 - [c](#📄-c) (3 lines, 0.10 KB)
 - [compile.sh](#📄-compilesh) (81 lines, 1.87 KB)
@@ -79,8 +79,8 @@
 - [src/engine/utils/syntaxHandler.ts](#📄-srcengineutilssyntaxhandlerts) (368 lines, 12.43 KB)
 - [src/runtime/vscode/VSCodeExecutor.ts](#📄-srcruntimevscodevscodeexecutorts) (133 lines, 5.56 KB)
 - [src/vscode/extension.ts](#📄-srcvscodeextensionts) (25 lines, 0.82 KB)
-- [src/vscode/provider/ChatViewProvider.ts](#📄-srcvscodeproviderchatviewproviderts) (192 lines, 7.84 KB)
-- [src/vscode/webview/sidebar.html](#📄-srcvscodewebviewsidebarhtml) (596 lines, 19.82 KB)
+- [src/vscode/provider/ChatViewProvider.ts](#📄-srcvscodeproviderchatviewproviderts) (312 lines, 12.43 KB)
+- [src/vscode/webview/sidebar.html](#📄-srcvscodewebviewsidebarhtml) (843 lines, 28.73 KB)
 - [tsconfig.json](#📄-tsconfigjson) (21 lines, 0.44 KB)
 
 ---
@@ -116,6 +116,57 @@ logs/
 
 ````markdown
 # Changelog
+
+## [1.0.3] - 2026-01-21
+
+### ✨ 新功能 (New Features)
+- **智能 Diff 应用 (Smart Diff Application)**: 
+  - 自动检测 AI 回复中的 diff 代码块
+  - 在 diff 代码块右上角显示"Apply"按钮（hover 时显示）
+  - 一键应用 diff 到代码文件
+  - 支持标准 unified diff 格式（`---`、`+++`、`@@`）
+  - 支持简单的 `+`/`-` 格式
+  - 自动创建不存在的文件
+  - 应用后自动保存并显示文件
+
+### 🎨 用户体验优化 (UX Improvements)
+- Diff 代码块特殊样式标识（边框、背景色）
+- 应用按钮状态反馈：
+  - 默认：`✓ Apply`（hover 时显示）
+  - 应用中：`⏳ Applying...`
+  - 成功：`✓ Applied`（绿色）
+  - 失败：`✗ Failed`（红色，3秒后恢复）
+- 实时处理流式渲染中的 diff 块
+
+### 🛠 技术改进 (Technical Improvements)
+- 完整的 diff 解析器，支持多种格式
+- 智能文件查找和创建
+- 工作区编辑 API 集成
+- 错误处理和用户反馈
+
+---
+
+## [1.0.2] - 2026-01-21
+
+### ✨ 新功能 (New Features)
+- **智能文本选择 (Smart Text Selection)**: 
+  - 在聊天记录中选中文本后，自动填入输入框，方便一键发送
+  - 支持快速引用 AI 回答或重新发送之前的问题
+  - 自动清除选择，避免视觉干扰
+  - 输入框高度自动调整以适应内容
+
+### 🛠 开发体验 (Developer Experience)
+- **一键编译脚本**: 
+  - 新增 `compile.sh` - 自动查找 Node.js 和 npm，智能编译
+  - 新增 `c` 快捷脚本 - 超简短命令，只需 `./c` 即可编译
+  - 支持多种 Node.js 安装方式（Homebrew、NVM、Volta、FNM 等）
+  - 显示详细的版本信息和编译进度
+
+### 🎨 用户体验优化 (UX Improvements)
+- 优化了文本选择的交互逻辑，确保只在聊天容器内的选择才会触发自动填入
+- 改进了输入框焦点管理，选中文本后自动获得焦点
+
+---
 
 ## [1.0.1] - 2026-01-21
 
@@ -5120,7 +5171,7 @@ echo "  2. 或者在扩展开发主机中测试"
     "name": "yuangs-vscode",
     "displayName": "Yuangs AI Agent",
     "description": "治理-执行 (Think-Govern-Execute) 闭环能力的 Agent 插件",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "engines": {
         "vscode": "^1.75.0"
     },
@@ -10604,6 +10655,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                         }
                     }
                     break;
+                case 'applyDiff':
+                    await this.handleApplyDiff(data.value);
+                    break;
             }
         });
     }
@@ -10681,6 +10735,123 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         } catch (error: any) {
             this._view.webview.postMessage({ type: 'error', value: error.message });
         }
+    }
+
+    private async handleApplyDiff(diffData: any) {
+        if (!this._view) return;
+
+        try {
+            if (diffData.type === 'unified') {
+                // 处理标准 unified diff 格式
+                for (const file of diffData.files) {
+                    await this.applyUnifiedDiff(file);
+                }
+                this._view.webview.postMessage({ type: 'diffApplied' });
+                vscode.window.showInformationMessage('✓ Diff applied successfully!');
+            } else if (diffData.type === 'simple') {
+                // 处理简单的 +/- 格式
+                await this.applySimpleDiff(diffData);
+                this._view.webview.postMessage({ type: 'diffApplied' });
+                vscode.window.showInformationMessage('✓ Diff applied successfully!');
+            } else {
+                throw new Error('Unknown diff format');
+            }
+        } catch (error: any) {
+            this._view.webview.postMessage({ type: 'diffError', value: error.message });
+            vscode.window.showErrorMessage(`Failed to apply diff: ${error.message}`);
+        }
+    }
+
+    private async applyUnifiedDiff(file: any) {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            throw new Error('No workspace folder open');
+        }
+
+        // 查找文件
+        const filePath = path.join(workspaceFolder.uri.fsPath, file.newFile || file.oldFile);
+        const fileUri = vscode.Uri.file(filePath);
+
+        // 打开或创建文件
+        let document: vscode.TextDocument;
+        try {
+            document = await vscode.workspace.openTextDocument(fileUri);
+        } catch {
+            // 文件不存在，创建新文件
+            const edit = new vscode.WorkspaceEdit();
+            edit.createFile(fileUri, { ignoreIfExists: true });
+            await vscode.workspace.applyEdit(edit);
+            document = await vscode.workspace.openTextDocument(fileUri);
+        }
+
+        // 应用每个 hunk
+        const edit = new vscode.WorkspaceEdit();
+        for (const hunk of file.hunks) {
+            let startLine = hunk.oldStart - 1; // VS Code 使用 0-based 索引
+            if (startLine < 0) startLine = 0; // 修正：防止新文件(oldStart=0)导致负数
+
+            const endLine = startLine + hunk.oldLines;
+
+            // 构建新内容
+            const newLines: string[] = [];
+            for (const line of hunk.lines) {
+                if (line.startsWith('+')) {
+                    newLines.push(line.substring(1));
+                } else if (!line.startsWith('-')) {
+                    newLines.push(line.startsWith(' ') ? line.substring(1) : line);
+                }
+            }
+
+            const range = new vscode.Range(startLine, 0, endLine, 0);
+            edit.replace(fileUri, range, newLines.join('\n') + '\n');
+        }
+
+        await vscode.workspace.applyEdit(edit);
+        await document.save();
+
+        // 显示文件
+        await vscode.window.showTextDocument(document);
+    }
+
+    private async applySimpleDiff(diffData: any) {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            throw new Error('No active editor. Please open a file first.');
+        }
+
+        const document = editor.document;
+        const edit = new vscode.WorkspaceEdit();
+
+        // 简单策略：查找并替换
+        const fullText = document.getText();
+
+        if (diffData.removed.length > 0) {
+            // 尝试查找要删除的内容
+            const toRemove = diffData.removed.join('\n');
+            const index = fullText.indexOf(toRemove);
+
+            if (index !== -1) {
+                const startPos = document.positionAt(index);
+                const endPos = document.positionAt(index + toRemove.length);
+                const range = new vscode.Range(startPos, endPos);
+
+                if (diffData.added.length > 0) {
+                    // 替换
+                    edit.replace(document.uri, range, diffData.added.join('\n'));
+                } else {
+                    // 删除
+                    edit.delete(document.uri, range);
+                }
+            } else {
+                throw new Error('Could not find the content to replace in the active file');
+            }
+        } else if (diffData.added.length > 0) {
+            // 只有添加，插入到光标位置
+            edit.insert(document.uri, editor.selection.active, diffData.added.join('\n'));
+        }
+
+        await vscode.workspace.applyEdit(edit);
+        await document.save();
     }
 
     public clear() {
@@ -10882,6 +11053,66 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             border-radius: 6px;
             overflow-x: auto;
             margin: 8px 0;
+            position: relative;
+        }
+
+        /* Diff 代码块样式 */
+        .ai-message pre.diff-block {
+            border: 1px solid var(--vscode-editorWidget-border);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .ai-message pre.diff-block::before {
+            content: "📝 Diff";
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            font-size: 0.75em;
+            opacity: 0.6;
+            font-family: var(--vscode-font-family);
+        }
+
+        /* 应用按钮 */
+        .apply-diff-btn {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            font-family: var(--vscode-font-family);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+            z-index: 10;
+        }
+
+        .ai-message pre.diff-block:hover .apply-diff-btn {
+            opacity: 1;
+        }
+
+        .apply-diff-btn:hover {
+            background: var(--vscode-button-hoverBackground);
+        }
+
+        .apply-diff-btn:active {
+            transform: scale(0.95);
+        }
+
+        .apply-diff-btn.applied {
+            background: var(--vscode-testing-iconPassed);
+            opacity: 1;
+        }
+
+        .apply-diff-btn.error {
+            background: var(--vscode-testing-iconFailed);
+            opacity: 1;
         }
 
         .ai-message code {
@@ -11174,6 +11405,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
             if (role === 'ai') {
                 div.innerHTML = marked.parse(text);
+                // 处理 diff 代码块
+                processDiffBlocks(div);
             } else {
                 div.textContent = text;
             }
@@ -11181,6 +11414,162 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             chatContainer.appendChild(div);
             scrollToBottom();
             return div;
+        }
+
+        // 检测并处理 diff 代码块
+        function processDiffBlocks(messageElement) {
+            const codeBlocks = messageElement.querySelectorAll('pre code');
+
+            codeBlocks.forEach((codeBlock, index) => {
+                const content = codeBlock.textContent;
+                const preElement = codeBlock.parentElement;
+
+                // 检测是否是 diff 格式
+                if (isDiffContent(content)) {
+                    preElement.classList.add('diff-block');
+
+                    // 添加应用按钮
+                    const applyBtn = document.createElement('button');
+                    applyBtn.className = 'apply-diff-btn';
+                    applyBtn.innerHTML = '✓ Apply';
+                    applyBtn.title = 'Apply this diff to your code';
+
+                    // 存储 diff 内容
+                    applyBtn.dataset.diffContent = content;
+                    applyBtn.dataset.diffIndex = index;
+
+                    applyBtn.onclick = () => applyDiff(applyBtn, content);
+
+                    preElement.appendChild(applyBtn);
+                }
+            });
+        }
+
+        // 检测是否是 diff 内容
+        function isDiffContent(content) {
+            const lines = content.trim().split('\n');
+
+            // 检测常见的 diff 格式特征
+            const hasDiffMarkers = lines.some(line =>
+                line.startsWith('+++') ||
+                line.startsWith('---') ||
+                line.startsWith('@@') ||
+                line.match(/^diff --git/)
+            );
+
+            // 或者检测是否有足够多的 +/- 行
+            const changeLines = lines.filter(line =>
+                line.startsWith('+') || line.startsWith('-')
+            );
+
+            return hasDiffMarkers || (changeLines.length >= 3 && changeLines.length / lines.length > 0.3);
+        }
+
+        // 应用 diff
+        function applyDiff(button, diffContent) {
+            button.disabled = true;
+            button.innerHTML = '⏳ Applying...';
+
+            // 解析 diff 内容
+            const diffData = parseDiff(diffContent);
+
+            if (!diffData) {
+                button.innerHTML = '✗ Invalid Diff';
+                button.classList.add('error');
+                setTimeout(() => {
+                    button.disabled = false;
+                    button.innerHTML = '✓ Apply';
+                    button.classList.remove('error');
+                }, 2000);
+                return;
+            }
+
+            // 发送到 VS Code 扩展进行应用
+            vscode.postMessage({
+                type: 'applyDiff',
+                value: diffData
+            });
+
+            // 等待响应
+            button.dataset.pending = 'true';
+        }
+
+        // 解析 diff 内容
+        function parseDiff(diffContent) {
+            const lines = diffContent.trim().split('\n');
+            let currentFile = null;
+            const files = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // 检测文件名
+                if (line.startsWith('--- ') || line.startsWith('+++ ')) {
+                    const match = line.match(/^[+-]{3}\s+(?:a\/|b\/)?(.+?)(?:\s+|$)/);
+                    if (match) {
+                        const filename = match[1];
+                        if (line.startsWith('---')) {
+                            currentFile = { oldFile: filename, newFile: null, hunks: [] };
+                        } else if (currentFile) {
+                            currentFile.newFile = filename;
+                            files.push(currentFile);
+                        }
+                    }
+                }
+
+                // 检测 hunk 头部 (@@)
+                if (line.startsWith('@@') && currentFile) {
+                    const hunkMatch = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+                    if (hunkMatch) {
+                        const hunk = {
+                            oldStart: parseInt(hunkMatch[1]),
+                            oldLines: parseInt(hunkMatch[2] || '1'),
+                            newStart: parseInt(hunkMatch[3]),
+                            newLines: parseInt(hunkMatch[4] || '1'),
+                            lines: []
+                        };
+
+                        // 收集 hunk 的内容
+                        i++;
+                        while (i < lines.length && !lines[i].startsWith('@@') && !lines[i].startsWith('---')) {
+                            hunk.lines.push(lines[i]);
+                            i++;
+                        }
+                        i--; // 回退一行
+
+                        currentFile.hunks.push(hunk);
+                    }
+                }
+            }
+
+            // 如果没有找到标准格式，尝试简单的 +/- 格式
+            if (files.length === 0) {
+                const addedLines = [];
+                const removedLines = [];
+                const contextLines = [];
+
+                lines.forEach(line => {
+                    if (line.startsWith('+') && !line.startsWith('+++')) {
+                        addedLines.push(line.substring(1));
+                    } else if (line.startsWith('-') && !line.startsWith('---')) {
+                        removedLines.push(line.substring(1));
+                    } else if (!line.startsWith('@@')) {
+                        contextLines.push(line);
+                    }
+                });
+
+                if (addedLines.length > 0 || removedLines.length > 0) {
+                    return {
+                        type: 'simple',
+                        added: addedLines,
+                        removed: removedLines,
+                        context: contextLines,
+                        raw: diffContent
+                    };
+                }
+            }
+
+            return files.length > 0 ? { type: 'unified', files, raw: diffContent } : null;
         }
 
         function scrollToBottom() {
@@ -11299,6 +11688,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     }
                     currentAiRawText += message.value;
                     currentAiMessageElement.innerHTML = marked.parse(currentAiRawText);
+                    // 实时处理 diff 块
+                    processDiffBlocks(currentAiMessageElement);
                     scrollToBottom();
                     break;
                 case 'history':
@@ -11321,6 +11712,33 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 case 'error':
                     if (loader) loader.remove();
                     addMessage('❌ Error: ' + message.value, 'system');
+                    break;
+                case 'diffApplied':
+                    // Diff 应用成功
+                    const successButtons = document.querySelectorAll('.apply-diff-btn[data-pending="true"]');
+                    successButtons.forEach(btn => {
+                        btn.innerHTML = '✓ Applied';
+                        btn.classList.add('applied');
+                        btn.disabled = true;
+                        btn.dataset.pending = 'false';
+                    });
+                    break;
+                case 'diffError':
+                    // Diff 应用失败
+                    const errorButtons = document.querySelectorAll('.apply-diff-btn[data-pending="true"]');
+                    errorButtons.forEach(btn => {
+                        btn.innerHTML = '✗ Failed';
+                        btn.classList.add('error');
+                        btn.dataset.pending = 'false';
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '✓ Apply';
+                            btn.classList.remove('error');
+                        }, 3000);
+                    });
+                    if (message.value) {
+                        addMessage('❌ Diff application error: ' + message.value, 'system');
+                    }
                     break;
             }
         });
@@ -11363,5 +11781,5 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 ---
 ### 📊 最终统计汇总
 - **文件总数:** 75
-- **代码总行数:** 10679
-- **物理总大小:** 371.27 KB
+- **代码总行数:** 11097
+- **物理总大小:** 386.63 KB
