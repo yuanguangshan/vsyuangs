@@ -19,6 +19,7 @@ Yuangs AI Agent 是一款深度集成在 VS Code 中的新一代 AI 辅助开发
     - 采用玻璃拟态 (Glassmorphism) 设计的侧边栏。
     - 完整的 Markdown 渲染支持。
     - 交互式加载指示器与自适应输入框。
+    - **智能文本选择**: 在聊天记录中选中文本后自动填入输入框，一键发送。
 
 ---
 
@@ -54,7 +55,14 @@ rules:
 
 ### 编译扩展
 ```bash
-# 模式一：一键编译（含 WASM 和 TS）
+# 🚀 推荐方式：一键编译（自动查找 npm）
+./c
+
+# 或使用详细版本（显示完整编译过程）
+./compile.sh
+
+# 传统方式：
+# 模式一：完整构建（含 WASM 和 TS）
 npm run build
 
 # 模式二：仅编译 TypeScript
@@ -63,6 +71,8 @@ npm run compile
 # 模式三：仅编译 AssemblyScript (WASM 沙箱核心)
 npm run asbuild
 ```
+
+> 💡 **提示**: `./c` 脚本会自动查找系统中的 Node.js 和 npm，支持 Homebrew、NVM、Volta、FNM 等多种安装方式，无需配置环境变量。
 
 ### 调试
 1. 在 VS Code 中打开本项目。
