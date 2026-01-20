@@ -28,10 +28,34 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
-        webviewView.webview.onDidReceiveMessage(data => {
+        webviewView.webview.onDidReceiveMessage(async data => {
             switch (data.type) {
                 case 'ask':
                     this.handleAgentTask(data.value);
+                    break;
+                case 'getFiles':
+                    const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 100);
+                    const fileNames = files.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
+                    webviewView.webview.postMessage({ type: 'suggestions', value: fileNames, trigger: '@' });
+                    break;
+                case 'getSymbols':
+                    // 这是一个简化的符号获取，实际可以通过 DocumentSymbolProvider 获取
+                    // 这里为了演示，获取当前打开文件的符号
+                    const editor = vscode.window.activeTextEditor;
+                    if (editor) {
+                        try {
+                            const symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+                                'vscode.executeDocumentSymbolProvider',
+                                editor.document.uri
+                            );
+                            if (symbols) {
+                                const symbolNames = symbols.map(s => s.name);
+                                webviewView.webview.postMessage({ type: 'suggestions', value: symbolNames, trigger: '#' });
+                            }
+                        } catch (e) {
+                            webviewView.webview.postMessage({ type: 'suggestions', value: [], trigger: '#' });
+                        }
+                    }
                     break;
             }
         });

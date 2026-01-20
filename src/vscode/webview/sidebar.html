@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +16,7 @@
             --input-bg: var(--vscode-input-background);
         }
 
-        body { 
+        body {
             font-family: var(--vscode-font-family), "Inter", -apple-system, sans-serif;
             font-size: var(--vscode-font-size);
             color: var(--text-main);
@@ -53,6 +54,7 @@
         #chat-container::-webkit-scrollbar {
             width: 6px;
         }
+
         #chat-container::-webkit-scrollbar-thumb {
             background: var(--vscode-scrollbarSlider-background);
             border-radius: 10px;
@@ -66,12 +68,19 @@
             position: relative;
             animation: fadeIn 0.3s ease-out;
             line-height: 1.5;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .user-message {
@@ -92,15 +101,16 @@
 
         /* Markdown 样式 */
         .ai-message pre {
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             padding: 8px;
             border-radius: 6px;
             overflow-x: auto;
             margin: 8px 0;
         }
+
         .ai-message code {
             font-family: var(--vscode-editor-font-family);
-            background: rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.1);
             padding: 2px 4px;
             border-radius: 4px;
         }
@@ -122,6 +132,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            position: relative;
         }
 
         .input-wrapper {
@@ -174,6 +185,7 @@
             gap: 4px;
             padding: 4px;
         }
+
         .dot {
             width: 6px;
             height: 6px;
@@ -181,26 +193,81 @@
             border-radius: 50%;
             animation: bounce 1.4s infinite ease-in-out both;
         }
-        .dot:nth-child(1) { animation-delay: -0.32s; }
-        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        .dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
 
         @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1.0); }
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1.0);
+            }
+        }
+
+        /* 建议列表样式 */
+        #suggestions-list {
+            position: absolute;
+            bottom: 100%;
+            left: 16px;
+            right: 16px;
+            background: var(--vscode-editor-background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            margin-bottom: 8px;
+        }
+
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item.selected {
+            background: var(--vscode-list-hoverBackground);
+            color: var(--vscode-list-hoverForeground);
+        }
+
+        .suggestion-icon {
+            opacity: 0.7;
+            font-size: 1.1em;
         }
     </style>
 </head>
+
 <body>
     <div id="chat-container">
         <div class="message system-message">✨ Yuangs AI Agent initialized and ready.</div>
     </div>
-    
+
     <div id="input-area">
+        <div id="suggestions-list"></div>
         <div class="input-wrapper">
             <textarea id="user-input" rows="1" placeholder="Type your message..."></textarea>
             <button id="send-btn">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M1.146 1.146a.5.5 0 0 1 .538-.093l13 5a.5.5 0 0 1 0 .94l-13 5a.5.5 0 0 1-.667-.615L2.854 8 1.017 2.618a.5.5 0 0 1 .129-.472zM3.854 8l-1.5 4.34L13.84 8 2.354 3.66 3.854 8z"/>
+                    <path
+                        d="M1.146 1.146a.5.5 0 0 1 .538-.093l13 5a.5.5 0 0 1 0 .94l-13 5a.5.5 0 0 1-.667-.615L2.854 8 1.017 2.618a.5.5 0 0 1 .129-.472zM3.854 8l-1.5 4.34L13.84 8 2.354 3.66 3.854 8z" />
                 </svg>
             </button>
         </div>
@@ -211,26 +278,110 @@
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        const suggestionsList = document.getElementById('suggestions-list');
 
         let currentAiMessageElement = null;
         let currentAiRawText = "";
+        let suggestionType = null; // '@' or '#'
+        let selectedSuggestionIndex = -1;
+        let currentSuggestions = [];
 
         // 输入框高度自动伸缩
-        userInput.addEventListener('input', () => {
+        userInput.addEventListener('input', (e) => {
             userInput.style.height = 'auto';
             userInput.style.height = userInput.scrollHeight + 'px';
+
+            handleTriggerDetection(e);
         });
+
+        function handleTriggerDetection(e) {
+            const value = userInput.value;
+            const cursorPos = userInput.selectionStart;
+            const textBeforeCursor = value.substring(0, cursorPos);
+
+            // 检测触发符
+            const lastAt = textBeforeCursor.lastIndexOf('@');
+            const lastHash = textBeforeCursor.lastIndexOf('#');
+            const lastTriggerIndex = Math.max(lastAt, lastHash);
+
+            if (lastTriggerIndex !== -1 && (lastTriggerIndex === 0 || /\s/.test(textBeforeCursor[lastTriggerIndex - 1]))) {
+                const trigger = textBeforeCursor[lastTriggerIndex];
+                const query = textBeforeCursor.substring(lastTriggerIndex + 1);
+
+                if (!/\s/.test(query)) {
+                    suggestionType = trigger;
+
+                    // 立即显示加载状态
+                    suggestionsList.innerHTML = '<div class="suggestion-item">🔍 Loading...</div>';
+                    suggestionsList.style.display = 'block';
+
+                    if (trigger === '@') {
+                        vscode.postMessage({ type: 'getFiles', query });
+                    } else {
+                        vscode.postMessage({ type: 'getSymbols', query });
+                    }
+                    return;
+                }
+            }
+
+            hideSuggestions();
+        }
+
+        function showSuggestions(suggestions, trigger) {
+            currentSuggestions = suggestions;
+            if (suggestions.length === 0) {
+                hideSuggestions();
+                return;
+            }
+
+            suggestionsList.innerHTML = '';
+            suggestionsList.style.display = 'block';
+            selectedSuggestionIndex = 0;
+
+            suggestions.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item' + (index === 0 ? ' selected' : '');
+                const icon = trigger === '@' ? '📄' : '🔧';
+                div.innerHTML = `<span class="suggestion-icon">${icon}</span><span>${item}</span>`;
+                div.onclick = () => selectSuggestion(item);
+                suggestionsList.appendChild(div);
+            });
+        }
+
+        function hideSuggestions() {
+            suggestionsList.style.display = 'none';
+            suggestionType = null;
+            selectedSuggestionIndex = -1;
+        }
+
+        function selectSuggestion(value) {
+            const text = userInput.value;
+            const cursorPos = userInput.selectionStart;
+            const textBeforeCursor = text.substring(0, cursorPos);
+            const textAfterCursor = text.substring(cursorPos);
+
+            const lastTriggerIndex = textBeforeCursor.lastIndexOf(suggestionType);
+            const newText = textBeforeCursor.substring(0, lastTriggerIndex) + suggestionType + value + ' ' + textAfterCursor;
+
+            userInput.value = newText;
+            hideSuggestions();
+            userInput.focus();
+
+            // 重新计算高度
+            userInput.style.height = 'auto';
+            userInput.style.height = userInput.scrollHeight + 'px';
+        }
 
         function addMessage(text, role, isRaw = false) {
             const div = document.createElement('div');
             div.className = `message ${role}-message`;
-            
+
             if (role === 'ai') {
                 div.innerHTML = marked.parse(text);
             } else {
                 div.textContent = text;
             }
-            
+
             chatContainer.appendChild(div);
             scrollToBottom();
             return div;
@@ -249,7 +400,7 @@
                 userInput.style.height = 'auto';
                 currentAiMessageElement = null;
                 currentAiRawText = "";
-                
+
                 // 添加加载指示器
                 const loader = document.createElement('div');
                 loader.id = 'ai-loader';
@@ -261,18 +412,52 @@
         }
 
         sendBtn.addEventListener('click', handleSend);
+
         userInput.addEventListener('keydown', (e) => {
+            if (suggestionsList.style.display === 'block') {
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedSuggestionIndex = (selectedSuggestionIndex + 1) % currentSuggestions.length;
+                    updateSuggestionSelection();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedSuggestionIndex = (selectedSuggestionIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
+                    updateSuggestionSelection();
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    if (selectedSuggestionIndex !== -1) {
+                        selectSuggestion(currentSuggestions[selectedSuggestionIndex]);
+                    }
+                } else if (e.key === 'Escape') {
+                    hideSuggestions();
+                }
+                return;
+            }
+
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleSend();
             }
         });
 
+        function updateSuggestionSelection() {
+            const items = suggestionsList.querySelectorAll('.suggestion-item');
+            items.forEach((item, index) => {
+                item.className = 'suggestion-item' + (index === selectedSuggestionIndex ? ' selected' : '');
+                if (index === selectedSuggestionIndex) {
+                    item.scrollIntoView({ block: 'nearest' });
+                }
+            });
+        }
+
         window.addEventListener('message', event => {
             const message = event.data;
             const loader = document.getElementById('ai-loader');
-            
+
             switch (message.type) {
+                case 'suggestions':
+                    showSuggestions(message.value, message.trigger);
+                    break;
                 case 'aiChunk':
                     if (loader) loader.remove();
                     if (!currentAiMessageElement) {
@@ -299,4 +484,5 @@
         });
     </script>
 </body>
+
 </html>
