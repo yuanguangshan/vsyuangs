@@ -148,6 +148,66 @@
             border-radius: 6px;
             overflow-x: auto;
             margin: 8px 0;
+            position: relative;
+        }
+
+        /* Diff 代码块样式 */
+        .ai-message pre.diff-block {
+            border: 1px solid var(--vscode-editorWidget-border);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .ai-message pre.diff-block::before {
+            content: "📝 Diff";
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            font-size: 0.75em;
+            opacity: 0.6;
+            font-family: var(--vscode-font-family);
+        }
+
+        /* 应用按钮 */
+        .apply-diff-btn {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            font-family: var(--vscode-font-family);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+            z-index: 10;
+        }
+
+        .ai-message pre.diff-block:hover .apply-diff-btn {
+            opacity: 1;
+        }
+
+        .apply-diff-btn:hover {
+            background: var(--vscode-button-hoverBackground);
+        }
+
+        .apply-diff-btn:active {
+            transform: scale(0.95);
+        }
+
+        .apply-diff-btn.applied {
+            background: var(--vscode-testing-iconPassed);
+            opacity: 1;
+        }
+
+        .apply-diff-btn.error {
+            background: var(--vscode-testing-iconFailed);
+            opacity: 1;
         }
 
         .ai-message code {
@@ -440,6 +500,8 @@
 
             if (role === 'ai') {
                 div.innerHTML = marked.parse(text);
+                // 处理 diff 代码块
+                processDiffBlocks(div);
             } else {
                 div.textContent = text;
             }
@@ -447,6 +509,162 @@
             chatContainer.appendChild(div);
             scrollToBottom();
             return div;
+        }
+
+        // 检测并处理 diff 代码块
+        function processDiffBlocks(messageElement) {
+            const codeBlocks = messageElement.querySelectorAll('pre code');
+
+            codeBlocks.forEach((codeBlock, index) => {
+                const content = codeBlock.textContent;
+                const preElement = codeBlock.parentElement;
+
+                // 检测是否是 diff 格式
+                if (isDiffContent(content)) {
+                    preElement.classList.add('diff-block');
+
+                    // 添加应用按钮
+                    const applyBtn = document.createElement('button');
+                    applyBtn.className = 'apply-diff-btn';
+                    applyBtn.innerHTML = '✓ Apply';
+                    applyBtn.title = 'Apply this diff to your code';
+
+                    // 存储 diff 内容
+                    applyBtn.dataset.diffContent = content;
+                    applyBtn.dataset.diffIndex = index;
+
+                    applyBtn.onclick = () => applyDiff(applyBtn, content);
+
+                    preElement.appendChild(applyBtn);
+                }
+            });
+        }
+
+        // 检测是否是 diff 内容
+        function isDiffContent(content) {
+            const lines = content.trim().split('\n');
+
+            // 检测常见的 diff 格式特征
+            const hasDiffMarkers = lines.some(line =>
+                line.startsWith('+++') ||
+                line.startsWith('---') ||
+                line.startsWith('@@') ||
+                line.match(/^diff --git/)
+            );
+
+            // 或者检测是否有足够多的 +/- 行
+            const changeLines = lines.filter(line =>
+                line.startsWith('+') || line.startsWith('-')
+            );
+
+            return hasDiffMarkers || (changeLines.length >= 3 && changeLines.length / lines.length > 0.3);
+        }
+
+        // 应用 diff
+        function applyDiff(button, diffContent) {
+            button.disabled = true;
+            button.innerHTML = '⏳ Applying...';
+
+            // 解析 diff 内容
+            const diffData = parseDiff(diffContent);
+
+            if (!diffData) {
+                button.innerHTML = '✗ Invalid Diff';
+                button.classList.add('error');
+                setTimeout(() => {
+                    button.disabled = false;
+                    button.innerHTML = '✓ Apply';
+                    button.classList.remove('error');
+                }, 2000);
+                return;
+            }
+
+            // 发送到 VS Code 扩展进行应用
+            vscode.postMessage({
+                type: 'applyDiff',
+                value: diffData
+            });
+
+            // 等待响应
+            button.dataset.pending = 'true';
+        }
+
+        // 解析 diff 内容
+        function parseDiff(diffContent) {
+            const lines = diffContent.trim().split('\n');
+            let currentFile = null;
+            const files = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // 检测文件名
+                if (line.startsWith('--- ') || line.startsWith('+++ ')) {
+                    const match = line.match(/^[+-]{3}\s+(?:a\/|b\/)?(.+?)(?:\s+|$)/);
+                    if (match) {
+                        const filename = match[1];
+                        if (line.startsWith('---')) {
+                            currentFile = { oldFile: filename, newFile: null, hunks: [] };
+                        } else if (currentFile) {
+                            currentFile.newFile = filename;
+                            files.push(currentFile);
+                        }
+                    }
+                }
+
+                // 检测 hunk 头部 (@@)
+                if (line.startsWith('@@') && currentFile) {
+                    const hunkMatch = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+                    if (hunkMatch) {
+                        const hunk = {
+                            oldStart: parseInt(hunkMatch[1]),
+                            oldLines: parseInt(hunkMatch[2] || '1'),
+                            newStart: parseInt(hunkMatch[3]),
+                            newLines: parseInt(hunkMatch[4] || '1'),
+                            lines: []
+                        };
+
+                        // 收集 hunk 的内容
+                        i++;
+                        while (i < lines.length && !lines[i].startsWith('@@') && !lines[i].startsWith('---')) {
+                            hunk.lines.push(lines[i]);
+                            i++;
+                        }
+                        i--; // 回退一行
+
+                        currentFile.hunks.push(hunk);
+                    }
+                }
+            }
+
+            // 如果没有找到标准格式，尝试简单的 +/- 格式
+            if (files.length === 0) {
+                const addedLines = [];
+                const removedLines = [];
+                const contextLines = [];
+
+                lines.forEach(line => {
+                    if (line.startsWith('+') && !line.startsWith('+++')) {
+                        addedLines.push(line.substring(1));
+                    } else if (line.startsWith('-') && !line.startsWith('---')) {
+                        removedLines.push(line.substring(1));
+                    } else if (!line.startsWith('@@')) {
+                        contextLines.push(line);
+                    }
+                });
+
+                if (addedLines.length > 0 || removedLines.length > 0) {
+                    return {
+                        type: 'simple',
+                        added: addedLines,
+                        removed: removedLines,
+                        context: contextLines,
+                        raw: diffContent
+                    };
+                }
+            }
+
+            return files.length > 0 ? { type: 'unified', files, raw: diffContent } : null;
         }
 
         function scrollToBottom() {
@@ -565,6 +783,8 @@
                     }
                     currentAiRawText += message.value;
                     currentAiMessageElement.innerHTML = marked.parse(currentAiRawText);
+                    // 实时处理 diff 块
+                    processDiffBlocks(currentAiMessageElement);
                     scrollToBottom();
                     break;
                 case 'history':
@@ -587,6 +807,33 @@
                 case 'error':
                     if (loader) loader.remove();
                     addMessage('❌ Error: ' + message.value, 'system');
+                    break;
+                case 'diffApplied':
+                    // Diff 应用成功
+                    const successButtons = document.querySelectorAll('.apply-diff-btn[data-pending="true"]');
+                    successButtons.forEach(btn => {
+                        btn.innerHTML = '✓ Applied';
+                        btn.classList.add('applied');
+                        btn.disabled = true;
+                        btn.dataset.pending = 'false';
+                    });
+                    break;
+                case 'diffError':
+                    // Diff 应用失败
+                    const errorButtons = document.querySelectorAll('.apply-diff-btn[data-pending="true"]');
+                    errorButtons.forEach(btn => {
+                        btn.innerHTML = '✗ Failed';
+                        btn.classList.add('error');
+                        btn.dataset.pending = 'false';
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '✓ Apply';
+                            btn.classList.remove('error');
+                        }, 3000);
+                    });
+                    if (message.value) {
+                        addMessage('❌ Diff application error: ' + message.value, 'system');
+                    }
                     break;
             }
         });

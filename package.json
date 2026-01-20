@@ -2,7 +2,7 @@
     "name": "yuangs-vscode",
     "displayName": "Yuangs AI Agent",
     "description": "治理-执行 (Think-Govern-Execute) 闭环能力的 Agent 插件",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "engines": {
         "vscode": "^1.75.0"
     },

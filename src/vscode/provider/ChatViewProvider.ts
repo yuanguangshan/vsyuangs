@@ -70,6 +70,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                         }
                     }
                     break;
+                case 'applyDiff':
+                    await this.handleApplyDiff(data.value);
+                    break;
             }
         });
     }
@@ -147,6 +150,123 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         } catch (error: any) {
             this._view.webview.postMessage({ type: 'error', value: error.message });
         }
+    }
+
+    private async handleApplyDiff(diffData: any) {
+        if (!this._view) return;
+
+        try {
+            if (diffData.type === 'unified') {
+                // 处理标准 unified diff 格式
+                for (const file of diffData.files) {
+                    await this.applyUnifiedDiff(file);
+                }
+                this._view.webview.postMessage({ type: 'diffApplied' });
+                vscode.window.showInformationMessage('✓ Diff applied successfully!');
+            } else if (diffData.type === 'simple') {
+                // 处理简单的 +/- 格式
+                await this.applySimpleDiff(diffData);
+                this._view.webview.postMessage({ type: 'diffApplied' });
+                vscode.window.showInformationMessage('✓ Diff applied successfully!');
+            } else {
+                throw new Error('Unknown diff format');
+            }
+        } catch (error: any) {
+            this._view.webview.postMessage({ type: 'diffError', value: error.message });
+            vscode.window.showErrorMessage(`Failed to apply diff: ${error.message}`);
+        }
+    }
+
+    private async applyUnifiedDiff(file: any) {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            throw new Error('No workspace folder open');
+        }
+
+        // 查找文件
+        const filePath = path.join(workspaceFolder.uri.fsPath, file.newFile || file.oldFile);
+        const fileUri = vscode.Uri.file(filePath);
+
+        // 打开或创建文件
+        let document: vscode.TextDocument;
+        try {
+            document = await vscode.workspace.openTextDocument(fileUri);
+        } catch {
+            // 文件不存在，创建新文件
+            const edit = new vscode.WorkspaceEdit();
+            edit.createFile(fileUri, { ignoreIfExists: true });
+            await vscode.workspace.applyEdit(edit);
+            document = await vscode.workspace.openTextDocument(fileUri);
+        }
+
+        // 应用每个 hunk
+        const edit = new vscode.WorkspaceEdit();
+        for (const hunk of file.hunks) {
+            let startLine = hunk.oldStart - 1; // VS Code 使用 0-based 索引
+            if (startLine < 0) startLine = 0; // 修正：防止新文件(oldStart=0)导致负数
+
+            const endLine = startLine + hunk.oldLines;
+
+            // 构建新内容
+            const newLines: string[] = [];
+            for (const line of hunk.lines) {
+                if (line.startsWith('+')) {
+                    newLines.push(line.substring(1));
+                } else if (!line.startsWith('-')) {
+                    newLines.push(line.startsWith(' ') ? line.substring(1) : line);
+                }
+            }
+
+            const range = new vscode.Range(startLine, 0, endLine, 0);
+            edit.replace(fileUri, range, newLines.join('\n') + '\n');
+        }
+
+        await vscode.workspace.applyEdit(edit);
+        await document.save();
+
+        // 显示文件
+        await vscode.window.showTextDocument(document);
+    }
+
+    private async applySimpleDiff(diffData: any) {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            throw new Error('No active editor. Please open a file first.');
+        }
+
+        const document = editor.document;
+        const edit = new vscode.WorkspaceEdit();
+
+        // 简单策略：查找并替换
+        const fullText = document.getText();
+
+        if (diffData.removed.length > 0) {
+            // 尝试查找要删除的内容
+            const toRemove = diffData.removed.join('\n');
+            const index = fullText.indexOf(toRemove);
+
+            if (index !== -1) {
+                const startPos = document.positionAt(index);
+                const endPos = document.positionAt(index + toRemove.length);
+                const range = new vscode.Range(startPos, endPos);
+
+                if (diffData.added.length > 0) {
+                    // 替换
+                    edit.replace(document.uri, range, diffData.added.join('\n'));
+                } else {
+                    // 删除
+                    edit.delete(document.uri, range);
+                }
+            } else {
+                throw new Error('Could not find the content to replace in the active file');
+            }
+        } else if (diffData.added.length > 0) {
+            // 只有添加，插入到光标位置
+            edit.insert(document.uri, editor.selection.active, diffData.added.join('\n'));
+        }
+
+        await vscode.workspace.applyEdit(edit);
+        await document.save();
     }
 
     public clear() {

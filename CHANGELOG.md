@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.0.3] - 2026-01-21
+
+### ✨ 新功能 (New Features)
+- **智能 Diff 应用 (Smart Diff Application)**: 
+  - 自动检测 AI 回复中的 diff 代码块
+  - 在 diff 代码块右上角显示"Apply"按钮（hover 时显示）
+  - 一键应用 diff 到代码文件
+  - 支持标准 unified diff 格式（`---`、`+++`、`@@`）
+  - 支持简单的 `+`/`-` 格式
+  - 自动创建不存在的文件
+  - 应用后自动保存并显示文件
+
+### 🎨 用户体验优化 (UX Improvements)
+- Diff 代码块特殊样式标识（边框、背景色）
+- 应用按钮状态反馈：
+  - 默认：`✓ Apply`（hover 时显示）
+  - 应用中：`⏳ Applying...`
+  - 成功：`✓ Applied`（绿色）
+  - 失败：`✗ Failed`（红色，3秒后恢复）
+- 实时处理流式渲染中的 diff 块
+
+### 🛠 技术改进 (Technical Improvements)
+- 完整的 diff 解析器，支持多种格式
+- 智能文件查找和创建
+- 工作区编辑 API 集成
+- 错误处理和用户反馈
+
+---
+
 ## [1.0.2] - 2026-01-21
 
 ### ✨ 新功能 (New Features)
