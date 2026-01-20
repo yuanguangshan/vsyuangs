@@ -49,7 +49,7 @@ export async function askAI(prompt: string, model?: string): Promise<string> {
 
     const headers = {
         'Content-Type': 'application/json',
-        'X-Client-ID': 'npm_yuangs',
+        'X-Client-ID': 'vscode',
         'Origin': 'https://cli.want.biz',
         'Referer': 'https://cli.want.biz/',
         'account': config.accountType || DEFAULT_ACCOUNT_TYPE,
@@ -88,7 +88,7 @@ export async function callAI_Stream(messages: AIRequestMessage[], model: string 
         responseType: 'stream',
         headers: {
             'Content-Type': 'application/json',
-            'X-Client-ID': 'npm_yuangs',
+            'X-Client-ID': 'vscode',
             'Origin': 'https://cli.want.biz',
             'Referer': 'https://cli.want.biz/',
             'account': config.accountType || DEFAULT_ACCOUNT_TYPE,

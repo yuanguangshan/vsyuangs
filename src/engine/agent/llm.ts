@@ -50,7 +50,7 @@ export async function runLLM({
 
     const headers = {
         'Content-Type': 'application/json',
-        'X-Client-ID': 'npm_yuangs',
+        'X-Client-ID': 'vscode',
         'Origin': 'https://cli.want.biz',
         'Referer': 'https://cli.want.biz/',
         'account': config.accountType || DEFAULT_ACCOUNT_TYPE,

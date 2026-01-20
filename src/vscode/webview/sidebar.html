@@ -29,15 +29,57 @@
             overflow: hidden;
         }
 
-        /* 顶部装饰线 */
-        body::before {
+        /* 顶部装饰线与标题栏 */
+        header {
+            height: 40px;
+            width: 100%;
+            background: var(--vscode-sideBar-background);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+
+        header::before {
             content: "";
             height: 2px;
             width: 100%;
             background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-            position: fixed;
+            position: absolute;
             top: 0;
-            z-index: 100;
+            left: 0;
+        }
+
+        .header-title {
+            font-size: 0.9em;
+            font-weight: bold;
+            opacity: 0.8;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            opacity: 0.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .icon-btn:hover {
+            opacity: 1;
+            background: var(--vscode-toolbar-hoverBackground);
         }
 
         #chat-container {
@@ -256,6 +298,24 @@
 </head>
 
 <body>
+    <header>
+        <div class="header-title">YUANGS AI</div>
+        <div class="header-actions">
+            <button class="icon-btn" id="export-btn" title="Export Chat History (.md)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path
+                        d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zM13 5H9V1h4v4zM3 2v12h10V6H8V2H3z" />
+                </svg>
+            </button>
+            <button class="icon-btn" id="clear-btn" title="Clear Chat">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 4v9h7V4H4z" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
     <div id="chat-container">
         <div class="message system-message">✨ Yuangs AI Agent initialized and ready.</div>
     </div>
@@ -278,6 +338,8 @@
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const clearBtn = document.getElementById('clear-btn');
         const suggestionsList = document.getElementById('suggestions-list');
 
         let currentAiMessageElement = null;
@@ -438,6 +500,14 @@
                 e.preventDefault();
                 handleSend();
             }
+        });
+
+        exportBtn.addEventListener('click', () => {
+            vscode.postMessage({ type: 'exportChat' });
+        });
+
+        clearBtn.addEventListener('click', () => {
+            vscode.postMessage({ type: 'clear' }); // 已经在 Provider 中实现清理逻辑
         });
 
         function updateSuggestionSelection() {

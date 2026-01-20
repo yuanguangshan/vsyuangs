@@ -7,6 +7,7 @@ import { GovernanceService } from '../../engine/agent/governance';
 export class ChatViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'yuangs.chatView';
     private _view?: vscode.WebviewView;
+    private _messages: { role: string, content: string }[] = [];
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
@@ -37,6 +38,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 100);
                     const fileNames = files.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
                     webviewView.webview.postMessage({ type: 'suggestions', value: fileNames, trigger: '@' });
+                    break;
+                case 'exportChat':
+                    this.exportChatHistory();
+                    break;
+                case 'clear':
+                    this.clear();
                     break;
                 case 'getSymbols':
                     // 这是一个简化的符号获取，实际可以通过 DocumentSymbolProvider 获取
@@ -84,6 +91,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             }
 
+            this._messages.push({ role: 'user', content: userInput });
+
             // 初始化治理服务 (传入插件基础路径以正确加载 policy.yaml 和 wasm)
             await GovernanceService.init(this._extensionUri.fsPath);
 
@@ -105,13 +114,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
             const runtime = new AgentRuntime([]); // 这里可以传入历史消息
 
+            let fullAiResponse = '';
             await runtime.run(
                 finalInput,
                 'chat',
                 (chunk) => {
+                    fullAiResponse += chunk;
                     this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
                 }
             );
+
+            this._messages.push({ role: 'assistant', content: fullAiResponse });
 
             this._view?.webview.postMessage({ type: 'done' });
 
@@ -124,7 +137,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     public clear() {
+        this._messages = [];
         this._view?.webview.postMessage({ type: 'clear' });
+    }
+
+    private async exportChatHistory() {
+        if (this._messages.length === 0) {
+            vscode.window.showWarningMessage('No chat history to export.');
+            return;
+        }
+
+        const mdContent = this._messages.map(m => {
+            const role = m.role === 'user' ? '### 👤 User' : '### 🤖 Assistant';
+            return `${role}\n\n${m.content}\n\n---\n`;
+        }).join('\n');
+
+        const uri = await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(path.join(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', 'chat_export.md')),
+            filters: { 'Markdown': ['md'] }
+        });
+
+        if (uri) {
+            fs.writeFileSync(uri.fsPath, mdContent);
+            vscode.window.showInformationMessage('Chat history exported successfully!');
+        }
     }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
