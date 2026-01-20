@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Built files
+dist/
+out/
+build/release.wasm
+build/debug.wasm
+
+# VS Code
+.vscode-test/
+*.vsix
+
+# OS
+.DS_Store
+
+# Replay system
+replay/
+logs/

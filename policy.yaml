@@ -1,0 +1,26 @@
+rules:
+  - id: block-root-rm
+    when:
+      pattern: "rm -rf /"
+    effect: deny
+    reason: "WASM_SANDBOX: 禁止删除根目录"
+  
+  - id: require-human-sudo
+    when:
+      pattern: "sudo "
+    effect: require_approval
+    reason: "提权操作需要人工二次核验"
+
+  - id: allow-safe-read
+    when:
+      type: tool_call
+      pattern: "read_file"
+    effect: allow
+    reason: "允许读取文件进行分析"
+
+  - id: rate-limit-shell
+    when:
+      type: shell_cmd
+      max_per_minute: 5
+    effect: allow
+    reason: "防止 AI 陷入循环执行命令"
