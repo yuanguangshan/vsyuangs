@@ -10,8 +10,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private _messages: { role: string, content: string }[] = [];
 
     constructor(
-        private readonly _extensionUri: vscode.Uri,
-    ) { }
+        private readonly _context: vscode.ExtensionContext,
+    ) {
+        // 从 workspaceState 恢复历史记录
+        this._messages = this._context.workspaceState.get<{ role: string, content: string }[]>('chatHistory', []);
+    }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
@@ -23,11 +26,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [
-                this._extensionUri
+                this._context.extensionUri
             ]
         };
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+
+        // 当 webview 准备好后，发送历史记录
+        webviewView.webview.postMessage({ type: 'history', value: this._messages });
 
         webviewView.webview.onDidReceiveMessage(async data => {
             switch (data.type) {
@@ -92,9 +98,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             }
 
             this._messages.push({ role: 'user', content: userInput });
+            this._saveHistory();
 
             // 初始化治理服务 (传入插件基础路径以正确加载 policy.yaml 和 wasm)
-            await GovernanceService.init(this._extensionUri.fsPath);
+            await GovernanceService.init(this._context.extensionUri.fsPath);
 
             // 劫持治理审批逻辑为 VS Code UI
             const originalAdjudicate = GovernanceService.adjudicate;
@@ -112,7 +119,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             };
 
-            const runtime = new AgentRuntime([]); // 这里可以传入历史消息
+            const runtime = new AgentRuntime({
+                history: this._messages.map(m => ({
+                    role: m.role as any,
+                    content: m.content
+                }))
+            });
 
             let fullAiResponse = '';
             await runtime.run(
@@ -125,6 +137,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             );
 
             this._messages.push({ role: 'assistant', content: fullAiResponse });
+            this._saveHistory();
 
             this._view?.webview.postMessage({ type: 'done' });
 
@@ -138,7 +151,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     public clear() {
         this._messages = [];
+        this._saveHistory();
         this._view?.webview.postMessage({ type: 'clear' });
+    }
+
+    private _saveHistory() {
+        this._context.workspaceState.update('chatHistory', this._messages);
     }
 
     private async exportChatHistory() {
@@ -164,9 +182,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'src', 'vscode', 'webview', 'sidebar.html'));
         // 实际上我们可以直接读取文件内容并注入
-        const htmlPath = path.join(this._extensionUri.fsPath, 'src', 'vscode', 'webview', 'sidebar.html');
+        const htmlPath = path.join(this._context.extensionPath, 'src', 'vscode', 'webview', 'sidebar.html');
         let htmlSnippet = fs.readFileSync(htmlPath, 'utf8');
 
         // 替换一些资源路径如果需要的话

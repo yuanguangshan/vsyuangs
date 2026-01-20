@@ -539,6 +539,16 @@
                     currentAiMessageElement.innerHTML = marked.parse(currentAiRawText);
                     scrollToBottom();
                     break;
+                case 'history':
+                    chatContainer.innerHTML = '';
+                    if (message.value && message.value.length > 0) {
+                        message.value.forEach(msg => {
+                            addMessage(msg.content, msg.role === 'user' ? 'user' : 'ai');
+                        });
+                    } else {
+                        chatContainer.innerHTML = '<div class="message system-message">✨ Yuangs AI Agent initialized and ready.</div>';
+                    }
+                    break;
                 case 'done':
                     currentAiMessageElement = null;
                     currentAiRawText = "";
