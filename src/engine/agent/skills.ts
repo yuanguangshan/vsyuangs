@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import chalk from 'chalk';
+import { recordEdge } from './knowledgeGraph';
 
 export interface Skill {
     id: string;
@@ -21,6 +22,25 @@ export interface Skill {
 
     // 是否启用
     enabled: boolean;
+
+    // 可选属性
+    parameters?: any;
+    implementation?: string;
+    metadata?: {
+        source?: string;
+        originalContextId?: string;
+        originalContextPath?: string;
+        originalContextStableId?: string;
+        promotionCriteria?: any;
+        usageStats?: {
+            useCount: number;
+            successCount: number;
+            failureCount: number;
+            confidence: number;
+            lastUsed: number;
+        };
+        createdAt?: number;
+    };
 }
 
 const SKILLS_FILE = path.join(os.homedir(), '.yuangs_skills.json');
@@ -82,9 +102,18 @@ export function updateSkillStatus(skillId: string, success: boolean) {
         skill.confidence = Math.min(1, skill.confidence + 0.05);
     } else {
         skill.failureCount++;
-        // 失败惩罚: 惩罚力度大于奖励，防止系统“自嗨”
+        // 失败惩罚: 惩罚力度大于奖励，防止系统"自嗨"
         skill.confidence = Math.max(0, skill.confidence - 0.1);
     }
+
+    // === C5-B-1: Knowledge Graph Record (Execution -> Skill) ===
+    recordEdge({
+        from: 'current_execution', // TODO(KG): replace with real executionId (v2)
+        to: skill.id,
+        type: 'validated_by',
+        timestamp: Date.now(),
+        meta: { success, skillName: skill.name }
+    });
 
     saveSkills(); // Persist changes
 }

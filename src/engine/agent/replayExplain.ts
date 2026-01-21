@@ -81,7 +81,7 @@ export function explainExecution(recorder: ExecutionRecorder, contextManager?: C
     if (turn.governance) {
       lines.push('');
       lines.push(`#### Governance Decision: ${turn.governance.status}`);
-      if (turn.governance.reason) {
+      if ('reason' in turn.governance) {
         lines.push(`- Reason: ${turn.governance.reason}`);
       }
       lines.push(`- Decided by: ${turn.governance.by}`);

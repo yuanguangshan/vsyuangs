@@ -59,15 +59,13 @@ export function diffContext(
   return { added, removed, changed };
 }
 
-import { ContextItem } from './contextBuffer';
-
 /**
  * 从ContextBuffer创建快照
  * @param buffer ContextBuffer实例
  * @returns ContextSnapshot
  */
-export function snapshotFromBuffer(buffer: { items: ContextItem[] }): ContextSnapshot {
-  const items = buffer.items || [];
+export function snapshotFromBuffer(buffer: { export(): ContextItem[] }): ContextSnapshot {
+  const items = buffer.export();
   return {
     items: items.map((item: ContextItem) => ({
       path: item.path,

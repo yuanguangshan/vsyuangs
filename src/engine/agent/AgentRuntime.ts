@@ -46,7 +46,7 @@ export class AgentRuntime {
 
     if (userInput) {
       // 检查用户输入是否包含 DSL 查询，如果有则自动添加相关上下文
-      const dslContextItems = this.context.getDSLContextForInput(userInput);
+      const dslContextItems = await this.context.getDSLContextForInput(userInput);
 
       if (dslContextItems.length > 0) {
         console.log(chalk.cyan(`\n[DSL Query] Found ${dslContextItems.length} matching context items:`));
@@ -156,9 +156,6 @@ export class AgentRuntime {
         executionTurn.executionResult = result;
         executionTurn.endTime = Date.now();
 
-        // 记录执行回合
-        this.executionRecorder.recordTurn(executionTurn);
-
         // 任务成功完成，只更新被使用过的ContextItem的重要性
         for (const item of this.context.getContextBuffer().export()) {
           if (item.importance && item.importance.useCount > 0) {
@@ -209,8 +206,11 @@ export class AgentRuntime {
                 // 通过治理服务审批
                 const governanceDecision = await GovernanceService.adjudicate({
                   id: randomUUID(),
-                  type: 'skill_create',
-                  payload: promotedSkill,
+                  type: 'tool_call',
+                  payload: {
+                    tool_name: 'skill_create',
+                    parameters: promotedSkill
+                  },
                   riskLevel: 'low',
                   reasoning: 'Auto promotion from context'
                 });
@@ -225,7 +225,7 @@ export class AgentRuntime {
                   };
                   console.log(chalk.green(`✅ Skill "${promotedSkill.name}" created successfully`));
                 } else {
-                  console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${governanceDecision.reason}`));
+                  console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${'reason' in governanceDecision ? governanceDecision.reason : 'Unknown reason'}`));
                 }
               } catch (error) {
                 console.log(chalk.red(`❌ Failed to create skill: ${error}`));
@@ -234,8 +234,11 @@ export class AgentRuntime {
           }
         }
 
+        // 记录执行回合（只在这里记录一次）
+        this.executionRecorder.recordTurn({ ...executionTurn, turnId: 0 } as any);
+
         // 执行回顾性分析
-        await this.retrospective(executionTurn);
+        await this.retrospective({ ...executionTurn, turnId: 0 });
 
         break;
       }
@@ -264,7 +267,7 @@ export class AgentRuntime {
         executionTurn.endTime = Date.now();
 
         // 记录执行回合
-        this.executionRecorder.recordTurn(executionTurn);
+        this.executionRecorder.recordTurn({ ...executionTurn, turnId: 0 } as any);
 
         continue;
       }
@@ -272,23 +275,20 @@ export class AgentRuntime {
       // === 正式治理 (WASM + 人工/自动) ===
       const decision = await GovernanceService.adjudicate(action);
       if (decision.status === "rejected") {
-        console.log(chalk.red(`[GOVERNANCE] ❌ Rejected: ${decision.reason}`));
+        console.log(chalk.red(`[GOVERNANCE] ❌ Rejected: ${'reason' in decision ? decision.reason : 'Unknown reason'}`));
         this.context.addMessage(
           "system",
-          `Rejected by Governance: ${decision.reason}`,
+          `Rejected by Governance: ${'reason' in decision ? decision.reason : 'Unknown reason'}`,
         );
 
         // 更新executionTurn
         executionTurn.governance = decision;
         executionTurn.executionResult = {
           success: false,
-          output: `GOVERNANCE REJECTED: ${decision.reason}`,
-          error: decision.reason
+          output: `GOVERNANCE REJECTED: ${'reason' in decision ? decision.reason : 'Unknown reason'}`,
+          error: 'reason' in decision ? decision.reason : 'Unknown reason'
         };
         executionTurn.endTime = Date.now();
-
-        // 记录执行回合
-        this.executionRecorder.recordTurn(executionTurn);
 
         // 任务被拒绝，只更新被使用过的ContextItem的重要性（失败惩罚）
         for (const item of this.context.getContextBuffer().export()) {
@@ -303,6 +303,9 @@ export class AgentRuntime {
         // 记录 ContextBank 使用情况（失败）
         await this.context.recordBankUsage(false);
 
+        // 记录执行回合
+        this.executionRecorder.recordTurn({ ...executionTurn, turnId: 0 } as any);
+
         continue;
       }
 
@@ -316,9 +319,6 @@ export class AgentRuntime {
       // 更新executionTurn
       executionTurn.executionResult = result;
       executionTurn.endTime = Date.now();
-
-      // 记录执行回合
-      this.executionRecorder.recordTurn(executionTurn);
 
       if (result.success) {
         this.context.addToolResult(action.type, result.output);
@@ -346,6 +346,9 @@ export class AgentRuntime {
         // 记录 ContextBank 使用情况（失败）
         await this.context.recordBankUsage(false);
       }
+
+      // 记录执行回合
+      this.executionRecorder.recordTurn({ ...executionTurn, turnId: 0 } as any);
     }
 
     if (turnCount >= maxTurns) {
@@ -422,8 +425,11 @@ export class AgentRuntime {
             // 通过治理服务审批
             const governanceDecision = await GovernanceService.adjudicate({
               id: randomUUID(),
-              type: 'skill_create',
-              payload: promotedSkill,
+              type: 'tool_call',
+              payload: {
+                tool_name: 'skill_create',
+                parameters: promotedSkill
+              },
               riskLevel: 'low',
               reasoning: 'Auto promotion from context'
             });
@@ -433,7 +439,7 @@ export class AgentRuntime {
               await this.saveSkill(promotedSkill);
               console.log(chalk.green(`✅ Skill "${promotedSkill.name}" created successfully`));
             } else {
-              console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${governanceDecision.reason}`));
+              console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${'reason' in governanceDecision ? governanceDecision.reason : 'Unknown reason'}`));
             }
           } catch (error) {
             console.log(chalk.red(`❌ Failed to create skill: ${error}`));

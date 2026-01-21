@@ -139,13 +139,13 @@ export function validateContextReferences(references: ContextReference[], availa
  * @param referencedPaths 显式引用的路径列表
  * @returns 构建的提示字符串
  */
-export function buildContextPromptWithReferences(
+export async function buildContextPromptWithReferences(
   contextBuffer: ContextBuffer,
   userInput: string,
   referencedPaths?: string[]
-): string {
+): Promise<string> {
   // 首先检查用户输入是否包含 DSL 查询
-  const dslContextItems = contextBuffer.getDSLContextForInput(userInput);
+  const dslContextItems = await contextBuffer.getDSLContextForInput(userInput);
 
   let filteredItems: ContextItem[];
 
@@ -320,12 +320,12 @@ export function validateResponseReferences(
  * @param response AI响应
  * @returns 回溯报告
  */
-export function generateReferenceRetrospective(
+export async function generateReferenceRetrospective(
   contextBuffer: ContextBuffer,
   responseId: string,
   userInput: string,
   response: string
-): string {
+): Promise<string> {
   const allItems = contextBuffer.export();
   const references = parseContextReferences(response);
 
@@ -403,8 +403,8 @@ export function analyzeContextLifecycle(
   return items.map(item => {
     // 计算使用趋势 (基于useCount和时间)
     const now = Date.now();
-    const daysSinceCreated = (now - item.importance!.createdAt) / (1000 * 60 * 60 * 24);
-    const avgUsesPerDay = item.importance!.useCount / (daysSinceCreated || 1);
+    const daysSinceCreated = (now - (item.importance?.createdAt || now)) / (1000 * 60 * 60 * 24);
+    const avgUsesPerDay = item.importance ? item.importance.useCount / (daysSinceCreated || 1) : 0;
 
     // 使用趋势：正值表示使用频率增加，负值表示减少
     const usageTrend = avgUsesPerDay > 0.5 ? 1 : (avgUsesPerDay > 0.1 ? 0.5 : 0);

@@ -63,6 +63,14 @@ export class ContextToSkillPromotionRules {
           id: `skill_${randomUUID()}`, // 使用随机 UUID 而不是直接复制 context id
           name: skillName,
           description: `从高频使用的上下文 "${contextPath}" 晋升而来的技能。使用次数: ${useCount}, 成功率: ${(successRate * 100).toFixed(2)}%`,
+          whenToUse: `当需要访问 "${contextPath}" 的内容时`,
+          planTemplate: {},
+          successCount: successCount,
+          failureCount: contextItem.importance.failureCount,
+          confidence: successRate,
+          lastUsed: contextItem.importance.lastUsed,
+          createdAt: contextItem.importance.createdAt,
+          enabled: true,
           parameters: {
             contextPath: contextPath
           },
@@ -98,6 +106,7 @@ export class ContextToSkillPromotionRules {
         if (!contextItem.importance) return null;
 
         const importanceScore = computeContextImportance(contextItem.importance);
+        const { useCount, successCount, failureCount, lastUsed, createdAt } = contextItem.importance;
         const contextPath = contextItem.path; // 从 ContextItem 获取路径
         const skillName = `important_${contextPath
           .split('/')
@@ -109,6 +118,14 @@ export class ContextToSkillPromotionRules {
           id: `skill_${randomUUID()}`, // 使用随机 UUID
           name: skillName,
           description: `从高重要性上下文 "${contextPath}" 晋升而来的技能。重要性评分: ${importanceScore.toFixed(2)}`,
+          whenToUse: `当需要访问高重要性上下文 "${contextPath}" 的内容时`,
+          planTemplate: {},
+          successCount: successCount,
+          failureCount: failureCount,
+          confidence: importanceScore,
+          lastUsed: lastUsed,
+          createdAt: createdAt,
+          enabled: true,
           parameters: {
             contextPath: contextPath
           },
@@ -145,6 +162,7 @@ export class ContextToSkillPromotionRules {
 
         const { referencedCount, verifiedUseful } = contextItem.usageStats;
         const usefulnessRate = referencedCount > 0 ? verifiedUseful / referencedCount : 0;
+        const { useCount, successCount, failureCount, lastUsed, createdAt } = contextItem.importance;
         const contextPath = contextItem.path; // 从 ContextItem 获取路径
 
         const skillName = `referenced_${contextPath
@@ -157,6 +175,14 @@ export class ContextToSkillPromotionRules {
           id: `skill_${randomUUID()}`, // 使用随机 UUID
           name: skillName,
           description: `从被频繁显式引用的上下文 "${contextPath}" 晋升而来的技能。引用次数: ${referencedCount}, 有用率: ${(usefulnessRate * 100).toFixed(2)}%`,
+          whenToUse: `当需要访问被频繁引用的上下文 "${contextPath}" 的内容时`,
+          planTemplate: {},
+          successCount: successCount,
+          failureCount: failureCount,
+          confidence: usefulnessRate,
+          lastUsed: lastUsed,
+          createdAt: createdAt,
+          enabled: true,
           parameters: {
             contextPath: contextPath
           },
@@ -200,7 +226,7 @@ export class ContextToSkillPromotionRules {
       action: (contextItem: ContextItem) => {
         if (!contextItem.importance) return null;
 
-        const { useCount, successCount } = contextItem.importance;
+        const { useCount, successCount, failureCount, lastUsed, createdAt } = contextItem.importance;
         const successRate = useCount > 0 ? successCount / useCount : 0;
         const contextPath = contextItem.path; // 从 ContextItem 获取路径
 
@@ -220,6 +246,14 @@ export class ContextToSkillPromotionRules {
           id: `skill_${randomUUID()}`, // 使用随机 UUID
           name: skillName,
           description: `从配置文件或脚本 "${contextPath}" 晋升而来的技能。使用次数: ${useCount}, 成功率: ${(successRate * 100).toFixed(2)}%`,
+          whenToUse: `当需要访问配置文件或脚本 "${contextPath}" 的内容时`,
+          planTemplate: {},
+          successCount: successCount,
+          failureCount: failureCount,
+          confidence: successRate,
+          lastUsed: lastUsed,
+          createdAt: createdAt,
+          enabled: true,
           parameters: {
             contextPath: contextPath
           },
@@ -304,10 +338,23 @@ export class SkillToContextDemotionRules {
               confidence: skill.metadata.usageStats?.confidence || 0.5,
               createdAt: skill.metadata.createdAt || Date.now(),
               lastUsed: skill.metadata.usageStats?.lastUsed || Date.now()
-            }
+            },
+            summary: skill.description,
+            summarized: true,
+            semantic: 'decision',
+            summaryQuality: 0.8,
+            referencedBy: [],
+            usageStats: {
+              referencedCount: 0,
+              verifiedUseful: 0,
+              verifiedNotUseful: 0
+            },
+            tags: [],
+            projectScope: undefined,
+            metadata: {}
           } as ContextItem;
         }
-        
+
         return null;
       }
     },
@@ -344,7 +391,19 @@ export class SkillToContextDemotionRules {
             confidence: 0.5,
             createdAt: Date.now(),
             lastUsed: Date.now()
-          }
+          },
+          summary: `关于技能 "${skill.name}" 的失败分析`,
+          summarized: true,
+          summaryQuality: 0.7,
+          referencedBy: [],
+          usageStats: {
+            referencedCount: 0,
+            verifiedUseful: 0,
+            verifiedNotUseful: 0
+          },
+          tags: ['failed-skill', 'review-needed'],
+          projectScope: undefined,
+          metadata: {}
         } as ContextItem;
       }
     }

@@ -1,6 +1,7 @@
 import { ContextItem } from './contextBuffer';
 import { Skill } from './skills';
 import { ContextToSkillPromotionRules } from './contextSkillPromotion';
+import { recordEdge } from './knowledgeGraph';
 
 export interface ContextSkillHint {
   source: 'context';
@@ -45,6 +46,19 @@ export function generateSkillHintsFromContext(contextItems: ContextItem[]): Cont
         lastUsed,
         description: promotedSkill.description
       });
+
+      // === C5-B-1: Knowledge Graph Record (Context -> Skill Candidate) ===
+      if (item.id) {
+        recordEdge({
+            from: item.id,
+            to: `skill_candidate:${promotedSkill.name}`,
+            type: 'promoted_to',
+            timestamp: Date.now(),
+            meta: {
+                confidence: promotedSkill.confidence
+            }
+        });
+      }
     } else {
       // 使用旧的逻辑作为后备
       if (item.importance) {

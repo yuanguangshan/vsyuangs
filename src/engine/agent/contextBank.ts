@@ -33,6 +33,7 @@ export interface BankIndexEntry {
   lastUsed: number;        // 最后使用时间戳
   tags?: string[];         // 标签
   projectScope?: string;   // 项目作用域
+  source?: 'project' | 'global' | 'external'; // 上下文来源
 }
 
 export interface BankQueryOptions {
@@ -95,6 +96,7 @@ export class ContextBank {
       const bankItem: BankContextItem = {
         ...item,
         id: `bank_${randomUUID()}`,
+        stableId: item.stableId || item.path, // 确保 stableId 存在
         source: projectScope ? 'project' : 'global',
         projectScope,
         firstSeenAt: Date.now(),
@@ -230,8 +232,8 @@ export class ContextBank {
         // 简单的相关性计算：基于路径匹配
         if (options.input) {
           filteredIndex.sort((a, b) => {
-            const aRelevance = this.calculateRelevance(a.path, options.input);
-            const bRelevance = this.calculateRelevance(b.path, options.input);
+            const aRelevance = this.calculateRelevance(a.path, options.input!);
+            const bRelevance = this.calculateRelevance(b.path, options.input!);
             return bRelevance - aRelevance;
           });
         }

@@ -10,7 +10,7 @@ export class ExecutionRecorder {
       ...turn,
       turnId: ++this.turnCounter
     };
-    
+
     this.turns.push(executionTurn);
     return executionTurn;
   }

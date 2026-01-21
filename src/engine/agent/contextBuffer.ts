@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { ContextImportance, createContextImportance, computeContextImportance } from './contextImportance';
 import { summarizeContext } from './contextSummary';
 import { ExtendedContextProtocol, DSLQueryEngine, DSLParser } from './contextDSL';
+import { recordEdge } from './knowledgeGraph';
 import crypto from 'crypto';
 
 function computeStableId(item: {
@@ -227,6 +228,17 @@ export class ContextBuffer {
                 }
                 if (!item.referencedBy.includes(responseId)) {
                     item.referencedBy.push(responseId);
+                }
+
+                // === C5-B-1: Knowledge Graph Record (Context -> Execution) ===
+                if (item.id) {
+                    recordEdge({
+                        from: item.id,
+                        to: responseId, // 使用 AI 响应 ID 作为执行节点的代理 ID
+                        type: 'used_in',
+                        timestamp: Date.now(),
+                        meta: { path: item.path, type: item.type }
+                    });
                 }
             }
 

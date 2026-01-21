@@ -34,7 +34,7 @@ export class LLMAdapter {
 
         if (dslContextItems.length > 0) {
           // 如果有 DSL 查询结果，使用 buildContextPromptWithReferences 来构建提示
-          contextPrompt = buildContextPromptWithReferences(contextBuffer, userInput);
+          contextPrompt = await buildContextPromptWithReferences(contextBuffer, userInput);
         } else {
           // 获取ContextBuffer的完整提示，使用排名策略
           contextPrompt = contextBuffer.buildPrompt('', {
