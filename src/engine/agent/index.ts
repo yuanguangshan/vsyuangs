@@ -8,4 +8,7 @@ export { ContextBuffer } from './contextBuffer';
 export { ContextImportance, computeContextImportance, createContextImportance, updateContextImportance } from './contextImportance';
 export { buildContextSummaryPrompt, summarizeContext } from './contextSummary';
 export { diffContext, snapshotFromBuffer, ContextDiff, ContextSnapshot } from './contextDiff';
+export { ExecutionRecorder } from './executionRecorder';
+export { explainExecution, replayExecution } from './replayExplain';
+export { generateSkillHintsFromContext, formatSkillHints, ContextSkillHint } from './contextSkillBridge';
 export * from './skills';

@@ -5,17 +5,20 @@ import { GovernanceService } from "./governance";
 import { ToolExecutor } from "./executor";
 import { ContextManager } from "./contextManager";
 import { evaluateProposal } from "./governance/core";
-import { ProposedAction } from "./state";
+import { ProposedAction, ExecutionTurn } from "./state";
 import { ContextBuffer } from "./contextBuffer";
 import { snapshotFromBuffer, diffContext, ContextSnapshot } from "./contextDiff";
+import { ExecutionRecorder } from "./executionRecorder";
 
 export class AgentRuntime {
   private context: ContextManager;
   private lastContextSnapshot: ContextSnapshot | null = null;
   private executionId: string;
+  private executionRecorder: ExecutionRecorder;
 
   constructor(initialContext: any) {
     this.context = new ContextManager(initialContext);
+    this.executionRecorder = new ExecutionRecorder();
     this.executionId = randomUUID();
   }
 
@@ -66,6 +69,20 @@ export class AgentRuntime {
 
       this.lastContextSnapshot = currentSnapshot;
 
+      // 记录执行回合
+      const executionTurn: Omit<ExecutionTurn, 'turnId'> = {
+        startTime: Date.now(),
+        contextSnapshot: {
+          inputHash: this.context.getHash(),
+          systemPromptVersion: 'v1.0.0',
+          toolSetVersion: 'v1.0.0',
+          recentMessages: this.context.getRecentMessages(5)
+        },
+        contextDiff: contextDiff.added.length || contextDiff.removed.length || contextDiff.changed.length
+          ? contextDiff
+          : undefined
+      };
+
       const thought = await LLMAdapter.think(
         messages,
         mode as any,
@@ -83,6 +100,9 @@ export class AgentRuntime {
         reasoning: thought.reasoning || "",
       };
 
+      // 更新executionTurn
+      executionTurn.proposedAction = action;
+
       if (action.reasoning && !onChunk) {
         console.log(chalk.gray(`\n🤔 Reasoning: ${action.reasoning}`));
       }
@@ -94,6 +114,13 @@ export class AgentRuntime {
           console.log(chalk.green(`\n🤖 AI：${result.output}\n`));
         }
         this.context.addMessage("assistant", result.output);
+
+        // 更新executionTurn
+        executionTurn.executionResult = result;
+        executionTurn.endTime = Date.now();
+
+        // 记录执行回合
+        this.executionRecorder.recordTurn(executionTurn);
 
         // 任务成功完成，只更新被使用过的ContextItem的重要性
         for (const item of this.context.getContextBuffer().export()) {
@@ -121,6 +148,18 @@ export class AgentRuntime {
           "system",
           `POLICY DENIED: ${preCheck.reason}. Find a different way.`,
         );
+
+        // 更新executionTurn
+        executionTurn.executionResult = {
+          success: false,
+          output: `POLICY DENIED: ${preCheck.reason}`,
+          error: preCheck.reason
+        };
+        executionTurn.endTime = Date.now();
+
+        // 记录执行回合
+        this.executionRecorder.recordTurn(executionTurn);
+
         continue;
       }
 
@@ -132,6 +171,18 @@ export class AgentRuntime {
           "system",
           `Rejected by Governance: ${decision.reason}`,
         );
+
+        // 更新executionTurn
+        executionTurn.governance = decision;
+        executionTurn.executionResult = {
+          success: false,
+          output: `GOVERNANCE REJECTED: ${decision.reason}`,
+          error: decision.reason
+        };
+        executionTurn.endTime = Date.now();
+
+        // 记录执行回合
+        this.executionRecorder.recordTurn(executionTurn);
 
         // 任务被拒绝，只更新被使用过的ContextItem的重要性（失败惩罚）
         for (const item of this.context.getContextBuffer().export()) {
@@ -146,9 +197,19 @@ export class AgentRuntime {
         continue;
       }
 
+      // 更新executionTurn
+      executionTurn.governance = decision;
+
       // === 执行 ===
       console.log(chalk.yellow(`[EXECUTING] ⚙️ ${action.type}...`));
       const result = await ToolExecutor.execute(action as any);
+
+      // 更新executionTurn
+      executionTurn.executionResult = result;
+      executionTurn.endTime = Date.now();
+
+      // 记录执行回合
+      this.executionRecorder.recordTurn(executionTurn);
 
       if (result.success) {
         this.context.addToolResult(action.type, result.output);
@@ -175,5 +236,13 @@ export class AgentRuntime {
     if (turnCount >= maxTurns) {
       console.log(chalk.red(`\n⚠️ Max turns (${maxTurns}) reached.`));
     }
+  }
+
+  getContextManager(): ContextManager {
+    return this.context;
+  }
+
+  getExecutionRecorder(): ExecutionRecorder {
+    return this.executionRecorder;
   }
 }

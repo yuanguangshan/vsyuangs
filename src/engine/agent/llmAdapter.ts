@@ -20,8 +20,11 @@ export class LLMAdapter {
     if (contextManager) {
       const contextBuffer = contextManager.getContextBuffer();
       if (!contextBuffer.isEmpty()) {
-        // 获取ContextBuffer的完整提示
-        const contextPrompt = contextBuffer.buildPrompt('');
+        // 获取ContextBuffer的完整提示，使用排名策略
+        const contextPrompt = contextBuffer.buildPrompt('', {
+          strategy: 'ranked',  // 使用排名策略
+          maxTokens: 16000     // 设置最大token限制
+        });
 
         // 将ContextBuffer内容作为system消息添加到消息列表开头
         fullMessages = [

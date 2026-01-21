@@ -14,6 +14,13 @@ export type ContextItem = {
     tokens: number;
 };
 
+export type InjectionStrategy = 'ranked' | 'recent' | 'all';
+
+export interface BuildPromptOptions {
+  maxTokens?: number;
+  strategy?: InjectionStrategy;
+}
+
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
 export class ContextBuffer {
@@ -153,29 +160,145 @@ export class ContextBuffer {
         }
     }
 
-    buildPrompt(userInput: string): string {
+    /**
+     * 计算ContextItem的综合评分
+     * @param item ContextItem
+     * @returns 评分值
+     */
+    private computeItemScore(item: ContextItem): number {
+        if (!item.importance) {
+            // 如果没有重要性信息，默认为中等评分
+            return 0.5;
+        }
+
+        const baseScore = computeContextImportance(item.importance);
+
+        // 使用次数的影响（对数增长，避免过度放大）
+        const useFactor = Math.log(1 + item.importance.useCount);
+
+        // 新鲜度衰减（最近使用的项目获得更高评分）
+        const now = Date.now();
+        const daysSinceLastUse = (now - item.importance.lastUsed) / (1000 * 60 * 60 * 24);
+        const freshnessFactor = Math.exp(-daysSinceLastUse / 7); // 7天半衰期
+
+        return baseScore * useFactor * freshnessFactor;
+    }
+
+    /**
+     * 根据策略对ContextItems进行排序
+     * @param items ContextItem数组
+     * @param strategy 排序策略
+     * @returns 排序后的数组
+     */
+    private sortItemsByStrategy(items: ContextItem[], strategy: InjectionStrategy): ContextItem[] {
+        switch (strategy) {
+            case 'ranked':
+                // 按综合评分降序排列
+                return [...items].sort((a, b) =>
+                    this.computeItemScore(b) - this.computeItemScore(a)
+                );
+            case 'recent':
+                // 按最近使用时间降序排列
+                return [...items].sort((a, b) =>
+                    (b.importance?.lastUsed || 0) - (a.importance?.lastUsed || 0)
+                );
+            case 'all':
+            default:
+                // 保持原有顺序
+                return [...items];
+        }
+    }
+
+    buildPrompt(userInput: string, options: BuildPromptOptions = {}): string {
+        const { maxTokens, strategy = 'ranked' } = options;
+
         if (this.isEmpty()) return userInput;
 
-        const contextBlock = this.items.map(item => {
-            const title = item.alias
-                ? `[Context Item] ${item.type}: ${item.alias} (${item.path})`
-                : `[Context Item] ${item.type}: ${item.path}`;
+        // 根据策略排序items
+        const sortedItems = this.sortItemsByStrategy([...this.items], strategy);
 
-            const body = item.summary ?? item.content;
+        // 如果指定了maxTokens，我们需要截断内容以满足限制
+        let filteredItems = sortedItems;
+        if (maxTokens) {
+            filteredItems = [];
+            let currentTokens = 0;
 
-            return `${title}\n---\n${body}\n---`;
-        }).join('\n\n');
+            for (const item of sortedItems) {
+                if (currentTokens + item.tokens > maxTokens) {
+                    break;
+                }
+                filteredItems.push(item);
+                currentTokens += item.tokens;
+            }
+        }
+
+        // 按重要性分组
+        const highConfidenceItems = filteredItems.filter(item =>
+            item.importance && computeContextImportance(item.importance) > 0.7
+        );
+        const mediumConfidenceItems = filteredItems.filter(item =>
+            item.importance &&
+            computeContextImportance(item.importance) > 0.3 &&
+            computeContextImportance(item.importance) <= 0.7
+        );
+        const lowConfidenceItems = filteredItems.filter(item =>
+            !item.importance || computeContextImportance(item.importance) <= 0.3
+        );
+
+        // 构建不同部分的上下文
+        const sections = [];
+
+        if (highConfidenceItems.length > 0) {
+            const highConfidenceBlock = highConfidenceItems.map(item => {
+                const title = item.alias
+                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                    : `[Reference] ${item.type}: ${item.path}`;
+
+                const body = item.summary ?? item.content;
+
+                return `${title}\n---\n${body}\n---`;
+            }).join('\n\n');
+
+            sections.push(`# Background Knowledge (High Confidence)\n${highConfidenceBlock}`);
+        }
+
+        if (mediumConfidenceItems.length > 0) {
+            const mediumConfidenceBlock = mediumConfidenceItems.map(item => {
+                const title = item.alias
+                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                    : `[Reference] ${item.type}: ${item.path}`;
+
+                const body = item.summary ?? item.content;
+
+                return `${title}\n---\n${body}\n---`;
+            }).join('\n\n');
+
+            sections.push(`# Supporting Information (Medium Confidence)\n${mediumConfidenceBlock}`);
+        }
+
+        if (lowConfidenceItems.length > 0) {
+            const lowConfidenceBlock = lowConfidenceItems.map(item => {
+                const title = item.alias
+                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                    : `[Reference] ${item.type}: ${item.path}`;
+
+                const body = item.summary ?? item.content;
+
+                return `${title}\n---\n${body}\n---`;
+            }).join('\n\n');
+
+            sections.push(`# Archived References (Low Confidence)\n${lowConfidenceBlock}`);
+        }
+
+        const contextBlock = sections.join('\n\n');
 
         return `
-# 知识上下文 (Knowledge Context)
-你目前的会话已加载以下参考资料。在回答用户问题时，请优先参考这些内容：
-
 ${contextBlock}
 
-# 任务说明
-基于上述提供的上下文（如果有），回答用户的问题。如果上下文中包含源码，请将其视为你当前的“真理来源”。
+# Task Instructions
+Based on the provided context (if any), answer the user's question. If the context contains source code, treat it as your "source of truth."
 
-用户问题：
+User Question:
 ${userInput}
 `;
     }

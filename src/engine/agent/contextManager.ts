@@ -62,6 +62,10 @@ export class ContextManager {
     await this.contextBuffer.addAsync(item);
   }
 
+  buildContextPrompt(userInput: string, options?: import('./contextBuffer').BuildPromptOptions) {
+    return this.contextBuffer.buildPrompt(userInput, options);
+  }
+
   getRecentMessages(count: number): Array<{ role: string; content: string; timestamp: number }> {
     return this.messages.slice(-count);
   }
