@@ -1,107 +1,108 @@
 {
-    "name": "yuangs-vscode",
-    "displayName": "Yuangs AI Agent",
-    "description": "治理-执行 (Think-Govern-Execute) 闭环能力的 Agent 插件",
-    "version": "1.0.3",
-    "engines": {
-        "vscode": "^1.75.0"
-    },
-    "categories": [
-        "Other"
-    ],
-    "activationEvents": [],
-    "main": "./dist/vscode/extension.js",
-    "contributes": {
-        "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "yuangs-sidebar",
-                    "title": "Yuangs",
-                    "icon": "$(robot)"
-                }
-            ]
-        },
-        "views": {
-            "yuangs-sidebar": [
-                {
-                    "id": "yuangs.chatView",
-                    "type": "webview",
-                    "name": "AI Agent Chat",
-                    "icon": "$(comment-discussion)"
-                }
-            ]
-        },
-        "commands": [
-            {
-                "command": "yuangs.applyEdit",
-                "title": "Apply Suggested Edit",
-                "icon": "$(check)"
-            },
-            {
-                "command": "yuangs.clearChat",
-                "title": "Clear Chat History",
-                "icon": "$(clear-all)"
-            }
-        ],
-        "menus": {
-            "view/title": [
-                {
-                    "command": "yuangs.clearChat",
-                    "when": "view == yuangs.chatView",
-                    "group": "navigation"
-                },
-                {
-                    "command": "yuangs.applyEdit",
-                    "when": "view == yuangs.chatView",
-                    "group": "navigation"
-                }
-            ]
+  "name": "yuangs-vscode",
+  "publisher": "yuanguangshan",
+  "displayName": "Yuangs AI Agent",
+  "description": "治理-执行 (Think-Govern-Execute) 闭环能力的 Agent 插件",
+  "version": "1.0.4",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/vscode/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "yuangs-sidebar",
+          "title": "Yuangs",
+          "icon": "$(robot)"
         }
+      ]
     },
-    "scripts": {
-        "asbuild:debug": "asc src/engine/agent/governance/sandbox/core.as.ts --target debug",
-        "asbuild:release": "asc src/engine/agent/governance/sandbox/core.as.ts --target release",
-        "asbuild": "npm run asbuild:debug && npm run asbuild:release",
-        "compile": "tsc -p ./",
-        "bundle": "webpack --mode production",
-        "build": "npm run asbuild && npm run bundle",
-        "vscode:prepublish": "npm run build",
-        "watch": "tsc -watch -p ./",
-        "pretest": "npm run build && npm run lint",
-        "lint": "eslint src --ext ts",
-        "test": "node ./out/test/runTest.js"
+    "views": {
+      "yuangs-sidebar": [
+        {
+          "id": "yuangs.chatView",
+          "type": "webview",
+          "name": "AI Agent Chat",
+          "icon": "$(comment-discussion)"
+        }
+      ]
     },
-    "devDependencies": {
-        "@types/glob": "^8.1.0",
-        "@types/js-yaml": "^4.0.5",
-        "@types/marked": "^4.0.8",
-        "@types/marked-terminal": "^3.1.0",
-        "@types/mocha": "^10.0.1",
-        "@types/node": "20.x",
-        "@types/vscode": "^1.75.0",
-        "@typescript-eslint/eslint-plugin": "^5.56.0",
-        "@typescript-eslint/parser": "^5.56.0",
-        "@vscode/test-electron": "^2.3.0",
-        "assemblyscript": "^0.27.29",
-        "eslint": "^8.36.0",
-        "glob": "^8.1.0",
-        "mocha": "^10.2.0",
-        "terser-webpack-plugin": "^5.3.16",
-        "ts-loader": "^9.5.4",
-        "typescript": "^5.0.0",
-        "webpack": "^5.104.1",
-        "webpack-cli": "^6.0.1"
-    },
-    "dependencies": {
-        "@assemblyscript/loader": "^0.27.29",
-        "axios": "^1.6.0",
-        "chalk": "^4.1.2",
-        "commander": "^11.1.0",
-        "js-yaml": "^4.1.0",
-        "json5": "^2.2.3",
-        "marked": "^4.3.0",
-        "marked-terminal": "^5.2.0",
-        "ora": "^5.4.1",
-        "zod": "^3.22.4"
+    "commands": [
+      {
+        "command": "yuangs.applyEdit",
+        "title": "Apply Suggested Edit",
+        "icon": "$(check)"
+      },
+      {
+        "command": "yuangs.clearChat",
+        "title": "Clear Chat History",
+        "icon": "$(clear-all)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "yuangs.clearChat",
+          "when": "view == yuangs.chatView",
+          "group": "navigation"
+        },
+        {
+          "command": "yuangs.applyEdit",
+          "when": "view == yuangs.chatView",
+          "group": "navigation"
+        }
+      ]
     }
+  },
+  "scripts": {
+    "asbuild:debug": "asc src/engine/agent/governance/sandbox/core.as.ts --target debug",
+    "asbuild:release": "asc src/engine/agent/governance/sandbox/core.as.ts --target release",
+    "asbuild": "npm run asbuild:debug && npm run asbuild:release",
+    "compile": "tsc -p ./",
+    "bundle": "webpack --mode production",
+    "build": "npm run asbuild && npm run bundle",
+    "vscode:prepublish": "npm run build",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run build && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.5",
+    "@types/marked": "^4.0.8",
+    "@types/marked-terminal": "^3.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "@typescript-eslint/parser": "^5.56.0",
+    "@vscode/test-electron": "^2.3.0",
+    "assemblyscript": "^0.27.29",
+    "eslint": "^8.36.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "terser-webpack-plugin": "^5.3.16",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.0.0",
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@assemblyscript/loader": "^0.27.29",
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.3",
+    "marked": "^4.3.0",
+    "marked-terminal": "^5.2.0",
+    "ora": "^5.4.1",
+    "zod": "^3.22.4"
+  }
 }

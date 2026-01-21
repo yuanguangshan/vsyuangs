@@ -1,0 +1,16 @@
+.git/**
+.vscode/**
+node_modules/**
+src/**
+tsconfig.json
+webpack.config.js
+compile.sh
+asconfig.json
+yuangs-vscode-20260121-docs.md
+yuangs-vscode-1.0.3.vsix
+CHANGELOG.md
+QUICK_REFERENCE.md
+policy.yaml
+c
+build/**
+!dist/**
