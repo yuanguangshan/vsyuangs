@@ -74,7 +74,7 @@ export class DSLParser {
    * - `@!script.sh` - 立即执行脚本
    * - `type:file importance:>0.5` - 类型为文件且重要性大于0.5
    * - `semantic:source_code tag:critical` - 语义类型为源码且带有critical标签
-   * - `path:**/*.ts` - glob模式匹配所有ts文件
+   * - `path:\*\*/*.ts` - glob模式匹配所有ts文件
    * - `keyword:async,await` - 包含async或await关键词
    */
   static parse(queryString: string): DSLQuery {
