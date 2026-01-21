@@ -9,6 +9,7 @@ import { ProposedAction, ExecutionTurn } from "./state";
 import { ContextBuffer } from "./contextBuffer";
 import { snapshotFromBuffer, diffContext, ContextSnapshot } from "./contextDiff";
 import { ExecutionRecorder } from "./executionRecorder";
+import { generateReferenceRetrospective, analyzeContextLifecycle } from "./contextProtocol";
 
 export class AgentRuntime {
   private context: ContextManager;
@@ -131,6 +132,29 @@ export class AgentRuntime {
             item.importance.lastUsed = Date.now();
           }
         }
+
+        // 生成Context引用回溯报告
+        const retrospectiveReport = generateReferenceRetrospective(
+          this.context.getContextBuffer(),
+          this.executionId,
+          userInput,
+          result.output
+        );
+
+        console.log(chalk.magenta('\n🔍 Context Reference Retrospective:'));
+        console.log(retrospectiveReport);
+
+        // 分析ContextItem的生命周期
+        const lifecycleAnalysis = analyzeContextLifecycle(this.context.getContextBuffer());
+        const recommendations = lifecycleAnalysis.filter(item => item.recommendation !== 'keep');
+
+        if (recommendations.length > 0) {
+          console.log(chalk.magenta('\n💡 Context Lifecycle Recommendations:'));
+          for (const rec of recommendations) {
+            console.log(chalk.yellow(`  ${rec.recommendation.toUpperCase()}: ${rec.path} (quality: ${rec.qualityScore.toFixed(2)}, relevance: ${rec.relevanceScore.toFixed(2)})`));
+          }
+        }
+
         break;
       }
 

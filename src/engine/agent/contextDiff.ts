@@ -5,6 +5,8 @@ export interface ContextSnapshot {
     path: string;
     hash: string; // 内容哈希，用于检测变化
     tokens: number;
+    semantic?: string; // 语义类型
+    summaryQuality?: number; // 摘要质量
   }>;
 }
 
@@ -70,7 +72,9 @@ export function snapshotFromBuffer(buffer: { items: ContextItem[] }): ContextSna
     items: items.map((item: ContextItem) => ({
       path: item.path,
       hash: calculateHash(item.content), // 简单的哈希计算
-      tokens: item.tokens
+      tokens: item.tokens,
+      semantic: item.semantic,
+      summaryQuality: item.summaryQuality
     }))
   };
 }

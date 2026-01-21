@@ -4,6 +4,8 @@ import { AgentPrompt } from './types';
 import type { AIRequestMessage } from '../core/validation';
 import { getUserConfig } from '../ai/client';
 import { ContextManager } from './contextManager';
+import { parseContextReferences, validateContextReferences, buildContextPromptWithReferences } from './contextProtocol';
+import { randomUUID } from 'crypto';
 
 export class LLMAdapter {
   static async think(
@@ -14,6 +16,9 @@ export class LLMAdapter {
     customSystemPrompt?: string,
     contextManager?: ContextManager
   ): Promise<AgentThought> {
+    // 生成唯一的响应ID用于引用跟踪
+    const responseId = randomUUID();
+
     // 构建包含ContextBuffer内容的完整上下文
     let fullMessages = [...messages];
 
@@ -35,11 +40,12 @@ export class LLMAdapter {
     }
 
     const prompt: AgentPrompt = {
-      system: customSystemPrompt || `[SYSTEM PROTOCOL V2]
-- ROLE: AUTOMATED EXECUTION AGENT
+      system: customSystemPrompt || `[SYSTEM PROTOCOL V3 - CONTEXT REFERENCE ENABLED]
+- ROLE: AUTOMATED EXECUTION AGENT WITH CONTEXT REFERENCE
 - OUTPUT: STRICT JSON ONLY
 - TALK: FORBIDDEN
 - MODE: REACT (THINK -> ACTION -> PERCEIVE)
+- CONTEXT REFERENCE: When using information from the provided context, explicitly reference it in your response using [Reference] notation or in the JSON output
 
 JSON SCHEMA:
 {
@@ -49,16 +55,18 @@ JSON SCHEMA:
   "diff": "unified diff string",
   "parameters": {},
   "command": "shell string",
-  "content": "final answer string"
+  "content": "final answer string",
+  "used_context": ["path/to/file.ts", "path/to/dir"] // OPTIONAL: List paths of context items used
 }
 
 EXECUTION RULES:
 1. If data is unknown (e.g. file list), use 'shell_cmd' or 'tool_call'.
 2. NEVER explain how to do it. JUST EXECUTE.
 3. Your output MUST start with '{' and end with '}'.
+4. When referencing information from provided context, include the path in "used_context" array or use [Reference] notation.
 
 Example Task: "count files"
-Your Output: {"action_type":"shell_cmd","reasoning":"count files","command":"ls | wc -l"}`,
+Your Output: {"action_type":"shell_cmd","reasoning":"count files","command":"ls | wc -l","used_context":["/path/to/config.json"]}`,
       messages: fullMessages,
     };
 
@@ -72,7 +80,36 @@ Your Output: {"action_type":"shell_cmd","reasoning":"count files","command":"ls 
       onChunk
     });
 
-    return this.parseThought(result.rawText);
+    // 解析响应并处理Context引用
+    const thought = this.parseThought(result.rawText);
+
+    // 如果有ContextManager，解析并记录引用
+    if (contextManager) {
+      const contextBuffer = contextManager.getContextBuffer();
+      const references = parseContextReferences(result.rawText);
+
+      // 记录显式引用
+      for (const ref of references.referencedItems) {
+        contextBuffer.recordExplicitReference(ref.path, responseId);
+      }
+
+      // 验证引用的有效性
+      const validation = validateContextReferences(
+        references.referencedItems,
+        contextBuffer.export()
+      );
+
+      // 更新引用的有效性
+      for (const validRef of validation.valid) {
+        contextBuffer.validateReference(validRef.path, true);
+      }
+
+      for (const invalidRef of validation.invalid) {
+        contextBuffer.validateReference(invalidRef.path, false);
+      }
+    }
+
+    return thought;
   }
 
   private static parseThought(raw: string): AgentThought {

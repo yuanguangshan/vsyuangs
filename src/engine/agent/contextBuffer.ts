@@ -12,6 +12,16 @@ export type ContextItem = {
     summary?: string;
     summarized?: boolean;
     tokens: number;
+    // 引用协议相关字段
+    semantic?: 'source_code' | 'log' | 'config' | 'decision' | 'evidence' | 'documentation' | 'test' | 'requirement';
+    summaryQuality?: number; // 摘要质量评分 (0-1)
+    summarySourceHash?: string; // 摘要来源内容的哈希值
+    referencedBy?: string[]; // 引用此ContextItem的AI响应ID列表
+    usageStats?: {
+        referencedCount: number; // 被显式引用的次数
+        verifiedUseful: number; // 经验证有用的引用次数
+        verifiedNotUseful: number; // 经验证无用的引用次数
+    };
 };
 
 export type InjectionStrategy = 'ranked' | 'recent' | 'all';
@@ -33,7 +43,12 @@ export class ContextBuffer {
             ...item,
             id: item.id ?? randomUUID(),
             importance: item.importance ?? createContextImportance(item.path, item.type),
-            tokens
+            tokens,
+            usageStats: item.usageStats ?? {
+                referencedCount: 0,
+                verifiedUseful: 0,
+                verifiedNotUseful: 0
+            }
         });
         if (!bypassTokenLimit) {
             await this.trimIfNeeded();
@@ -46,7 +61,12 @@ export class ContextBuffer {
             ...item,
             id: item.id ?? randomUUID(),
             importance: item.importance ?? createContextImportance(item.path, item.type),
-            tokens
+            tokens,
+            usageStats: item.usageStats ?? {
+                referencedCount: 0,
+                verifiedUseful: 0,
+                verifiedNotUseful: 0
+            }
         });
         if (!bypassTokenLimit) {
             // 对于同步方法，我们只做基本修剪（不进行摘要）
@@ -161,6 +181,56 @@ export class ContextBuffer {
     }
 
     /**
+     * 记录ContextItem被显式引用
+     * @param path ContextItem的路径
+     * @param responseId 引用该ContextItem的AI响应ID
+     */
+    recordExplicitReference(path: string, responseId?: string) {
+        const item = this.items.find(i => i.path === path);
+        if (item) {
+            if (!item.usageStats) {
+                item.usageStats = {
+                    referencedCount: 0,
+                    verifiedUseful: 0,
+                    verifiedNotUseful: 0
+                };
+            }
+            item.usageStats.referencedCount++;
+
+            if (responseId) {
+                if (!item.referencedBy) {
+                    item.referencedBy = [];
+                }
+                if (!item.referencedBy.includes(responseId)) {
+                    item.referencedBy.push(responseId);
+                }
+            }
+
+            // 同时更新importance中的useCount
+            if (item.importance) {
+                item.importance.useCount++;
+                item.importance.lastUsed = Date.now();
+            }
+        }
+    }
+
+    /**
+     * 验证ContextItem引用的有效性
+     * @param path ContextItem的路径
+     * @param wasUseful 引用是否被证明有用
+     */
+    validateReference(path: string, wasUseful: boolean) {
+        const item = this.items.find(i => i.path === path);
+        if (item && item.usageStats) {
+            if (wasUseful) {
+                item.usageStats.verifiedUseful++;
+            } else {
+                item.usageStats.verifiedNotUseful++;
+            }
+        }
+    }
+
+    /**
      * 计算ContextItem的综合评分
      * @param item ContextItem
      * @returns 评分值
@@ -181,7 +251,11 @@ export class ContextBuffer {
         const daysSinceLastUse = (now - item.importance.lastUsed) / (1000 * 60 * 60 * 24);
         const freshnessFactor = Math.exp(-daysSinceLastUse / 7); // 7天半衰期
 
-        return baseScore * useFactor * freshnessFactor;
+        // 显式引用的影响
+        const explicitReferenceFactor = item.usageStats ?
+            Math.log(1 + item.usageStats.referencedCount) : 0;
+
+        return baseScore * useFactor * freshnessFactor * (1 + explicitReferenceFactor * 0.1);
     }
 
     /**
@@ -232,7 +306,7 @@ export class ContextBuffer {
             }
         }
 
-        // 按重要性分组
+        // 按重要性和语义类型分组
         const highConfidenceItems = filteredItems.filter(item =>
             item.importance && computeContextImportance(item.importance) > 0.7
         );
@@ -249,45 +323,81 @@ export class ContextBuffer {
         const sections = [];
 
         if (highConfidenceItems.length > 0) {
-            const highConfidenceBlock = highConfidenceItems.map(item => {
-                const title = item.alias
-                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
-                    : `[Reference] ${item.type}: ${item.path}`;
+            // 按语义类型进一步细分高置信度项
+            const semanticGroups: Record<string, typeof highConfidenceItems> = {};
+            for (const item of highConfidenceItems) {
+                const semantic = item.semantic || 'other';
+                if (!semanticGroups[semantic]) {
+                    semanticGroups[semantic] = [];
+                }
+                semanticGroups[semantic].push(item);
+            }
 
-                const body = item.summary ?? item.content;
+            for (const [semantic, items] of Object.entries(semanticGroups)) {
+                const semanticBlock = items.map(item => {
+                    const title = item.alias
+                        ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                        : `[Reference] ${item.type}: ${item.path}`;
 
-                return `${title}\n---\n${body}\n---`;
-            }).join('\n\n');
+                    const body = item.summary ?? item.content;
 
-            sections.push(`# Background Knowledge (High Confidence)\n${highConfidenceBlock}`);
+                    return `${title}\n---\n${body}\n---`;
+                }).join('\n\n');
+
+                sections.push(`# Background Knowledge (${semantic.charAt(0).toUpperCase() + semantic.slice(1)} - High Confidence)\n${semanticBlock}`);
+            }
         }
 
         if (mediumConfidenceItems.length > 0) {
-            const mediumConfidenceBlock = mediumConfidenceItems.map(item => {
-                const title = item.alias
-                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
-                    : `[Reference] ${item.type}: ${item.path}`;
+            // 按语义类型进一步细分中置信度项
+            const semanticGroups: Record<string, typeof mediumConfidenceItems> = {};
+            for (const item of mediumConfidenceItems) {
+                const semantic = item.semantic || 'other';
+                if (!semanticGroups[semantic]) {
+                    semanticGroups[semantic] = [];
+                }
+                semanticGroups[semantic].push(item);
+            }
 
-                const body = item.summary ?? item.content;
+            for (const [semantic, items] of Object.entries(semanticGroups)) {
+                const semanticBlock = items.map(item => {
+                    const title = item.alias
+                        ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                        : `[Reference] ${item.type}: ${item.path}`;
 
-                return `${title}\n---\n${body}\n---`;
-            }).join('\n\n');
+                    const body = item.summary ?? item.content;
 
-            sections.push(`# Supporting Information (Medium Confidence)\n${mediumConfidenceBlock}`);
+                    return `${title}\n---\n${body}\n---`;
+                }).join('\n\n');
+
+                sections.push(`# Supporting Information (${semantic.charAt(0).toUpperCase() + semantic.slice(1)} - Medium Confidence)\n${semanticBlock}`);
+            }
         }
 
         if (lowConfidenceItems.length > 0) {
-            const lowConfidenceBlock = lowConfidenceItems.map(item => {
-                const title = item.alias
-                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
-                    : `[Reference] ${item.type}: ${item.path}`;
+            // 按语义类型进一步细分低置信度项
+            const semanticGroups: Record<string, typeof lowConfidenceItems> = {};
+            for (const item of lowConfidenceItems) {
+                const semantic = item.semantic || 'other';
+                if (!semanticGroups[semantic]) {
+                    semanticGroups[semantic] = [];
+                }
+                semanticGroups[semantic].push(item);
+            }
 
-                const body = item.summary ?? item.content;
+            for (const [semantic, items] of Object.entries(semanticGroups)) {
+                const semanticBlock = items.map(item => {
+                    const title = item.alias
+                        ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                        : `[Reference] ${item.type}: ${item.path}`;
 
-                return `${title}\n---\n${body}\n---`;
-            }).join('\n\n');
+                    const body = item.summary ?? item.content;
 
-            sections.push(`# Archived References (Low Confidence)\n${lowConfidenceBlock}`);
+                    return `${title}\n---\n${body}\n---`;
+                }).join('\n\n');
+
+                sections.push(`# Archived References (${semantic.charAt(0).toUpperCase() + semantic.slice(1)} - Low Confidence)\n${semanticBlock}`);
+            }
         }
 
         const contextBlock = sections.join('\n\n');
