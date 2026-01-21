@@ -5,14 +5,20 @@ import { GovernanceService } from "./governance";
 import { ToolExecutor } from "./executor";
 import { ContextManager } from "./contextManager";
 import { evaluateProposal } from "./governance/core";
-import { ProposedAction } from "./state";
+import { ProposedAction, ExecutionTurn } from "./state";
+import { ContextBuffer } from "./contextBuffer";
+import { snapshotFromBuffer, diffContext, ContextSnapshot } from "./contextDiff";
+import { ExecutionRecorder } from "./executionRecorder";
 
 export class AgentRuntime {
   private context: ContextManager;
+  private lastContextSnapshot: ContextSnapshot | null = null;
   private executionId: string;
+  private executionRecorder: ExecutionRecorder;
 
   constructor(initialContext: any) {
     this.context = new ContextManager(initialContext);
+    this.executionRecorder = new ExecutionRecorder();
     this.executionId = randomUUID();
   }
 
@@ -43,12 +49,47 @@ export class AgentRuntime {
         content: msg.content,
       }));
 
+      // === Context Diff ===
+      const currentSnapshot = snapshotFromBuffer(this.context.getContextBuffer());
+      const contextDiff = diffContext(this.lastContextSnapshot, currentSnapshot);
+
+      if (
+        contextDiff.added.length ||
+        contextDiff.removed.length ||
+        contextDiff.changed.length
+      ) {
+        console.log(chalk.cyan('\n[Context Diff]'));
+        if (contextDiff.added.length)
+          console.log('  + added:', contextDiff.added);
+        if (contextDiff.removed.length)
+          console.log('  - removed:', contextDiff.removed);
+        if (contextDiff.changed.length)
+          console.log('  ~ changed:', contextDiff.changed);
+      }
+
+      this.lastContextSnapshot = currentSnapshot;
+
+      // 记录执行回合
+      const executionTurn: Omit<ExecutionTurn, 'turnId'> = {
+        startTime: Date.now(),
+        contextSnapshot: {
+          inputHash: this.context.getHash(),
+          systemPromptVersion: 'v1.0.0',
+          toolSetVersion: 'v1.0.0',
+          recentMessages: this.context.getRecentMessages(5)
+        },
+        contextDiff: contextDiff.added.length || contextDiff.removed.length || contextDiff.changed.length
+          ? contextDiff
+          : undefined
+      };
+
       const thought = await LLMAdapter.think(
         messages,
         mode as any,
         onChunk,
         model,
         GovernanceService.getPolicyManual(),
+        this.context  // 传递ContextManager以便访问ContextBuffer
       );
 
       const action: ProposedAction = {
@@ -58,6 +99,9 @@ export class AgentRuntime {
         riskLevel: "low",
         reasoning: thought.reasoning || "",
       };
+
+      // 更新executionTurn
+      executionTurn.proposedAction = action;
 
       if (action.reasoning && !onChunk) {
         console.log(chalk.gray(`\n🤔 Reasoning: ${action.reasoning}`));
@@ -70,6 +114,23 @@ export class AgentRuntime {
           console.log(chalk.green(`\n🤖 AI：${result.output}\n`));
         }
         this.context.addMessage("assistant", result.output);
+
+        // 更新executionTurn
+        executionTurn.executionResult = result;
+        executionTurn.endTime = Date.now();
+
+        // 记录执行回合
+        this.executionRecorder.recordTurn(executionTurn);
+
+        // 任务成功完成，只更新被使用过的ContextItem的重要性
+        for (const item of this.context.getContextBuffer().export()) {
+          if (item.importance && item.importance.useCount > 0) {
+            // 成功完成任务，增加成功计数
+            item.importance.successCount++;
+            item.importance.confidence = Math.min(1, item.importance.confidence + 0.05);
+            item.importance.lastUsed = Date.now();
+          }
+        }
         break;
       }
 
@@ -87,6 +148,18 @@ export class AgentRuntime {
           "system",
           `POLICY DENIED: ${preCheck.reason}. Find a different way.`,
         );
+
+        // 更新executionTurn
+        executionTurn.executionResult = {
+          success: false,
+          output: `POLICY DENIED: ${preCheck.reason}`,
+          error: preCheck.reason
+        };
+        executionTurn.endTime = Date.now();
+
+        // 记录执行回合
+        this.executionRecorder.recordTurn(executionTurn);
+
         continue;
       }
 
@@ -98,19 +171,62 @@ export class AgentRuntime {
           "system",
           `Rejected by Governance: ${decision.reason}`,
         );
+
+        // 更新executionTurn
+        executionTurn.governance = decision;
+        executionTurn.executionResult = {
+          success: false,
+          output: `GOVERNANCE REJECTED: ${decision.reason}`,
+          error: decision.reason
+        };
+        executionTurn.endTime = Date.now();
+
+        // 记录执行回合
+        this.executionRecorder.recordTurn(executionTurn);
+
+        // 任务被拒绝，只更新被使用过的ContextItem的重要性（失败惩罚）
+        for (const item of this.context.getContextBuffer().export()) {
+          if (item.importance && item.importance.useCount > 0) {
+            // 任务失败，增加失败计数
+            item.importance.failureCount++;
+            item.importance.confidence = Math.max(0, item.importance.confidence - 0.1);
+            item.importance.lastUsed = Date.now();
+          }
+        }
+
         continue;
       }
+
+      // 更新executionTurn
+      executionTurn.governance = decision;
 
       // === 执行 ===
       console.log(chalk.yellow(`[EXECUTING] ⚙️ ${action.type}...`));
       const result = await ToolExecutor.execute(action as any);
 
+      // 更新executionTurn
+      executionTurn.executionResult = result;
+      executionTurn.endTime = Date.now();
+
+      // 记录执行回合
+      this.executionRecorder.recordTurn(executionTurn);
+
       if (result.success) {
         this.context.addToolResult(action.type, result.output);
-        const preview = result.output.length > 300 
-          ? result.output.substring(0, 300) + '...' 
+        const preview = result.output.length > 300
+          ? result.output.substring(0, 300) + '...'
           : result.output;
         console.log(chalk.green(`[SUCCESS] Result:\n${preview}`));
+
+        // 更新ContextBuffer中相关项的重要性（标记为被使用）
+        for (const item of this.context.getContextBuffer().export()) {
+          if (result.output.includes(item.path)) {
+            if (item.importance) {
+              item.importance.useCount++;
+              item.importance.lastUsed = Date.now();
+            }
+          }
+        }
       } else {
         this.context.addToolResult(action.type, `Error: ${result.error}`);
         console.log(chalk.red(`[ERROR] ${result.error}`));
@@ -120,5 +236,13 @@ export class AgentRuntime {
     if (turnCount >= maxTurns) {
       console.log(chalk.red(`\n⚠️ Max turns (${maxTurns}) reached.`));
     }
+  }
+
+  getContextManager(): ContextManager {
+    return this.context;
+  }
+
+  getExecutionRecorder(): ExecutionRecorder {
+    return this.executionRecorder;
   }
 }

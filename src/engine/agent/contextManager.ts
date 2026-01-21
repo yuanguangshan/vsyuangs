@@ -1,11 +1,15 @@
 import crypto from 'crypto';
 import { GovernanceContext } from './state';
+import { ContextBuffer } from './contextBuffer';
 
 export class ContextManager {
   private messages: Array<{ role: string; content: string; timestamp: number }> = [];
+  private contextBuffer: ContextBuffer;
   private maxHistorySize = 50;
 
   constructor(initialContext?: GovernanceContext) {
+    this.contextBuffer = new ContextBuffer();
+
     if (initialContext?.history) {
       this.messages = initialContext.history.map(msg => ({
         ...msg,
@@ -40,10 +44,26 @@ export class ContextManager {
   }
 
   getMessages(): Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }> {
-    return this.messages.map(({ role, content }) => ({ 
-      role: role as 'system' | 'user' | 'assistant' | 'tool', 
-      content 
+    return this.messages.map(({ role, content }) => ({
+      role: role as 'system' | 'user' | 'assistant' | 'tool',
+      content
     }));
+  }
+
+  getContextBuffer(): ContextBuffer {
+    return this.contextBuffer;
+  }
+
+  addContextItem(item: Omit<import('./contextBuffer').ContextItem, 'tokens'>) {
+    this.contextBuffer.add(item);
+  }
+
+  async addContextItemAsync(item: Omit<import('./contextBuffer').ContextItem, 'tokens'>) {
+    await this.contextBuffer.addAsync(item);
+  }
+
+  buildContextPrompt(userInput: string, options?: import('./contextBuffer').BuildPromptOptions) {
+    return this.contextBuffer.buildPrompt(userInput, options);
   }
 
   getRecentMessages(count: number): Array<{ role: string; content: string; timestamp: number }> {
@@ -66,5 +86,6 @@ export class ContextManager {
 
   clear(): void {
     this.messages = [];
+    this.contextBuffer.clear();
   }
 }

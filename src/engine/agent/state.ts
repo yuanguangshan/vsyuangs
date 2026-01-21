@@ -46,6 +46,8 @@ export interface AgentThought {
   reasoning?: string;
 }
 
+import { ContextDiff } from './contextDiff';
+
 export interface ExecutionTurn {
   turnId: number;
   startTime: number;
@@ -56,6 +58,7 @@ export interface ExecutionTurn {
     toolSetVersion: string;
     recentMessages: Array<{ role: string; content: string; timestamp: number }>;
   };
+  contextDiff?: ContextDiff;
   thought?: AgentThought;
   proposedAction?: ProposedAction;
   governance?: GovernanceDecision;

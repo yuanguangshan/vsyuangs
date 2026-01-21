@@ -1,11 +1,25 @@
+import { randomUUID } from 'crypto';
+import { ContextImportance, createContextImportance, computeContextImportance } from './contextImportance';
+import { summarizeContext } from './contextSummary';
+
 export type ContextItem = {
     type: 'file' | 'directory';
     path: string;
+    id?: string;
+    importance?: ContextImportance;
     alias?: string;
     content: string;
     summary?: string;
+    summarized?: boolean;
     tokens: number;
 };
+
+export type InjectionStrategy = 'ranked' | 'recent' | 'all';
+
+export interface BuildPromptOptions {
+  maxTokens?: number;
+  strategy?: InjectionStrategy;
+}
 
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
 
@@ -13,11 +27,48 @@ export class ContextBuffer {
     private items: ContextItem[] = [];
     private maxTokens = 32000; // 约 12.8 万字符
 
+    async addAsync(item: Omit<ContextItem, 'tokens'>, bypassTokenLimit: boolean = false) {
+        const tokens = estimateTokens(item.content);
+        this.items.push({
+            ...item,
+            id: item.id ?? randomUUID(),
+            importance: item.importance ?? createContextImportance(item.path, item.type),
+            tokens
+        });
+        if (!bypassTokenLimit) {
+            await this.trimIfNeeded();
+        }
+    }
+
     add(item: Omit<ContextItem, 'tokens'>, bypassTokenLimit: boolean = false) {
         const tokens = estimateTokens(item.content);
-        this.items.push({ ...item, tokens });
+        this.items.push({
+            ...item,
+            id: item.id ?? randomUUID(),
+            importance: item.importance ?? createContextImportance(item.path, item.type),
+            tokens
+        });
         if (!bypassTokenLimit) {
-            this.trimIfNeeded();
+            // 对于同步方法，我们只做基本修剪（不进行摘要）
+            this.basicTrimIfNeeded();
+        }
+    }
+
+    private basicTrimIfNeeded() {
+        while (this.totalTokens() > this.maxTokens) {
+            // 按重要性评分排序，低重要性的在前面
+            this.items.sort((a, b) =>
+                computeContextImportance(a.importance!) -
+                computeContextImportance(b.importance!)
+            );
+
+            const removed = this.items.shift();
+
+            if (removed) {
+                console.log(
+                    `[Context Trim] removed low-importance: ${removed.path}`
+                );
+            }
         }
     }
 
@@ -52,35 +103,202 @@ export class ContextBuffer {
         return this.items.reduce((sum, i) => sum + i.tokens, 0);
     }
 
-    private trimIfNeeded() {
+    private async trimIfNeeded() {
         while (this.totalTokens() > this.maxTokens) {
-            this.items.shift();
+            // 1. 找一个「尚未 summary」且重要性最低的
+            const candidates = this.items
+                .filter(i => !i.summarized)
+                .sort((a, b) =>
+                    computeContextImportance(a.importance!) -
+                    computeContextImportance(b.importance!)
+                );
+
+            if (candidates.length > 0) {
+                const candidate = candidates[0];
+
+                // 2. 执行 summary
+                try {
+                    const summary = await summarizeContext({
+                        type: candidate.type,
+                        path: candidate.path,
+                        content: candidate.content
+                    });
+
+                    candidate.summary = summary;
+                    candidate.summarized = true;
+
+                    // 3. 用 summary 重新计算 token
+                    candidate.tokens = estimateTokens(summary);
+
+                    // 4. 释放原始内容以节省内存（保留原始内容的标记）
+                    const originalContentSize = estimateTokens(candidate.content);
+                    candidate.content = `[ARCHIVED: Original content was ${originalContentSize} tokens, summarized to ${candidate.tokens} tokens]`;
+
+                    console.log(
+                        `[Context Summary] ${candidate.path} reduced from ${originalContentSize} to ${candidate.tokens} tokens`
+                    );
+
+                    continue; // 重新评估token数量
+                } catch (error) {
+                    console.warn(`[Context Summary] Failed to summarize ${candidate.path}:`, error);
+                }
+            }
+
+            // 如果没有可摘要的项或摘要失败，则按重要性删除
+            this.items.sort((a, b) =>
+                computeContextImportance(a.importance!) -
+                computeContextImportance(b.importance!)
+            );
+
+            const removed = this.items.shift();
+
+            if (removed) {
+                console.log(
+                    `[Context Trim] removed low-importance: ${removed.path}`
+                );
+            }
         }
     }
 
-    buildPrompt(userInput: string): string {
+    /**
+     * 计算ContextItem的综合评分
+     * @param item ContextItem
+     * @returns 评分值
+     */
+    private computeItemScore(item: ContextItem): number {
+        if (!item.importance) {
+            // 如果没有重要性信息，默认为中等评分
+            return 0.5;
+        }
+
+        const baseScore = computeContextImportance(item.importance);
+
+        // 使用次数的影响（对数增长，避免过度放大）
+        const useFactor = Math.log(1 + item.importance.useCount);
+
+        // 新鲜度衰减（最近使用的项目获得更高评分）
+        const now = Date.now();
+        const daysSinceLastUse = (now - item.importance.lastUsed) / (1000 * 60 * 60 * 24);
+        const freshnessFactor = Math.exp(-daysSinceLastUse / 7); // 7天半衰期
+
+        return baseScore * useFactor * freshnessFactor;
+    }
+
+    /**
+     * 根据策略对ContextItems进行排序
+     * @param items ContextItem数组
+     * @param strategy 排序策略
+     * @returns 排序后的数组
+     */
+    private sortItemsByStrategy(items: ContextItem[], strategy: InjectionStrategy): ContextItem[] {
+        switch (strategy) {
+            case 'ranked':
+                // 按综合评分降序排列
+                return [...items].sort((a, b) =>
+                    this.computeItemScore(b) - this.computeItemScore(a)
+                );
+            case 'recent':
+                // 按最近使用时间降序排列
+                return [...items].sort((a, b) =>
+                    (b.importance?.lastUsed || 0) - (a.importance?.lastUsed || 0)
+                );
+            case 'all':
+            default:
+                // 保持原有顺序
+                return [...items];
+        }
+    }
+
+    buildPrompt(userInput: string, options: BuildPromptOptions = {}): string {
+        const { maxTokens, strategy = 'ranked' } = options;
+
         if (this.isEmpty()) return userInput;
 
-        const contextBlock = this.items.map(item => {
-            const title = item.alias
-                ? `[Context Item] ${item.type}: ${item.alias} (${item.path})`
-                : `[Context Item] ${item.type}: ${item.path}`;
+        // 根据策略排序items
+        const sortedItems = this.sortItemsByStrategy([...this.items], strategy);
 
-            const body = item.summary ?? item.content;
+        // 如果指定了maxTokens，我们需要截断内容以满足限制
+        let filteredItems = sortedItems;
+        if (maxTokens) {
+            filteredItems = [];
+            let currentTokens = 0;
 
-            return `${title}\n---\n${body}\n---`;
-        }).join('\n\n');
+            for (const item of sortedItems) {
+                if (currentTokens + item.tokens > maxTokens) {
+                    break;
+                }
+                filteredItems.push(item);
+                currentTokens += item.tokens;
+            }
+        }
+
+        // 按重要性分组
+        const highConfidenceItems = filteredItems.filter(item =>
+            item.importance && computeContextImportance(item.importance) > 0.7
+        );
+        const mediumConfidenceItems = filteredItems.filter(item =>
+            item.importance &&
+            computeContextImportance(item.importance) > 0.3 &&
+            computeContextImportance(item.importance) <= 0.7
+        );
+        const lowConfidenceItems = filteredItems.filter(item =>
+            !item.importance || computeContextImportance(item.importance) <= 0.3
+        );
+
+        // 构建不同部分的上下文
+        const sections = [];
+
+        if (highConfidenceItems.length > 0) {
+            const highConfidenceBlock = highConfidenceItems.map(item => {
+                const title = item.alias
+                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                    : `[Reference] ${item.type}: ${item.path}`;
+
+                const body = item.summary ?? item.content;
+
+                return `${title}\n---\n${body}\n---`;
+            }).join('\n\n');
+
+            sections.push(`# Background Knowledge (High Confidence)\n${highConfidenceBlock}`);
+        }
+
+        if (mediumConfidenceItems.length > 0) {
+            const mediumConfidenceBlock = mediumConfidenceItems.map(item => {
+                const title = item.alias
+                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                    : `[Reference] ${item.type}: ${item.path}`;
+
+                const body = item.summary ?? item.content;
+
+                return `${title}\n---\n${body}\n---`;
+            }).join('\n\n');
+
+            sections.push(`# Supporting Information (Medium Confidence)\n${mediumConfidenceBlock}`);
+        }
+
+        if (lowConfidenceItems.length > 0) {
+            const lowConfidenceBlock = lowConfidenceItems.map(item => {
+                const title = item.alias
+                    ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
+                    : `[Reference] ${item.type}: ${item.path}`;
+
+                const body = item.summary ?? item.content;
+
+                return `${title}\n---\n${body}\n---`;
+            }).join('\n\n');
+
+            sections.push(`# Archived References (Low Confidence)\n${lowConfidenceBlock}`);
+        }
+
+        const contextBlock = sections.join('\n\n');
 
         return `
-# 知识上下文 (Knowledge Context)
-你目前的会话已加载以下参考资料。在回答用户问题时，请优先参考这些内容：
-
 ${contextBlock}
 
-# 任务说明
-基于上述提供的上下文（如果有），回答用户的问题。如果上下文中包含源码，请将其视为你当前的“真理来源”。
+# Task Instructions
+Based on the provided context (if any), answer the user's question. If the context contains source code, treat it as your "source of truth."
 
-用户问题：
+User Question:
 ${userInput}
 `;
     }
