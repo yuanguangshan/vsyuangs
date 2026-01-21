@@ -10,6 +10,8 @@ import { ContextBuffer } from "./contextBuffer";
 import { snapshotFromBuffer, diffContext, ContextSnapshot } from "./contextDiff";
 import { ExecutionRecorder } from "./executionRecorder";
 import { generateReferenceRetrospective, analyzeContextLifecycle } from "./contextProtocol";
+import { ContextToSkillPromotionRules } from "./contextSkillPromotion";
+import { Skill, updateSkillStatus, learnSkillFromRecord, addSkill } from "./skills";
 
 export class AgentRuntime {
   private context: ContextManager;
@@ -23,16 +25,50 @@ export class AgentRuntime {
     this.executionId = randomUUID();
   }
 
+  /**
+   * 初始化运行时，包括 Context Bank
+   */
+  async initialize(): Promise<void> {
+    await this.context.initializeContextBank();
+  }
+
   async run(
     userInput: string,
     mode: "chat" | "command" = "chat",
     onChunk?: (chunk: string) => void,
     model?: string,
   ) {
+    // 确保 Context Bank 已初始化
+    await this.initialize();
+
     let turnCount = 0;
     const maxTurns = 10;
 
     if (userInput) {
+      // 检查用户输入是否包含 DSL 查询，如果有则自动添加相关上下文
+      const dslContextItems = this.context.getDSLContextForInput(userInput);
+
+      if (dslContextItems.length > 0) {
+        console.log(chalk.cyan(`\n[DSL Query] Found ${dslContextItems.length} matching context items:`));
+        for (const item of dslContextItems) {
+          console.log(chalk.cyan(`  - ${item.path} (${item.type})`));
+        }
+      }
+
+      // 从 Context Bank 查询与当前任务相关的上下文
+      console.log(chalk.blue('\n[Context Bank] Loading relevant context...'));
+      try {
+        await this.context.importFromContextBank({
+          input: userInput,
+          projectScope: process.cwd(), // 使用当前工作目录作为项目作用域
+          strategy: 'relevance',
+          limit: 5 // 最多加载5个相关上下文
+        });
+        console.log(chalk.green('[Context Bank] Relevant context loaded'));
+      } catch (error) {
+        console.log(chalk.yellow(`[Context Bank] Could not load context: ${error}`));
+      }
+
       this.context.addMessage("user", userInput);
     }
 
@@ -133,6 +169,9 @@ export class AgentRuntime {
           }
         }
 
+        // 记录 ContextBank 使用情况（成功）
+        await this.context.recordBankUsage(true);
+
         // 生成Context引用回溯报告
         const retrospectiveReport = generateReferenceRetrospective(
           this.context.getContextBuffer(),
@@ -154,6 +193,49 @@ export class AgentRuntime {
             console.log(chalk.yellow(`  ${rec.recommendation.toUpperCase()}: ${rec.path} (quality: ${rec.qualityScore.toFixed(2)}, relevance: ${rec.relevanceScore.toFixed(2)})`));
           }
         }
+
+        // 检查是否可以将某些ContextItem晋升为Skill
+        const contextItems = this.context.getContextBuffer().export();
+        for (const item of contextItems) {
+          const promotedSkill = ContextToSkillPromotionRules.evaluatePromotion(item);
+          if (promotedSkill) {
+            console.log(chalk.green(`\n🚀 PROMOTION: Context "${item.path}" qualifies to be promoted to Skill "${promotedSkill.name}"`));
+            console.log(chalk.gray(`   Description: ${promotedSkill.description}`));
+
+            // 询问用户是否确认创建技能
+            const confirmed = await this.confirmSkillCreation(promotedSkill);
+            if (confirmed) {
+              try {
+                // 通过治理服务审批
+                const governanceDecision = await GovernanceService.adjudicate({
+                  id: randomUUID(),
+                  type: 'skill_create',
+                  payload: promotedSkill,
+                  riskLevel: 'low',
+                  reasoning: 'Auto promotion from context'
+                });
+
+                if (governanceDecision.status === 'approved') {
+                  // 保存技能
+                  await this.saveSkill(promotedSkill);
+                  // 标记 ContextItem 已被晋升
+                  (item as any).metadata = {
+                    ...(item as any).metadata,
+                    promotedToSkill: true
+                  };
+                  console.log(chalk.green(`✅ Skill "${promotedSkill.name}" created successfully`));
+                } else {
+                  console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${governanceDecision.reason}`));
+                }
+              } catch (error) {
+                console.log(chalk.red(`❌ Failed to create skill: ${error}`));
+              }
+            }
+          }
+        }
+
+        // 执行回顾性分析
+        await this.retrospective(executionTurn);
 
         break;
       }
@@ -218,6 +300,9 @@ export class AgentRuntime {
           }
         }
 
+        // 记录 ContextBank 使用情况（失败）
+        await this.context.recordBankUsage(false);
+
         continue;
       }
 
@@ -251,9 +336,15 @@ export class AgentRuntime {
             }
           }
         }
+
+        // 记录 ContextBank 使用情况（成功）
+        await this.context.recordBankUsage(true);
       } else {
         this.context.addToolResult(action.type, `Error: ${result.error}`);
         console.log(chalk.red(`[ERROR] ${result.error}`));
+
+        // 记录 ContextBank 使用情况（失败）
+        await this.context.recordBankUsage(false);
       }
     }
 
@@ -264,6 +355,92 @@ export class AgentRuntime {
 
   getContextManager(): ContextManager {
     return this.context;
+  }
+
+  /**
+   * 询问用户是否确认创建技能
+   */
+  private async confirmSkillCreation(skill: Skill): Promise<boolean> {
+    // 在实际实现中，这里可能会有更复杂的确认逻辑
+    // 目前返回 true 以自动创建技能
+    console.log(chalk.blue(`\n📝 Creating skill: ${skill.name}`));
+    return true; // 自动确认，可根据配置调整
+  }
+
+  /**
+   * 保存技能
+   */
+  private async saveSkill(skill: Skill): Promise<void> {
+    // 将技能添加到技能库
+    const now = Date.now();
+    const skillToAdd = {
+      ...skill,
+      successCount: skill.metadata?.promotionCriteria?.successCount || 0,
+      failureCount: 0, // 新创建的技能没有失败记录
+      confidence: skill.metadata?.promotionCriteria?.successRate || 0.5,
+      lastUsed: now,
+      createdAt: now,
+      enabled: true
+    };
+
+    // 使用 addSkill 函数添加技能
+    addSkill(skillToAdd);
+  }
+
+  /**
+   * 执行回合回顾分析
+   */
+  private async retrospective(turn: ExecutionTurn) {
+    // 导出高价值上下文到 Context Bank
+    console.log(chalk.blue('\n[Context Bank] Exporting high-value context...'));
+    try {
+      await this.context.exportToContextBank(process.cwd()); // 使用当前工作目录作为项目作用域
+      console.log(chalk.green('[Context Bank] High-value context exported'));
+    } catch (error) {
+      console.log(chalk.yellow(`[Context Bank] Could not export context: ${error}`));
+    }
+
+    // 评估上下文晋升
+    await this.evaluateContextPromotion();
+  }
+
+  /**
+   * 评估上下文晋升
+   */
+  private async evaluateContextPromotion() {
+    const contextItems = this.context.getContextBuffer().export();
+    for (const item of contextItems) {
+      const promotedSkill = ContextToSkillPromotionRules.evaluatePromotion(item);
+      if (promotedSkill) {
+        console.log(chalk.green(`\n🚀 PROMOTION: Context "${item.path}" qualifies to be promoted to Skill "${promotedSkill.name}"`));
+        console.log(chalk.gray(`   Description: ${promotedSkill.description}`));
+
+        // 询问用户是否确认创建技能
+        const confirmed = await this.confirmSkillCreation(promotedSkill);
+        if (confirmed) {
+          try {
+            // 通过治理服务审批
+            const governanceDecision = await GovernanceService.adjudicate({
+              id: randomUUID(),
+              type: 'skill_create',
+              payload: promotedSkill,
+              riskLevel: 'low',
+              reasoning: 'Auto promotion from context'
+            });
+
+            if (governanceDecision.status === 'approved') {
+              // 保存技能
+              await this.saveSkill(promotedSkill);
+              console.log(chalk.green(`✅ Skill "${promotedSkill.name}" created successfully`));
+            } else {
+              console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${governanceDecision.reason}`));
+            }
+          } catch (error) {
+            console.log(chalk.red(`❌ Failed to create skill: ${error}`));
+          }
+        }
+      }
+    }
   }
 
   getExecutionRecorder(): ExecutionRecorder {

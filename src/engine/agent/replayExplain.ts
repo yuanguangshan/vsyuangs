@@ -1,7 +1,8 @@
 import { ExecutionTurn } from './state';
 import { ExecutionRecorder } from './executionRecorder';
-import { generateSkillHintsFromContext, formatSkillHints, ContextSkillHint } from './contextSkillBridge';
+import { generateSkillHintsFromContext, formatSkillHints, ContextSkillHint, promoteContextToSkill } from './contextSkillBridge';
 import { ContextManager } from './contextManager';
+import { ContextToSkillPromotionRules } from './contextSkillPromotion';
 
 export function explainExecution(recorder: ExecutionRecorder, contextManager?: ContextManager): string {
   const turns = recorder.getTurns();

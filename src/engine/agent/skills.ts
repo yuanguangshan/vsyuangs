@@ -178,3 +178,19 @@ export function reapColdSkills() {
 export function getAllSkills(): Skill[] {
     return [...skillLibrary];
 }
+
+/**
+ * 添加新技能
+ */
+export function addSkill(skill: Skill) {
+    // 检查是否已存在同名技能
+    const existingSkill = skillLibrary.find(s => s.name === skill.name);
+    if (existingSkill) {
+        console.log(`Skill with name "${skill.name}" already exists, skipping.`);
+        return false;
+    }
+
+    skillLibrary.push(skill);
+    saveSkills(); // 保存更改
+    return true;
+}

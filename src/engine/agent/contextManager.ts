@@ -1,14 +1,18 @@
 import crypto from 'crypto';
 import { GovernanceContext } from './state';
 import { ContextBuffer } from './contextBuffer';
+import { ExtendedContextProtocol } from './contextDSL';
+import { ContextBank } from './contextBank';
 
 export class ContextManager {
   private messages: Array<{ role: string; content: string; timestamp: number }> = [];
   private contextBuffer: ContextBuffer;
+  private contextBank: ContextBank;
   private maxHistorySize = 50;
 
   constructor(initialContext?: GovernanceContext) {
     this.contextBuffer = new ContextBuffer();
+    this.contextBank = new ContextBank();
 
     if (initialContext?.history) {
       this.messages = initialContext.history.map(msg => ({
@@ -64,6 +68,89 @@ export class ContextManager {
 
   buildContextPrompt(userInput: string, options?: import('./contextBuffer').BuildPromptOptions) {
     return this.contextBuffer.buildPrompt(userInput, options);
+  }
+
+  /**
+   * 使用 DSL 查询上下文
+   */
+  async queryDSL(dslQuery: string) {
+    return await this.contextBuffer.queryDSL(dslQuery, this.contextBank);
+  }
+
+  /**
+   * 解析包含 DSL 的用户输入并获取相关上下文
+   */
+  async getDSLContextForInput(input: string) {
+    return await this.contextBuffer.getDSLContextForInput(input, this.contextBank);
+  }
+
+  /**
+   * 初始化 Context Bank
+   */
+  async initializeContextBank(): Promise<void> {
+    await this.contextBank.initialize();
+  }
+
+  /**
+   * 从 ContextBuffer 导出高价值上下文到银行
+   */
+  async exportToContextBank(projectScope?: string): Promise<void> {
+    await this.contextBank.exportFromContextBuffer(this.contextBuffer, projectScope);
+  }
+
+  /**
+   * 从 Context Bank 查询上下文
+   */
+  async queryContextBank(options: import('./contextBank').BankQueryOptions): Promise<import('./contextBank').BankContextItem[]> {
+    return await this.contextBank.query(options);
+  }
+
+  /**
+   * 将 Context Bank 中的项目添加到当前上下文
+   */
+  async importFromContextBank(options: import('./contextBank').BankQueryOptions): Promise<void> {
+    const bankItems = await this.contextBank.query(options);
+
+    for (const item of bankItems) {
+      // 将 BankContextItem 转换为 ContextItem 并添加到缓冲区
+      this.contextBuffer.add({
+        type: item.type,
+        path: item.path,
+        stableId: item.stableId,
+        content: item.content,
+        summary: item.summary,
+        summarized: item.summarized,
+        semantic: item.semantic,
+        summaryQuality: item.summaryQuality,
+        referencedBy: item.referencedBy,
+        usageStats: item.usageStats,
+        importance: item.importance,
+        metadata: {
+          source: 'context_bank',
+          bankItemId: item.id
+        }
+      });
+    }
+  }
+
+  /**
+   * 记录 ContextBank 项目的使用情况
+   */
+  async recordBankUsage(success: boolean): Promise<void> {
+    const contextItems = this.contextBuffer.export();
+
+    for (const item of contextItems) {
+      // 检查项目是否来自银行（有 bankItemId）
+      const bankItemId = (item as any).metadata?.bankItemId;
+      if (bankItemId) {
+        try {
+          // 使用银行项目 ID 而不是路径进行记录
+          await this.contextBank.recordUsage(bankItemId, success);
+        } catch (error) {
+          console.warn(`[ContextManager] Could not record bank usage for ${bankItemId}:`, error);
+        }
+      }
+    }
   }
 
   getRecentMessages(count: number): Array<{ role: string; content: string; timestamp: number }> {

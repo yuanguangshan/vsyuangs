@@ -6,6 +6,7 @@ import { promisify } from 'util';
 import { buildPromptWithFileContent, readFilesContent } from '../core/fileReader';
 import { ContextBuffer } from '../agent/contextBuffer';
 import { loadContext, saveContext } from '../agent/contextStorage';
+import { DSLParser, DSLQueryEngine, ExtendedContextProtocol } from '../agent/contextDSL';
 
 const execAsync = promisify(exec);
 
@@ -67,6 +68,15 @@ export async function handleSpecialSyntax(input: string, stdinData?: string): Pr
     // 处理 :clear 命令
     if (trimmed === ':clear') {
         return await handleClearContext();
+    }
+
+    // 检查是否是 DSL 查询（包含 DSL 语法的查询）
+    if (trimmed.includes(':') || trimmed.startsWith('@') || trimmed.startsWith('#')) {
+        // 检查是否是有效的 DSL 查询
+        const { dslQueries } = ExtendedContextProtocol.parseUserInput(trimmed);
+        if (dslQueries.length > 0) {
+            return await handleDSLQuery(trimmed);
+        }
     }
 
     // 如果不是特殊语法，返回未处理
@@ -363,6 +373,64 @@ async function handleClearContext(): Promise<{ processed: boolean; result: strin
         return {
             processed: true,
             result: `清除上下文失败: ${error}`
+        };
+    }
+}
+
+async function handleDSLQuery(query: string): Promise<{ processed: boolean; result: string }> {
+    try {
+        // 加载当前上下文
+        const persisted = await loadContext();
+        const contextBuffer = new ContextBuffer();
+        contextBuffer.import(persisted);
+
+        // 使用 DSL 查询引擎执行查询
+        const matchingItems = await contextBuffer.queryDSL(query);
+
+        if (matchingItems.length === 0) {
+            return {
+                processed: true,
+                result: `未找到匹配 DSL 查询 "${query}" 的上下文项`
+            };
+        }
+
+        // 显示匹配的上下文项
+        let result = `DSL 查询 "${query}" 找到 ${matchingItems.length} 个匹配项：\n\n`;
+
+        for (let i = 0; i < matchingItems.length; i++) {
+            const item = matchingItems[i];
+            result += `--- [${i + 1}] ${item.type}: ${item.path} (${item.tokens} tokens) ---\n`;
+            result += `${item.content.substring(0, 500)}${item.content.length > 500 ? '...' : ''}\n\n`;
+        }
+
+        // 将匹配的项添加到上下文中（如果它们不在当前上下文中）
+        for (const item of matchingItems) {
+            // 检查是否已存在于上下文中
+            const exists = contextBuffer.export().some(existingItem => existingItem.path === item.path);
+            if (!exists) {
+                contextBuffer.add({
+                    type: item.type,
+                    path: item.path,
+                    content: item.content,
+                    summary: item.summary,
+                    summarized: item.summarized,
+                    semantic: item.semantic,
+                    summaryQuality: item.summaryQuality,
+                    referencedBy: item.referencedBy,
+                    usageStats: item.usageStats,
+                    importance: item.importance
+                });
+            }
+        }
+
+        // 保存更新后的上下文
+        await saveContext(contextBuffer.export());
+
+        return { processed: true, result };
+    } catch (error) {
+        return {
+            processed: true,
+            result: `执行 DSL 查询失败: ${error}`
         };
     }
 }

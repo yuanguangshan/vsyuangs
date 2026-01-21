@@ -19,6 +19,11 @@ export interface AgentContext {
     files?: Array<{ path: string; content: string }>;
     gitDiff?: string;
     history?: AIRequestMessage[];
+    contextItems?: import('./contextBuffer').ContextItem[];
+    totalTokens?: number;
+    highConfidenceItems?: import('./contextBuffer').ContextItem[];
+    mediumConfidenceItems?: import('./contextBuffer').ContextItem[];
+    lowConfidenceItems?: import('./contextBuffer').ContextItem[];
 }
 
 export interface AgentIntent {

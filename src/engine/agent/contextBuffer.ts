@@ -1,11 +1,24 @@
 import { randomUUID } from 'crypto';
 import { ContextImportance, createContextImportance, computeContextImportance } from './contextImportance';
 import { summarizeContext } from './contextSummary';
+import { ExtendedContextProtocol, DSLQueryEngine, DSLParser } from './contextDSL';
+import crypto from 'crypto';
+
+function computeStableId(item: {
+  path: string;
+  semantic?: string;
+  content: string;
+}) {
+  const sig = `${item.path}::${item.semantic ?? ''}::${item.content.slice(0, 512)}`;
+  return crypto.createHash('sha256').update(sig).digest('hex');
+}
 
 export type ContextItem = {
+    schemaVersion?: 1; // Schema 版本
     type: 'file' | 'directory';
     path: string;
     id?: string;
+    stableId?: string;   // 稳定身份（跨 session）
     importance?: ContextImportance;
     alias?: string;
     content: string;
@@ -22,6 +35,13 @@ export type ContextItem = {
         verifiedUseful: number; // 经验证有用的引用次数
         verifiedNotUseful: number; // 经验证无用的引用次数
     };
+    tags?: string[]; // 标签
+    projectScope?: string; // 项目作用域
+    metadata?: {
+        promotedToSkill?: boolean;
+        bankItemId?: string;
+        source?: string;
+    }; // 元数据
 };
 
 export type InjectionStrategy = 'ranked' | 'recent' | 'all';
@@ -41,6 +61,8 @@ export class ContextBuffer {
         const tokens = estimateTokens(item.content);
         this.items.push({
             ...item,
+            schemaVersion: item.schemaVersion ?? 1,
+            stableId: item.stableId ?? computeStableId(item),
             id: item.id ?? randomUUID(),
             importance: item.importance ?? createContextImportance(item.path, item.type),
             tokens,
@@ -59,6 +81,8 @@ export class ContextBuffer {
         const tokens = estimateTokens(item.content);
         this.items.push({
             ...item,
+            schemaVersion: item.schemaVersion ?? 1,
+            stableId: item.stableId ?? computeStableId(item),
             id: item.id ?? randomUUID(),
             importance: item.importance ?? createContextImportance(item.path, item.type),
             tokens,
@@ -411,6 +435,57 @@ Based on the provided context (if any), answer the user's question. If the conte
 User Question:
 ${userInput}
 `;
+    }
+
+    /**
+     * 使用 DSL 查询上下文
+     */
+    async queryDSL(dslQuery: string, contextBank?: import('./contextBank').ContextBank): Promise<ContextItem[]> {
+        const parsedQuery = DSLParser.parse(dslQuery);
+        const engine = new DSLQueryEngine(this.items);
+        const result = engine.execute(parsedQuery);
+
+        let matchingItems = result.items;
+
+        // 如果提供了 ContextBank，也查询银行中的项目
+        if (contextBank) {
+            try {
+                // 将 DSL 查询转换为 ContextBank 查询选项
+                const bankQueryOptions: import('./contextBank').BankQueryOptions = {
+                    input: dslQuery,
+                    strategy: 'relevance',
+                    limit: 10 // 限制从银行返回的数量
+                };
+
+                // 执行银行查询
+                const bankResults = await contextBank.query(bankQueryOptions);
+                matchingItems = [...matchingItems, ...bankResults];
+            } catch (error) {
+                console.warn(`[ContextBuffer] Could not query ContextBank: ${error}`);
+            }
+        }
+
+        return matchingItems;
+    }
+
+    /**
+     * 解析包含 DSL 的用户输入并获取相关上下文
+     */
+    async getDSLContextForInput(input: string, contextBank?: import('./contextBank').ContextBank): Promise<ContextItem[]> {
+        const { dslQueries } = ExtendedContextProtocol.parseUserInput(input);
+        let allMatchingItems: ContextItem[] = [];
+
+        for (const query of dslQueries) {
+            const matchingItems = await this.queryDSL(query, contextBank);
+            allMatchingItems = [...allMatchingItems, ...matchingItems];
+        }
+
+        // 去重
+        const uniqueItems = allMatchingItems.filter((item, index, self) =>
+            index === self.findIndex(i => i.path === item.path)
+        );
+
+        return uniqueItems;
     }
 }
 // Test change for git diff

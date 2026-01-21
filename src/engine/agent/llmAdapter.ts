@@ -4,6 +4,7 @@ import { AgentPrompt } from './types';
 import type { AIRequestMessage } from '../core/validation';
 import { getUserConfig } from '../ai/client';
 import { ContextManager } from './contextManager';
+import { ExtendedContextProtocol } from './contextDSL';
 import { parseContextReferences, validateContextReferences, buildContextPromptWithReferences } from './contextProtocol';
 import { randomUUID } from 'crypto';
 
@@ -25,11 +26,22 @@ export class LLMAdapter {
     if (contextManager) {
       const contextBuffer = contextManager.getContextBuffer();
       if (!contextBuffer.isEmpty()) {
-        // 获取ContextBuffer的完整提示，使用排名策略
-        const contextPrompt = contextBuffer.buildPrompt('', {
-          strategy: 'ranked',  // 使用排名策略
-          maxTokens: 16000     // 设置最大token限制
-        });
+        // 检查用户消息中是否有 DSL 查询
+        const userInput = messages[messages.length - 1]?.content || '';
+        const dslContextItems = await contextBuffer.getDSLContextForInput(userInput);
+
+        let contextPrompt: string;
+
+        if (dslContextItems.length > 0) {
+          // 如果有 DSL 查询结果，使用 buildContextPromptWithReferences 来构建提示
+          contextPrompt = buildContextPromptWithReferences(contextBuffer, userInput);
+        } else {
+          // 获取ContextBuffer的完整提示，使用排名策略
+          contextPrompt = contextBuffer.buildPrompt('', {
+            strategy: 'ranked',  // 使用排名策略
+            maxTokens: 16000     // 设置最大token限制
+          });
+        }
 
         // 将ContextBuffer内容作为system消息添加到消息列表开头
         fullMessages = [

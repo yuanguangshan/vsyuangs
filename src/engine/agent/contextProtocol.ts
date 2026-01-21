@@ -1,5 +1,6 @@
 import { ContextBuffer, ContextItem } from './contextBuffer';
 import { randomUUID } from 'crypto';
+import { ExtendedContextProtocol } from './contextDSL';
 
 /**
  * Context引用协议v1实现
@@ -49,13 +50,37 @@ export function parseContextReferences(response: string): ContextProtocolResult 
     result.referencedItems.push(reference);
   }
 
+  // 匹配 DSL 查询语法 (例如: type:file importance:>0.5)
+  const dslRegex = /[@#][^{}`]+|"[^"]*"|'[^']*'|[a-z_]+:[^\\s]+/gi;
+  let dslMatch;
+  while ((dslMatch = dslRegex.exec(response)) !== null) {
+    const dslPart = dslMatch[0];
+
+    // 检查是否是 DSL 查询语法 (包含冒号且不是文件路径)
+    if (dslPart.includes(':') && !dslPart.startsWith('/') && !dslPart.includes('.')) {
+      // 这可能是 DSL 查询的一部分，暂时跳过，因为我们需要完整的查询
+      continue;
+    }
+
+    // 检查是否是路径引用 (@file 或 #dir)
+    if (dslPart.startsWith('@') || dslPart.startsWith('#')) {
+      const path = dslPart.substring(1);
+      if (!result.referencedItems.some(ref => ref.path === path)) {
+        result.referencedItems.push({
+          path,
+          timestamp: Date.now()
+        });
+      }
+    }
+  }
+
   // 也可以匹配JSON格式的引用（如果AI输出遵循特定格式）
   try {
     // 尝试查找JSON块中的引用信息
     const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/);
     if (jsonMatch) {
       const jsonData = JSON.parse(jsonMatch[1]);
-      
+
       // 如果JSON中包含used_context字段
       if (jsonData.used_context && Array.isArray(jsonData.used_context)) {
         for (const path of jsonData.used_context) {
@@ -119,15 +144,24 @@ export function buildContextPromptWithReferences(
   userInput: string,
   referencedPaths?: string[]
 ): string {
-  const allItems = contextBuffer.export();
+  // 首先检查用户输入是否包含 DSL 查询
+  const dslContextItems = contextBuffer.getDSLContextForInput(userInput);
 
-  // 如果提供了显式引用路径，优先处理这些项
-  let filteredItems = allItems;
-  if (referencedPaths && referencedPaths.length > 0) {
+  let filteredItems: ContextItem[];
+
+  if (dslContextItems.length > 0) {
+    // 如果有 DSL 查询结果，使用 DSL 结果
+    filteredItems = dslContextItems;
+  } else if (referencedPaths && referencedPaths.length > 0) {
+    // 如果提供了显式引用路径，优先处理这些项
+    const allItems = contextBuffer.export();
     filteredItems = allItems.filter(item =>
       referencedPaths.includes(item.path) ||
       (item.alias && referencedPaths.includes(item.alias))
     );
+  } else {
+    // 否则使用所有可用项
+    filteredItems = contextBuffer.export();
   }
 
   // 按重要性分组
