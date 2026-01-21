@@ -3,7 +3,7 @@
   "publisher": "yuanguangshan",
   "displayName": "Yuangs AI Agent",
   "description": "治理-执行 (Think-Govern-Execute) 闭环能力的 Agent 插件",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "engines": {
     "vscode": "^1.75.0"
   },
