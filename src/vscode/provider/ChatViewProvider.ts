@@ -30,7 +30,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             ]
         };
 
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        try {
+            webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        } catch (error: any) {
+            webviewView.webview.html = `<html><body><h3>Error loading view</h3><pre>${error.message}</pre></body></html>`;
+        }
 
         // 当 webview 准备好后，发送历史记录
         webviewView.webview.postMessage({ type: 'history', value: this._messages });
@@ -52,8 +56,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     this.clear();
                     break;
                 case 'getSymbols':
-                    // 这是一个简化的符号获取，实际可以通过 DocumentSymbolProvider 获取
-                    // 这里为了演示，获取当前打开文件的符号
                     const editor = vscode.window.activeTextEditor;
                     if (editor) {
                         try {
@@ -81,7 +83,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         if (!this._view) return;
 
         try {
-            // 获取当前选中的代码片段
             const editor = vscode.window.activeTextEditor;
             let finalInput = userInput;
 
@@ -90,7 +91,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 const fileName = path.basename(editor.document.fileName);
                 finalInput = `Context from ${fileName}:\n\`\`\`\n${selection}\n\`\`\`\n\nTask: ${userInput}`;
             } else {
-                // 如果没有选中代码，提供工作区文件列表作为基础上下文，增强 Agent 的“感知”
                 const workspaceFolders = vscode.workspace.workspaceFolders;
                 if (workspaceFolders) {
                     const rootUri = workspaceFolders[0].uri;
@@ -103,10 +103,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this._messages.push({ role: 'user', content: userInput });
             this._saveHistory();
 
-            // 初始化治理服务 (传入插件基础路径以正确加载 policy.yaml 和 wasm)
             await GovernanceService.init(this._context.extensionUri.fsPath);
 
-            // 劫持治理审批逻辑为 VS Code UI
             const originalAdjudicate = GovernanceService.adjudicate;
             (GovernanceService as any).adjudicate = async (action: any) => {
                 const choice = await vscode.window.showInformationMessage(
@@ -141,10 +139,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
             this._messages.push({ role: 'assistant', content: fullAiResponse });
             this._saveHistory();
-
             this._view?.webview.postMessage({ type: 'done' });
-
-            // 恢复原始方法 (可选)
             (GovernanceService as any).adjudicate = originalAdjudicate;
 
         } catch (error: any) {
@@ -157,14 +152,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         try {
             if (diffData.type === 'unified') {
-                // 处理标准 unified diff 格式
                 for (const file of diffData.files) {
                     await this.applyUnifiedDiff(file);
                 }
                 this._view.webview.postMessage({ type: 'diffApplied' });
                 vscode.window.showInformationMessage('✓ Diff applied successfully!');
             } else if (diffData.type === 'simple') {
-                // 处理简单的 +/- 格式
                 await this.applySimpleDiff(diffData);
                 this._view.webview.postMessage({ type: 'diffApplied' });
                 vscode.window.showInformationMessage('✓ Diff applied successfully!');
@@ -183,31 +176,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             throw new Error('No workspace folder open');
         }
 
-        // 查找文件
         const filePath = path.join(workspaceFolder.uri.fsPath, file.newFile || file.oldFile);
         const fileUri = vscode.Uri.file(filePath);
 
-        // 打开或创建文件
         let document: vscode.TextDocument;
         try {
             document = await vscode.workspace.openTextDocument(fileUri);
         } catch {
-            // 文件不存在，创建新文件
             const edit = new vscode.WorkspaceEdit();
             edit.createFile(fileUri, { ignoreIfExists: true });
             await vscode.workspace.applyEdit(edit);
             document = await vscode.workspace.openTextDocument(fileUri);
         }
 
-        // 应用每个 hunk
         const edit = new vscode.WorkspaceEdit();
         for (const hunk of file.hunks) {
-            let startLine = hunk.oldStart - 1; // VS Code 使用 0-based 索引
-            if (startLine < 0) startLine = 0; // 修正：防止新文件(oldStart=0)导致负数
-
+            let startLine = hunk.oldStart - 1;
+            if (startLine < 0) startLine = 0;
             const endLine = startLine + hunk.oldLines;
 
-            // 构建新内容
             const newLines: string[] = [];
             for (const line of hunk.lines) {
                 if (line.startsWith('+')) {
@@ -223,8 +210,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         await vscode.workspace.applyEdit(edit);
         await document.save();
-
-        // 显示文件
         await vscode.window.showTextDocument(document);
     }
 
@@ -236,12 +221,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         const document = editor.document;
         const edit = new vscode.WorkspaceEdit();
-
-        // 简单策略：查找并替换
         const fullText = document.getText();
 
         if (diffData.removed.length > 0) {
-            // 尝试查找要删除的内容
             const toRemove = diffData.removed.join('\n');
             const index = fullText.indexOf(toRemove);
 
@@ -251,17 +233,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 const range = new vscode.Range(startPos, endPos);
 
                 if (diffData.added.length > 0) {
-                    // 替换
                     edit.replace(document.uri, range, diffData.added.join('\n'));
                 } else {
-                    // 删除
                     edit.delete(document.uri, range);
                 }
             } else {
                 throw new Error('Could not find the content to replace in the active file');
             }
         } else if (diffData.added.length > 0) {
-            // 只有添加，插入到光标位置
             edit.insert(document.uri, editor.selection.active, diffData.added.join('\n'));
         }
 
@@ -302,11 +281,35 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
-        // 实际上我们可以直接读取文件内容并注入
-        const htmlPath = path.join(this._context.extensionPath, 'src', 'vscode', 'webview', 'sidebar.html');
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'dist', 'webview', 'marked.min.js'));
+        const htmlPath = path.join(this._context.extensionPath, 'dist', 'webview', 'sidebar.html');
         let htmlSnippet = fs.readFileSync(htmlPath, 'utf8');
 
-        // 替换一些资源路径如果需要的话
+        // 生成随机 nonce 用于 CSP
+        const nonce = getNonce();
+
+        // 注入 CSP 和本地脚本路径
+        htmlSnippet = htmlSnippet.replace(
+            /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/marked\/marked\.min\.js"><\/script>/,
+            `<script nonce="${nonce}" src="${scriptUri}"></script>`
+        );
+
+        // 注入 CSP Meta 标签
+        const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https:; connect-src *;">`;
+        htmlSnippet = htmlSnippet.replace('<head>', `<head>\n    ${csp}`);
+
+        // 为所有的 <script> 标签注入 nonce
+        htmlSnippet = htmlSnippet.replace(/<script>/g, `<script nonce="${nonce}">`);
+
         return htmlSnippet;
     }
+}
+
+function getNonce() {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
 }

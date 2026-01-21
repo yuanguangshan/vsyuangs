@@ -10,7 +10,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onView:yuangs.chatView"
+  ],
   "main": "./dist/vscode/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -64,7 +66,7 @@
     "asbuild:release": "asc src/engine/agent/governance/sandbox/core.as.ts --target release",
     "asbuild": "npm run asbuild:debug && npm run asbuild:release",
     "compile": "tsc -p ./",
-    "bundle": "webpack --mode production",
+    "bundle": "webpack --mode production && mkdir -p dist/webview && cp src/vscode/webview/sidebar.html dist/webview/ && cp node_modules/marked/marked.min.js dist/webview/",
     "build": "npm run asbuild && npm run bundle",
     "vscode:prepublish": "npm run build",
     "watch": "tsc -watch -p ./",

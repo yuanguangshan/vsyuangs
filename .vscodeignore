@@ -10,7 +10,8 @@ yuangs-vscode-20260121-docs.md
 yuangs-vscode-1.0.3.vsix
 CHANGELOG.md
 QUICK_REFERENCE.md
-policy.yaml
+# policy.yaml
 c
 build/**
+!build/release.wasm
 !dist/**
