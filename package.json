@@ -13,6 +13,11 @@
   "activationEvents": [
     "onView:yuangs.chatView"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yuanguangshan/vsyuangs.git"
+  },
+  "license": "MIT",
   "main": "./dist/vscode/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -68,6 +73,7 @@
     "compile": "tsc -p ./",
     "bundle": "webpack --mode production && mkdir -p dist/webview && cp src/vscode/webview/sidebar.html dist/webview/ && cp node_modules/marked/marked.min.js dist/webview/",
     "build": "npm run asbuild && npm run bundle",
+    "package": "vsce package",
     "vscode:prepublish": "npm run build",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run build && npm run lint",
