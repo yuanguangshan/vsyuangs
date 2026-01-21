@@ -4,4 +4,8 @@ export { LLMAdapter } from './llmAdapter';
 export { GovernanceService } from './governance';
 export { ToolExecutor } from './executor';
 export { ContextManager } from './contextManager';
+export { ContextBuffer } from './contextBuffer';
+export { ContextImportance, computeContextImportance, createContextImportance, updateContextImportance } from './contextImportance';
+export { buildContextSummaryPrompt, summarizeContext } from './contextSummary';
+export { diffContext, snapshotFromBuffer, ContextDiff, ContextSnapshot } from './contextDiff';
 export * from './skills';

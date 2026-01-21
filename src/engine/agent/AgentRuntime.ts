@@ -6,13 +6,18 @@ import { ToolExecutor } from "./executor";
 import { ContextManager } from "./contextManager";
 import { evaluateProposal } from "./governance/core";
 import { ProposedAction } from "./state";
+import { ContextBuffer } from "./contextBuffer";
+import { snapshotFromBuffer, diffContext, ContextSnapshot } from "./contextDiff";
 
 export class AgentRuntime {
   private context: ContextManager;
+  private contextBuffer: ContextBuffer;
+  private lastContextSnapshot: ContextSnapshot | null = null;
   private executionId: string;
 
   constructor(initialContext: any) {
     this.context = new ContextManager(initialContext);
+    this.contextBuffer = new ContextBuffer();
     this.executionId = randomUUID();
   }
 
@@ -43,6 +48,26 @@ export class AgentRuntime {
         content: msg.content,
       }));
 
+      // === Context Diff ===
+      const currentSnapshot = snapshotFromBuffer(this.contextBuffer);
+      const contextDiff = diffContext(this.lastContextSnapshot, currentSnapshot);
+
+      if (
+        contextDiff.added.length ||
+        contextDiff.removed.length ||
+        contextDiff.changed.length
+      ) {
+        console.log(chalk.cyan('\n[Context Diff]'));
+        if (contextDiff.added.length)
+          console.log('  + added:', contextDiff.added);
+        if (contextDiff.removed.length)
+          console.log('  - removed:', contextDiff.removed);
+        if (contextDiff.changed.length)
+          console.log('  ~ changed:', contextDiff.changed);
+      }
+
+      this.lastContextSnapshot = currentSnapshot;
+
       const thought = await LLMAdapter.think(
         messages,
         mode as any,
@@ -70,6 +95,16 @@ export class AgentRuntime {
           console.log(chalk.green(`\n🤖 AI：${result.output}\n`));
         }
         this.context.addMessage("assistant", result.output);
+
+        // 任务成功完成，更新所有ContextItem的重要性
+        for (const item of this.contextBuffer.export()) {
+          if (item.importance) {
+            // 成功完成任务，增加成功计数
+            item.importance.successCount++;
+            item.importance.confidence = Math.min(1, item.importance.confidence + 0.05);
+            item.importance.lastUsed = Date.now();
+          }
+        }
         break;
       }
 
@@ -98,6 +133,17 @@ export class AgentRuntime {
           "system",
           `Rejected by Governance: ${decision.reason}`,
         );
+
+        // 任务被拒绝，更新所有ContextItem的重要性（失败惩罚）
+        for (const item of this.contextBuffer.export()) {
+          if (item.importance) {
+            // 任务失败，增加失败计数
+            item.importance.failureCount++;
+            item.importance.confidence = Math.max(0, item.importance.confidence - 0.1);
+            item.importance.lastUsed = Date.now();
+          }
+        }
+
         continue;
       }
 
@@ -107,10 +153,20 @@ export class AgentRuntime {
 
       if (result.success) {
         this.context.addToolResult(action.type, result.output);
-        const preview = result.output.length > 300 
-          ? result.output.substring(0, 300) + '...' 
+        const preview = result.output.length > 300
+          ? result.output.substring(0, 300) + '...'
           : result.output;
         console.log(chalk.green(`[SUCCESS] Result:\n${preview}`));
+
+        // 更新ContextBuffer中相关项的重要性（标记为被使用）
+        for (const item of this.contextBuffer.export()) {
+          if (result.output.includes(item.path)) {
+            if (item.importance) {
+              item.importance.useCount++;
+              item.importance.lastUsed = Date.now();
+            }
+          }
+        }
       } else {
         this.context.addToolResult(action.type, `Error: ${result.error}`);
         console.log(chalk.red(`[ERROR] ${result.error}`));
