@@ -48,9 +48,9 @@ export class CapabilitySystem {
 
   loadMergedConfig(): MergedConfig {
     const builtin = {
-      aiProxyUrl: 'https://aiproxy.want.biz/v1/chat/completions',
-      defaultModel: 'Assistant',
-      accountType: 'paid',
+      aiProxyUrl: 'https://api.openai.com/v1/chat/completions',
+      defaultModel: 'gpt-4o-mini',
+      accountType: 'free',
     };
 
     const filePaths = getConfigFilePaths();
