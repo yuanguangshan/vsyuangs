@@ -123,8 +123,12 @@ export class ContextBuffer {
                     // 3. 用 summary 重新计算 token
                     candidate.tokens = estimateTokens(summary);
 
+                    // 4. 释放原始内容以节省内存（保留原始内容的标记）
+                    const originalContentSize = estimateTokens(candidate.content);
+                    candidate.content = `[ARCHIVED: Original content was ${originalContentSize} tokens, summarized to ${candidate.tokens} tokens]`;
+
                     console.log(
-                        `[Context Summary] ${candidate.path} reduced`
+                        `[Context Summary] ${candidate.path} reduced from ${originalContentSize} to ${candidate.tokens} tokens`
                     );
 
                     continue; // 重新评估token数量

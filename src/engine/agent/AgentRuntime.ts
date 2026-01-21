@@ -11,13 +11,11 @@ import { snapshotFromBuffer, diffContext, ContextSnapshot } from "./contextDiff"
 
 export class AgentRuntime {
   private context: ContextManager;
-  private contextBuffer: ContextBuffer;
   private lastContextSnapshot: ContextSnapshot | null = null;
   private executionId: string;
 
   constructor(initialContext: any) {
     this.context = new ContextManager(initialContext);
-    this.contextBuffer = new ContextBuffer();
     this.executionId = randomUUID();
   }
 
@@ -49,7 +47,7 @@ export class AgentRuntime {
       }));
 
       // === Context Diff ===
-      const currentSnapshot = snapshotFromBuffer(this.contextBuffer);
+      const currentSnapshot = snapshotFromBuffer(this.context.getContextBuffer());
       const contextDiff = diffContext(this.lastContextSnapshot, currentSnapshot);
 
       if (
@@ -74,6 +72,7 @@ export class AgentRuntime {
         onChunk,
         model,
         GovernanceService.getPolicyManual(),
+        this.context  // 传递ContextManager以便访问ContextBuffer
       );
 
       const action: ProposedAction = {
@@ -96,9 +95,9 @@ export class AgentRuntime {
         }
         this.context.addMessage("assistant", result.output);
 
-        // 任务成功完成，更新所有ContextItem的重要性
-        for (const item of this.contextBuffer.export()) {
-          if (item.importance) {
+        // 任务成功完成，只更新被使用过的ContextItem的重要性
+        for (const item of this.context.getContextBuffer().export()) {
+          if (item.importance && item.importance.useCount > 0) {
             // 成功完成任务，增加成功计数
             item.importance.successCount++;
             item.importance.confidence = Math.min(1, item.importance.confidence + 0.05);
@@ -134,9 +133,9 @@ export class AgentRuntime {
           `Rejected by Governance: ${decision.reason}`,
         );
 
-        // 任务被拒绝，更新所有ContextItem的重要性（失败惩罚）
-        for (const item of this.contextBuffer.export()) {
-          if (item.importance) {
+        // 任务被拒绝，只更新被使用过的ContextItem的重要性（失败惩罚）
+        for (const item of this.context.getContextBuffer().export()) {
+          if (item.importance && item.importance.useCount > 0) {
             // 任务失败，增加失败计数
             item.importance.failureCount++;
             item.importance.confidence = Math.max(0, item.importance.confidence - 0.1);
@@ -159,7 +158,7 @@ export class AgentRuntime {
         console.log(chalk.green(`[SUCCESS] Result:\n${preview}`));
 
         // 更新ContextBuffer中相关项的重要性（标记为被使用）
-        for (const item of this.contextBuffer.export()) {
+        for (const item of this.context.getContextBuffer().export()) {
           if (result.output.includes(item.path)) {
             if (item.importance) {
               item.importance.useCount++;

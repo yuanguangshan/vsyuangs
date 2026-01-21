@@ -3,6 +3,7 @@ import { runLLM } from './llm';
 import { AgentPrompt } from './types';
 import type { AIRequestMessage } from '../core/validation';
 import { getUserConfig } from '../ai/client';
+import { ContextManager } from './contextManager';
 
 export class LLMAdapter {
   static async think(
@@ -10,8 +11,26 @@ export class LLMAdapter {
     mode: 'chat' | 'command' | 'command+exec' = 'chat',
     onChunk?: (chunk: string) => void,
     model?: string,
-    customSystemPrompt?: string
+    customSystemPrompt?: string,
+    contextManager?: ContextManager
   ): Promise<AgentThought> {
+    // 构建包含ContextBuffer内容的完整上下文
+    let fullMessages = [...messages];
+
+    if (contextManager) {
+      const contextBuffer = contextManager.getContextBuffer();
+      if (!contextBuffer.isEmpty()) {
+        // 获取ContextBuffer的完整提示
+        const contextPrompt = contextBuffer.buildPrompt('');
+
+        // 将ContextBuffer内容作为system消息添加到消息列表开头
+        fullMessages = [
+          { role: 'system', content: contextPrompt },
+          ...fullMessages
+        ];
+      }
+    }
+
     const prompt: AgentPrompt = {
       system: customSystemPrompt || `[SYSTEM PROTOCOL V2]
 - ROLE: AUTOMATED EXECUTION AGENT
@@ -37,7 +56,7 @@ EXECUTION RULES:
 
 Example Task: "count files"
 Your Output: {"action_type":"shell_cmd","reasoning":"count files","command":"ls | wc -l"}`,
-      messages,
+      messages: fullMessages,
     };
 
     const config = getUserConfig();
