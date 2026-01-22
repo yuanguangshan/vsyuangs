@@ -19,7 +19,7 @@ export class StreamMarkdownRenderer {
     private spinner: Ora | null = null;
     private startTime: number;
 
-    constructor(prefix: string = chalk.bold.blue('🤖 AI：'), spinner?: Ora) {
+    constructor(prefix: string = chalk.bold.cyan('🤖 AI：'), spinner?: Ora) {
         this.prefix = prefix;
         this.spinner = spinner || null;
         this.startTime = Date.now();
