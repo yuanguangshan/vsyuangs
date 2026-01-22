@@ -70,6 +70,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     const allFileNames = allFiles.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
                     webviewView.webview.postMessage({ type: 'fileTreeData', value: allFileNames });
                     break;
+                case 'readFile':
+                    await this.handleReadFile(webviewView, data.filePath, data.isReference || false);
+                    break;
                 case 'exportChat':
                     this.exportChatHistory();
                     break;
@@ -151,7 +154,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             );
 
-            // 发送上下文信息到UI
+            // 发送上下文信息到UI（但不自动弹出面板）
             this.sendContextToUI(runtime.getContextManager());
 
             this._messages.push({ role: 'assistant', content: fullAiResponse });
@@ -180,15 +183,74 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 value: items
             });
 
-            // 显示上下文面板
-            this._view.webview.postMessage({
-                type: 'showContextPanel'
-            });
-
             console.log(`[ChatViewProvider] Sent ${items.length} context items to UI`);
         } catch (error) {
             console.error('[ChatViewProvider] Error sending context to UI:', error);
         }
+    }
+
+    private async handleReadFile(webviewView: vscode.WebviewView, filePath: string, isReference: boolean = false) {
+        try {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) {
+                webviewView.webview.postMessage({ 
+                    type: 'error', 
+                    value: 'No workspace folder open' 
+                });
+                return;
+            }
+
+            const fileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
+            const document = await vscode.workspace.openTextDocument(fileUri);
+            const content = document.getText();
+            
+            // 发送文件内容到 UI
+            webviewView.webview.postMessage({
+                type: 'fileContent',
+                filePath: filePath,
+                content: content,
+                isReference: isReference
+            });
+            
+            // 只有不是引用时才自动分析
+            if (!isReference) {
+                const message = `请分析以下文件：${filePath}\n\n\`\`\`\`${this.getFileLanguage(filePath)}\n${content}\n\`\`\``;
+                await this.handleAgentTask(message);
+            }
+            
+        } catch (error: any) {
+            webviewView.webview.postMessage({ 
+                type: 'error', 
+                value: `Failed to read file: ${error.message}` 
+            });
+        }
+    }
+
+    private getFileLanguage(filePath: string): string {
+        const ext = filePath.split('.').pop()?.toLowerCase() || '';
+        const langMap: Record<string, string> = {
+            'js': 'javascript',
+            'ts': 'typescript',
+            'tsx': 'typescript',
+            'jsx': 'javascript',
+            'py': 'python',
+            'java': 'java',
+            'go': 'go',
+            'rs': 'rust',
+            'cpp': 'cpp',
+            'c': 'c',
+            'h': 'c',
+            'vue': 'vue',
+            'yaml': 'yaml',
+            'yml': 'yaml',
+            'json': 'json',
+            'md': 'markdown',
+            'html': 'html',
+            'css': 'css',
+            'sh': 'bash',
+            'bash': 'bash'
+        };
+        return langMap[ext] || 'text';
     }
 
     private async handleApplyDiff(diffData: any) {
