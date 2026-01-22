@@ -71,15 +71,16 @@
       ]
     }
   },
-  "scripts": {
+    "scripts": {
     "asbuild:debug": "asc src/engine/agent/governance/sandbox/core.as.ts --target debug",
     "asbuild:release": "asc src/engine/agent/governance/sandbox/core.as.ts --target release",
     "asbuild": "npm run asbuild:debug && npm run asbuild:release",
     "compile": "tsc -p ./",
     "bundle": "webpack --mode production && mkdir -p dist/webview && cp src/vscode/webview/sidebar.html dist/webview/ && cp node_modules/marked/marked.min.js dist/webview/",
     "build": "npm run asbuild && npm run bundle",
+    "build:package": "npm run build && npm run package",
     "package": "vsce package",
-    "vscode:prepublish": "npm run build",
+    "vscode:prepublish": "npm run asbuild && npm run bundle",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run build && npm run lint",
     "lint": "eslint src --ext ts",

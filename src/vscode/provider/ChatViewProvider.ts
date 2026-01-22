@@ -65,6 +65,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     const fileNames = files.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
                     webviewView.webview.postMessage({ type: 'suggestions', value: fileNames, trigger: '@' });
                     break;
+                case 'loadFileTree':
+                    const allFiles = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 500);
+                    const allFileNames = allFiles.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
+                    webviewView.webview.postMessage({ type: 'fileTreeData', value: allFileNames });
+                    break;
                 case 'exportChat':
                     this.exportChatHistory();
                     break;
