@@ -146,6 +146,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             );
 
+            // 发送上下文信息到UI
+            this.sendContextToUI(runtime.getContextManager());
+
             this._messages.push({ role: 'assistant', content: fullAiResponse });
             this._saveHistory();
             this._view?.webview.postMessage({ type: 'done' });
@@ -153,6 +156,33 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         } catch (error: any) {
             this._view.webview.postMessage({ type: 'error', value: error.message });
+        }
+    }
+
+    /**
+     * 发送上下文信息到UI
+     */
+    private sendContextToUI(contextManager: any) {
+        if (!this._view) return;
+
+        try {
+            const contextBuffer = contextManager.getContextBuffer();
+            const items = contextBuffer.export();
+
+            // 发送上下文数据到webview
+            this._view.webview.postMessage({
+                type: 'contextUpdate',
+                value: items
+            });
+
+            // 显示上下文面板
+            this._view.webview.postMessage({
+                type: 'showContextPanel'
+            });
+
+            console.log(`[ChatViewProvider] Sent ${items.length} context items to UI`);
+        } catch (error) {
+            console.error('[ChatViewProvider] Error sending context to UI:', error);
         }
     }
 

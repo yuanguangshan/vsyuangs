@@ -394,6 +394,251 @@
                 opacity: 0;
             }
         }
+
+        /* 上下文面板样式 */
+        #context-panel {
+            position: absolute;
+            top: 40px;
+            right: -400px;
+            width: 380px;
+            height: calc(100vh - 40px);
+            background: var(--vscode-sideBar-background);
+            border-left: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #context-panel.open {
+            right: 0;
+        }
+
+        .context-panel-header {
+            padding: 12px 16px;
+            background: var(--vscode-editor-background);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .context-panel-title {
+            font-weight: bold;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-panel-stats {
+            font-size: 0.75em;
+            opacity: 0.7;
+        }
+
+        .context-panel-close {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0.6;
+        }
+
+        .context-panel-close:hover {
+            opacity: 1;
+        }
+
+        .context-panel-controls {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .context-search {
+            flex: 1;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: var(--vscode-input-foreground);
+            font-size: 0.85em;
+            outline: none;
+        }
+
+        .context-search:focus {
+            border-color: var(--accent);
+        }
+
+        .context-filter-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 8px;
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.2s;
+        }
+
+        .context-filter-btn:hover,
+        .context-filter-btn.active {
+            background: var(--accent);
+            color: var(--vscode-button-foreground);
+            border-color: var(--accent);
+        }
+
+        .context-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .context-item {
+            background: var(--vscode-editor-background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .context-item:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .context-item-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .context-item-icon {
+            font-size: 1.2em;
+        }
+
+        .context-item-title {
+            flex: 1;
+            font-weight: 500;
+            font-size: 0.85em;
+            word-break: break-all;
+        }
+
+        .context-item-badges {
+            display: flex;
+            gap: 4px;
+        }
+
+        .context-badge {
+            background: rgba(127, 127, 127, 0.2);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.7em;
+            opacity: 0.8;
+        }
+
+        .context-badge.source_code {
+            background: rgba(86, 156, 214, 0.2);
+        }
+
+        .context-badge.log {
+            background: rgba(152, 195, 121, 0.2);
+        }
+
+        .context-badge.git {
+            background: rgba(229, 192, 123, 0.2);
+        }
+
+        .context-badge.diagnostics {
+            background: rgba(224, 108, 117, 0.2);
+        }
+
+        .context-item-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 0.75em;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+
+        .context-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .context-usage-bar {
+            height: 3px;
+            background: rgba(127, 127, 127, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .context-usage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--vscode-focusBorder), var(--accent));
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .context-item-preview {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            padding: 8px;
+            font-family: var(--vscode-editor-font-family);
+            font-size: 0.8em;
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .context-empty {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.5;
+            font-size: 0.9em;
+        }
+
+        /* 切换按钮 */
+        #context-toggle {
+            position: fixed;
+            top: 50px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            background: var(--vscode-button-background);
+            border: none;
+            border-radius: 6px;
+            color: var(--vscode-button-foreground);
+            cursor: pointer;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #context-toggle:hover {
+            opacity: 1;
+        }
+
+        #context-toggle.visible {
+            opacity: 0.8;
+        }
+
+        #context-toggle.visible:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -433,6 +678,40 @@
         </div>
     </div>
 
+    <!-- 上下文面板切换按钮 -->
+    <button id="context-toggle" title="Show Context">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path
+                d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5z" />
+        </svg>
+    </button>
+
+    <!-- 上下文面板 -->
+    <div id="context-panel">
+        <div class="context-panel-header">
+            <div class="context-panel-title">
+                <span>📋 Context</span>
+                <span class="context-panel-stats" id="context-stats">0 items</span>
+            </div>
+            <button class="context-panel-close" id="context-close">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path
+                        d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                </svg>
+            </button>
+        </div>
+        <div class="context-panel-controls">
+            <input type="text" class="context-search" id="context-search" placeholder="Search context...">
+            <button class="context-filter-btn active" data-filter="all">All</button>
+            <button class="context-filter-btn" data-filter="source_code">Code</button>
+            <button class="context-filter-btn" data-filter="log">Log</button>
+            <button class="context-filter-btn" data-filter="git">Git</button>
+        </div>
+        <div class="context-panel-content" id="context-panel-content">
+            <div class="context-empty">No context available</div>
+        </div>
+    </div>
+
     <script>
         const vscode = acquireVsCodeApi();
         const chatContainer = document.getElementById('chat-container');
@@ -441,12 +720,26 @@
         const exportBtn = document.getElementById('export-btn');
         const clearBtn = document.getElementById('clear-btn');
         const suggestionsList = document.getElementById('suggestions-list');
+        
+        // 上下文面板相关元素
+        const contextPanel = document.getElementById('context-panel');
+        const contextToggle = document.getElementById('context-toggle');
+        const contextClose = document.getElementById('context-close');
+        const contextPanelContent = document.getElementById('context-panel-content');
+        const contextSearch = document.getElementById('context-search');
+        const contextStats = document.getElementById('context-stats');
+        const contextFilterBtns = document.querySelectorAll('.context-filter-btn');
 
         let currentAiMessageElement = null;
         let currentAiRawText = "";
         let suggestionType = null; // '@' or '#'
         let selectedSuggestionIndex = -1;
         let currentSuggestions = [];
+        
+        // 上下文相关状态
+        let currentContextItems = [];
+        let currentFilter = 'all';
+        let currentSearchQuery = '';
 
         // 输入框高度自动伸缩
         userInput.addEventListener('input', (e) => {
@@ -913,8 +1206,25 @@
                         addMessage('❌ Diff application error: ' + message.value, 'system');
                     }
                     break;
+                case 'contextUpdate':
+                    // 更新上下文数据
+                    if (typeof updateContextItems === 'function') {
+                        updateContextItems(message.value);
+                    }
+                    break;
+                case 'showContextPanel':
+                    // 显示上下文面板
+                    if (typeof showContextPanel === 'function') {
+                        showContextPanel();
+                    }
+                    break;
             }
         });
+
+        // 初始化上下文面板
+        if (typeof setupContextPanel === 'function') {
+            setupContextPanel();
+        }
     </script>
 </body>
 
