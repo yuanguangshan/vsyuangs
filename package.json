@@ -49,6 +49,11 @@
         "command": "yuangs.clearChat",
         "title": "Clear Chat History",
         "icon": "$(clear-all)"
+      },
+      {
+        "command": "yuangs.askAI",
+        "title": "Ask Yuangs AI",
+        "icon": "$(comment-discussion)"
       }
     ],
     "menus": {

@@ -375,6 +375,25 @@
         .final-render {
             /* 最终渲染完成后的样式 */
         }
+
+        /* 光标闪烁效果 */
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--text-main);
+            margin-left: 4px;
+            animation: blink 1s step-start infinite;
+            vertical-align: middle;
+            opacity: 0.8;
+            border-radius: 1px;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 
@@ -807,24 +826,30 @@
                     if (!currentAiMessageElement) {
                         // 创建AI消息容器
                         const aiMessageDiv = document.createElement('div');
-                        aiMessageDiv.className = 'message ai-message streaming-draft'; // 添加草稿态类
+                        aiMessageDiv.className = 'message ai-message'; // 直接使用最终样式
+                        // aiMessageDiv.style.minHeight = '24px'; // 防止高度塌陷
                         chatContainer.appendChild(aiMessageDiv);
-
-                        // 使用预格式化文本元素，避免渲染抖动
-                        const preElement = document.createElement('pre');
-                        preElement.className = 'streaming-content';
-                        aiMessageDiv.appendChild(preElement);
-
-                        // 更新引用指向pre元素，用于后续更新
-                        currentAiMessageElement = preElement;
+                        currentAiMessageElement = aiMessageDiv;
                     }
 
                     currentAiRawText += message.value;
 
-                    // 在流式传输期间，只更新预格式化文本内容，避免markdown渲染引起的抖动
-                    currentAiMessageElement.textContent = currentAiRawText;
+                    // 实时 Markdown 渲染
+                    // 技巧：如果代码块未闭合，手动临时闭合它以保证渲染正确
+                    let textToRender = currentAiRawText;
+                    const codeBlockCount = (textToRender.match(/```/g) || []).length;
+                    if (codeBlockCount % 2 !== 0) {
+                        textToRender += '\n```';
+                    }
 
-                    scrollToBottom();
+                    // 渲染内容并添加光标
+                    currentAiMessageElement.innerHTML = marked.parse(textToRender) + '<span class="cursor"></span>';
+
+                    // 平滑滚动到底部
+                    // 使用 requestAnimationFrame 优化滚动性能
+                    requestAnimationFrame(() => {
+                        scrollToBottom();
+                    });
                     break;
                 case 'history':
                     chatContainer.innerHTML = '';
@@ -837,23 +862,18 @@
                     }
                     break;
                 case 'done':
-                    // 流式传输结束，转换为最终渲染
-                    if (isStreaming && currentAiMessageElement && currentAiRawText) {
+                    // 流式传输结束
+                    if (isStreaming && currentAiMessageElement) {
                         isStreaming = false;
 
-                        // 找到父容器（真正的ai-message div）
-                        let parentContainer = currentAiMessageElement.parentElement;
-                        if (parentContainer && parentContainer.classList.contains('ai-message')) {
-                            // 使用marked解析完整内容并替换预格式化文本
-                            parentContainer.innerHTML = marked.parse(currentAiRawText);
-
-                            // 重新处理diff块
-                            processDiffBlocks(parentContainer);
-
-                            // 移除草稿态类并添加最终渲染样式
-                            parentContainer.classList.remove('streaming-draft');
-                            parentContainer.classList.add('final-render');
-                        }
+                        // 移除光标，进行最终渲染
+                        currentAiMessageElement.innerHTML = marked.parse(currentAiRawText);
+                        
+                        // 处理diff块和其他后处理
+                        processDiffBlocks(currentAiMessageElement);
+                        
+                        // 添加淡入效果或其他完成动效
+                        currentAiMessageElement.classList.add('final-render');
                     }
 
                     currentAiMessageElement = null;

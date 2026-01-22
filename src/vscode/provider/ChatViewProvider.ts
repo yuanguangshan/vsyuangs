@@ -1,9 +1,20 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { AgentRuntime } from '../../engine/agent/AgentRuntime';
+import { VSCodeAgentRuntime } from '../core/runtime';
 import { GovernanceService } from '../../engine/agent/governance';
 
+/**
+ * ChatView Provider - 侧边栏聊天视图提供者
+ * 
+ * 职责：
+ * - 管理 Webview UI 的生命周期
+ * - 维护聊天历史记录
+ * - 提供用户输入流式展示
+ * - 通过 VSCodeAgentRuntime 执行 AI 任务
+ * 
+ * 注意：不负责 context 构造，只负责 UI 层
+ */
 export class ChatViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'yuangs.chatView';
     private _view?: vscode.WebviewView;
@@ -12,8 +23,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     constructor(
         private readonly _context: vscode.ExtensionContext,
     ) {
+        console.log('[ChatViewProvider] Initializing...');
         // 从 workspaceState 恢复历史记录
         this._messages = this._context.workspaceState.get<{ role: string, content: string }[]>('chatHistory', []);
+        console.log(`[ChatViewProvider] Restored ${this._messages.length} messages from history`);
     }
 
     public resolveWebviewView(
@@ -21,6 +34,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken,
     ) {
+        console.log('[ChatViewProvider] Resolving webview view...');
         this._view = webviewView;
 
         webviewView.webview.options = {
@@ -33,6 +47,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         try {
             webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
         } catch (error: any) {
+            console.error('[ChatViewProvider] Error loading view:', error);
             webviewView.webview.html = `<html><body><h3>Error loading view</h3><pre>${error.message}</pre></body></html>`;
         }
 
@@ -42,6 +57,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         webviewView.webview.onDidReceiveMessage(async data => {
             switch (data.type) {
                 case 'ask':
+                    console.log('[ChatViewProvider] User asked question');
                     this.handleAgentTask(data.value);
                     break;
                 case 'getFiles':
@@ -79,27 +95,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
     }
 
+    /**
+     * 从 UI 触发的聊天执行
+     * 
+     * 这是 ChatViewProvider 的主要公共 API
+     * 未来 AskAI 命令也可以通过事件机制调用此方法
+     */
+    public async runChatFromUI(userInput: string) {
+        console.log(`[ChatViewProvider] Running chat from UI: ${userInput.substring(0, 50)}...`);
+        await this.handleAgentTask(userInput);
+    }
+
     private async handleAgentTask(userInput: string) {
-        if (!this._view) return;
+        if (!this._view) {
+            console.warn('[ChatViewProvider] No webview available');
+            return;
+        }
 
         try {
-            const editor = vscode.window.activeTextEditor;
-            let finalInput = userInput;
-
-            if (editor && !editor.selection.isEmpty) {
-                const selection = editor.document.getText(editor.selection);
-                const fileName = path.basename(editor.document.fileName);
-                finalInput = `Context from ${fileName}:\n\`\`\`\n${selection}\n\`\`\`\n\nTask: ${userInput}`;
-            } else {
-                const workspaceFolders = vscode.workspace.workspaceFolders;
-                if (workspaceFolders) {
-                    const rootUri = workspaceFolders[0].uri;
-                    const files = await vscode.workspace.fs.readDirectory(rootUri);
-                    const fileNames = files.map(([name, type]) => `- ${name}${type === vscode.FileType.Directory ? '/' : ''}`).join('\n');
-                    finalInput = `Workspace Files:\n${fileNames}\n\nTask: ${userInput}`;
-                }
-            }
-
+            console.log('[ChatViewProvider] Starting AI task...');
             this._messages.push({ role: 'user', content: userInput });
             this._saveHistory();
 
@@ -120,17 +134,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             };
 
-            const runtime = new AgentRuntime({
-                history: this._messages.map(m => ({
-                    role: m.role as any,
-                    content: m.content
-                }))
-            });
+            // 使用 VSCodeAgentRuntime 替代原始的 AgentRuntime
+            const runtime = new VSCodeAgentRuntime();
 
             let fullAiResponse = '';
-            await runtime.run(
-                finalInput,
-                'chat',
+            await runtime.runChat(
+                userInput,
                 (chunk) => {
                     fullAiResponse += chunk;
                     this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './provider/ChatViewProvider';
+import { askAICommand } from './commands/askAI';
 
 export function activate(context: vscode.ExtensionContext) {
     try {
@@ -11,6 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, provider)
         );
 
+        // 注册现有命令
         let applyEdit = vscode.commands.registerCommand('yuangs.applyEdit', () => {
             vscode.window.showInformationMessage('Apply Edit triggered!');
         });
@@ -20,7 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage('Chat history cleared.');
         });
 
-        context.subscriptions.push(applyEdit, clearChat);
+        // 注册新的 askAI 命令
+        let askAI = vscode.commands.registerCommand('yuangs.askAI', askAICommand);
+
+        context.subscriptions.push(applyEdit, clearChat, askAI);
     } catch (error) {
         console.error('Failed to activate Yuangs AI Agent extension:', error);
     }
