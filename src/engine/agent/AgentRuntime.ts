@@ -148,7 +148,7 @@ export class AgentRuntime {
       if (thought.isDone || action.type === "answer") {
         const result = await ToolExecutor.execute(action as any);
         if (!onChunk) {
-          console.log(chalk.green(`\n🤖 AI：${result.output}\n`));
+          console.log(chalk.green(`\n\n\n🤖 AI：${result.output}\n`));
         }
         this.context.addMessage("assistant", result.output);
 
