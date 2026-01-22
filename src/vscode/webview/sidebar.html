@@ -26,7 +26,6 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden;
         }
 
         /* 顶部装饰线与标题栏 */
@@ -62,6 +61,8 @@
         .header-actions {
             display: flex;
             gap: 8px;
+            align-items: center;
+            z-index: 2000;
         }
 
         .icon-btn {
@@ -80,6 +81,20 @@
         .icon-btn:hover {
             opacity: 1;
             background: var(--vscode-toolbar-hoverBackground);
+        }
+
+        .icon-btn.context-btn {
+            opacity: 1 !important;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: 1px solid var(--vscode-focusBorder);
+            z-index: 2000;
+            padding: 6px 12px;
+        }
+
+        .icon-btn.context-btn:hover {
+            opacity: 1;
+            background: var(--vscode-button-hoverBackground);
         }
 
         #chat-container {
@@ -397,7 +412,7 @@
 
         /* 上下文面板样式 */
         #context-panel {
-            position: absolute;
+            position: fixed;
             top: 40px;
             right: -400px;
             width: 380px;
@@ -608,37 +623,6 @@
             font-size: 0.9em;
         }
 
-        /* 切换按钮 */
-        #context-toggle {
-            position: fixed;
-            top: 50px;
-            right: 12px;
-            width: 32px;
-            height: 32px;
-            background: var(--vscode-button-background);
-            border: none;
-            border-radius: 6px;
-            color: var(--vscode-button-foreground);
-            cursor: pointer;
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        #context-toggle:hover {
-            opacity: 1;
-        }
-
-        #context-toggle.visible {
-            opacity: 0.8;
-        }
-
-        #context-toggle.visible:hover {
-            opacity: 1;
-        }
     </style>
 </head>
 
@@ -646,6 +630,13 @@
     <header>
         <div class="header-title">YUANGS AI</div>
         <div class="header-actions">
+            <button class="icon-btn context-btn" id="context-toggle" title="Show Context Panel" style="z-index: 2000;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path
+                        d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5z" />
+                </svg>
+                <span style="margin-left: 4px; font-size: 0.8em;">Context</span>
+            </button>
             <button class="icon-btn" id="export-btn" title="Export Chat History (.md)">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <path
@@ -678,13 +669,6 @@
         </div>
     </div>
 
-    <!-- 上下文面板切换按钮 -->
-    <button id="context-toggle" title="Show Context">
-        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
-            <path
-                d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5z" />
-        </svg>
-    </button>
 
     <!-- 上下文面板 -->
     <div id="context-panel">
@@ -1428,133 +1412,6 @@
         function hideContextPanel() {
             contextPanel.classList.remove('open');
             contextToggle.classList.remove('visible');
-        }
-    </script>
-        // 初始化上下文面板
-        if (typeof setupContextPanel === 'function') {
-            setupContextPanel();
-        }
-
-        // === 上下文面板功能函数 ===
-
-        // 上下文面板开关
-        function setupContextPanel() {
-            // 上下文面板开关
-            contextToggle.addEventListener('click', () => {
-                contextPanel.classList.toggle('open');
-                contextToggle.classList.toggle('visible');
-            });
-
-            contextClose.addEventListener('click', () => {
-                contextPanel.classList.remove('open');
-                contextToggle.classList.remove('visible');
-            });
-
-            // 过滤按钮事件
-            contextFilterBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    // 移除所有active类
-                    contextFilterBtns.forEach(b => b.classList.remove('active'));
-                    // 添加active类到当前按钮
-                    btn.classList.add('active');
-                    // 更新过滤器
-                    currentFilter = btn.dataset.filter;
-                    // 重新渲染
-                    renderContextItems();
-                });
-            });
-
-            // 搜索功能
-            contextSearch.addEventListener('input', (e) => {
-                currentSearchQuery = e.target.value.toLowerCase();
-                renderContextItems();
-            });
-        }
-
-        // 更新上下文数据
-        function updateContextItems(items) {
-            currentContextItems = items || [];
-            renderContextItems();
-        }
-
-        // 渲染上下文项目
-        function renderContextItems() {
-            // 过滤上下文项目
-            let filteredItems = currentContextItems.filter(item => {
-                // 类型过滤
-                if (currentFilter !== 'all' && item.semantic !== currentFilter) {
-                    return false;
-                }
-                
-                // 搜索过滤
-                if (currentSearchQuery) {
-                    const searchText = (item.path + item.summary + item.content).toLowerCase();
-                    if (!searchText.includes(currentSearchQuery)) {
-                        return false;
-                    }
-                }
-                
-                return true;
-            });
-
-            // 更新统计信息
-            contextStats.textContent = `${filteredItems.length} items`;
-            
-            // 清空并重新渲染
-            contextPanelContent.innerHTML = '';
-            
-            if (filteredItems.length === 0) {
-                contextPanelContent.innerHTML = '<div class="context-empty">No context available</div>';
-                return;
-            }
-
-            // 渲染每个上下文项目
-            filteredItems.forEach(item => {
-                const itemElement = createContextItemElement(item);
-                contextPanelContent.appendChild(itemElement);
-            });
-        }
-
-        // 创建单个上下文项目元素
-        function createContextItemElement(item) {
-            const div = document.createElement('div');
-            div.className = 'context-item';
-            
-            // 获取图标
-            const icon = getContextIcon(item.semantic);
-            
-            // 获取重要性百分比
-            const importancePercent = item.importance ? 
-                (item.importance.confidence * 100).toFixed(0) : '50';
-            
-            // 获取标签HTML
-            const badgesHtml = createContextBadges(item);
-            
-            // 获取统计信息
-            const statsHtml = createContextStats(item);
-            
-            // 获取内容预览
-            const previewText = item.summary || item.content.substring(0, 200);
-            
-            div.innerHTML = `
-                <div class="context-item-header">
-                    <span class="context-item-icon">${icon}</span>
-                    <span class="context-item-title">${item.alias || item.path}</span>
-                    <div class="context-item-badges">${badgesHtml}</div>
-                </div>
-                <div class="context-item-stats">${statsHtml}</div>
-                <div class="context-usage-bar">
-                    <div class="context-usage-fill" style="width: ${importancePercent}%"></div>
-                </div>
-                <div class="context-item-preview">${previewText}</div>
-            `;
-            
-            // 添加点击事件
-            div.addEventListener('click', () => {
-                console.log('Context item clicked:', item);
-            });
-            
-            return div;
         }
     </script>
 </body>
