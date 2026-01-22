@@ -69,7 +69,7 @@ export function snapshotFromBuffer(buffer: { export(): ContextItem[] }): Context
   return {
     items: items.map((item: ContextItem) => ({
       path: item.path,
-      hash: calculateHash(item.content), // 简单的哈希计算
+      hash: item.summarySourceHash || item.stableId || calculateHash(item.content), // 优先使用稳定的hash值
       tokens: item.tokens,
       semantic: item.semantic,
       summaryQuality: item.summaryQuality

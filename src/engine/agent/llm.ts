@@ -34,10 +34,26 @@ export async function runLLM({
 
     if (stream) {
         let raw = '';
+        let buffer = '';
+        let lastFlush = Date.now();
+
         await callAI_Stream(prompt.messages, model, (chunk) => {
             raw += chunk;
-            onChunk?.(chunk);
+            buffer += chunk;
+
+            // 节流：每50ms最多触发一次onChunk，约20FPS
+            if (Date.now() - lastFlush > 50) {
+                onChunk?.(buffer);
+                buffer = '';
+                lastFlush = Date.now();
+            }
         });
+
+        // 确保最后的缓冲区内容也被发送
+        if (buffer) {
+            onChunk?.(buffer);
+        }
+
         return {
             rawText: raw,
             latencyMs: Date.now() - start,

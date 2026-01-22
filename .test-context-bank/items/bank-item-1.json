@@ -1,0 +1,11 @@
+{
+  "type": "file",
+  "path": "/test/bank-file.ts",
+  "stableId": "test-stable-id-123",
+  "content": "console.log(\"from bank\");",
+  "id": "bank-item-1",
+  "source": "project",
+  "firstSeenAt": 1769095454347,
+  "lastUsedAt": 1769095454347,
+  "tokens": 10
+}

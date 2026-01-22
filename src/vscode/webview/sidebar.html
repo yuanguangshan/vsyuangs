@@ -354,6 +354,27 @@
             opacity: 0.7;
             font-size: 1.1em;
         }
+
+        /* 流式传输期间的草稿态样式 */
+        .streaming-draft {
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .streaming-content {
+            margin: 0;
+            padding: 0;
+            font-family: inherit;
+            line-height: inherit;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .final-render {
+            /* 最终渲染完成后的样式 */
+        }
     </style>
 </head>
 
@@ -766,6 +787,9 @@
             }
         });
 
+        // 添加一个标志来标识当前是否正在流式接收AI消息
+        let isStreaming = false;
+
         window.addEventListener('message', event => {
             const message = event.data;
             const loader = document.getElementById('ai-loader');
@@ -776,15 +800,30 @@
                     break;
                 case 'aiChunk':
                     if (loader) loader.remove();
+
+                    // 开始流式接收
+                    isStreaming = true;
+
                     if (!currentAiMessageElement) {
-                        currentAiMessageElement = document.createElement('div');
-                        currentAiMessageElement.className = 'message ai-message';
-                        chatContainer.appendChild(currentAiMessageElement);
+                        // 创建AI消息容器
+                        const aiMessageDiv = document.createElement('div');
+                        aiMessageDiv.className = 'message ai-message streaming-draft'; // 添加草稿态类
+                        chatContainer.appendChild(aiMessageDiv);
+
+                        // 使用预格式化文本元素，避免渲染抖动
+                        const preElement = document.createElement('pre');
+                        preElement.className = 'streaming-content';
+                        aiMessageDiv.appendChild(preElement);
+
+                        // 更新引用指向pre元素，用于后续更新
+                        currentAiMessageElement = preElement;
                     }
+
                     currentAiRawText += message.value;
-                    currentAiMessageElement.innerHTML = marked.parse(currentAiRawText);
-                    // 实时处理 diff 块
-                    processDiffBlocks(currentAiMessageElement);
+
+                    // 在流式传输期间，只更新预格式化文本内容，避免markdown渲染引起的抖动
+                    currentAiMessageElement.textContent = currentAiRawText;
+
                     scrollToBottom();
                     break;
                 case 'history':
@@ -798,6 +837,25 @@
                     }
                     break;
                 case 'done':
+                    // 流式传输结束，转换为最终渲染
+                    if (isStreaming && currentAiMessageElement && currentAiRawText) {
+                        isStreaming = false;
+
+                        // 找到父容器（真正的ai-message div）
+                        let parentContainer = currentAiMessageElement.parentElement;
+                        if (parentContainer && parentContainer.classList.contains('ai-message')) {
+                            // 使用marked解析完整内容并替换预格式化文本
+                            parentContainer.innerHTML = marked.parse(currentAiRawText);
+
+                            // 重新处理diff块
+                            processDiffBlocks(parentContainer);
+
+                            // 移除草稿态类并添加最终渲染样式
+                            parentContainer.classList.remove('streaming-draft');
+                            parentContainer.classList.add('final-render');
+                        }
+                    }
+
                     currentAiMessageElement = null;
                     currentAiRawText = "";
                     break;
