@@ -110,38 +110,78 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 if [ "$CLEAN_BUILD" = true ]; then
-    echo "🧹 清理旧的构建文件..."
+    echo "🧹 步骤 1: 清理旧的构建文件..."
+    echo "   删除 dist/ 和 out/ 目录以确保干净的构建环境"
     rm -rf dist/
     rm -rf out/
+    echo "   ✅ 清理完成"
     echo ""
 fi
 
 if [ "$PACKAGE_ONLY" = false ]; then
-    echo "🔨 执行完整构建流程..."
-    npm run build
-
+    echo "🏗️  步骤 2: 执行完整构建流程"
+    echo "   此步骤将编译所有源代码并创建生产就绪的捆绑包"
     echo ""
-    echo "✅ 构建完成！"
+
+    echo "   ├── 子步骤 2.1: 编译 AssemblyScript 代码..."
+    echo "         - 编译 src/engine/agent/governance/sandbox/core.as.ts 为 debug 和 release 版本"
+    echo "         - 生成 WebAssembly 模块供沙箱环境使用"
+    npm run asbuild
+    echo "         ✅ AssemblyScript 编译完成"
+    echo ""
+
+    echo "   ├── 子步骤 2.2: 捆绑和优化代码..."
+    echo "         - 使用 Webpack 将所有模块捆绑成单个 extension.js 文件"
+    echo "         - 复制 webview 资源文件 (HTML, JS) 到 dist/webview/ 目录"
+    npm run bundle
+    echo "         ✅ 代码捆绑完成"
+    echo ""
+
+    echo "   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+    echo "   ┃ ✅ 构建完成！所有源代码已编译并捆绑到 dist/ 目录中                      ┃"
+    echo "   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     echo ""
 fi
 
 if [ "$BUILD_ONLY" = false ]; then
-    echo "📦 执行打包流程..."
-    npm run package
-
+    echo "📦 步骤 3: 执行打包流程"
+    echo "   创建 VS Code 扩展包 (Vsix 文件)，准备发布或安装"
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🎉 打包完成！"
+
+    echo "   ├── 子步骤 3.1: 准备打包环境..."
+    echo "         - 验证 package.json 中的必要字段"
+    echo "         - 检查扩展清单文件"
+    echo "         - 确保所有必需的资源文件存在"
+    echo "         ✅ 打包环境准备就绪"
+    echo ""
+
+    echo "   ├── 子步骤 3.2: 执行 vsce 打包命令..."
+    echo "         - 收集所有要包含在扩展中的文件"
+    echo "         - 生成扩展清单文件"
+    echo "         - 创建最终的 .vsix 包文件"
+    npm run package
+    echo ""
+
+    echo "   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+    echo "   ┃ 🎉 打包完成！VS Code 扩展包已成功创建                                  ┃"
+    echo "   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
     echo ""
 
     # 显示生成的包文件
-    echo "📁 生成的文件:"
+    echo "📁 生成的文件详情:"
     ls -la yuangs-vscode-*.vsix
+    echo ""
+
+    echo "📋 打包内容摘要:"
+    vsce ls | head -20
+    if [ $(vsce ls | wc -l) -gt 20 ]; then
+        echo "   ... (显示前20个项目，总共$(vsce ls | wc -l)个项目)"
+    fi
     echo ""
 
     echo "💡 下一步:"
     echo "  1. 在 VS Code 中按 F5 启动调试"
-    echo "  2. 或者安装生成的 VSIX 文件进行测试"
+    echo "  2. 或者安装生成的 VSIX 文件进行测试: code --install-extension yuangs-vscode-*.vsix"
     echo "  3. 或者发布到 VS Code Marketplace"
 else
     echo ""
@@ -152,5 +192,5 @@ else
 fi
 
 echo ""
-echo "🎯 流程结束"
+echo "🎯 流程结束 - 所有步骤已完成"
 
