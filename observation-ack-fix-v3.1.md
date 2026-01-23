@@ -389,6 +389,147 @@ THINK
 
 ---
 
+## 六、VSCode 聊天停止功能实现
+
+### 功能概述
+
+在 VSCode 聊天界面中添加了停止按钮，允许用户在 AI 生成过程中强制停止。
+
+### 实现细节
+
+#### 1. UI 层（sidebar.html）
+
+- 添加了红色停止按钮（带脉冲动画）
+- 停止按钮仅在生成过程中显示
+- 用户输入框在生成时禁用
+
+```javascript
+// 停止按钮样式
+#stop-btn {
+  background: var(--vscode-errorForeground);
+  animation: pulse 1.5s infinite;
+}
+
+// 发送时禁用输入框并显示停止按钮
+userInput.disabled = true;
+sendBtn.style.display = "none";
+stopBtn.classList.add("visible");
+```
+
+#### 2. ChatViewProvider 层（ChatViewProvider.ts）
+
+- 添加 `AbortController` 管理器
+- 处理 `stop` 消息类型
+- 取消正在运行的任务
+
+```typescript
+private _abortController: AbortController | null = null;
+
+case 'stop':
+  if (this._abortController) {
+    this._abortController.abort();
+    this._abortController = null;
+  }
+  break;
+
+// 每次新任务前取消旧任务
+if (this._abortController) {
+  this._abortController.abort();
+}
+this._abortController = new AbortController();
+```
+
+#### 3. VSCodeAgentRuntime 层（runtime.ts）
+
+- 添加 `abortSignal` 参数到 `runChat` 方法
+- 传递信号到底层 AgentRuntime
+
+#### 4. AgentRuntime 层（AgentRuntime.ts）
+
+- 添加 `abortSignal` 参数到 `run` 方法
+- 在关键位置检查取消信号
+- 抛出明确的取消错误
+
+```typescript
+if (abortSignal?.aborted) {
+  console.log(chalk.red('\n🛑 Execution aborted by user'));
+  throw new Error('Execution aborted by user');
+}
+```
+
+#### 5. LLM 层（llm.ts, llmAdapter.ts）
+
+- 添加 `abortSignal` 参数到 `runLLM` 和 `think` 方法
+- 在流式传输时检查取消信号
+- 传递信号到 AI 客户端
+
+#### 6. AI 客户端层（client.ts）
+
+- 添加 `abortSignal` 参数到 `callAI_Stream` 方法
+- 在每个 chunk 处理时检查取消信号
+- 使用 AbortController 中断 HTTP 请求
+
+```typescript
+const controller = new AbortController();
+if (abortSignal) {
+  abortSignal.addEventListener('abort', () => {
+    controller.abort();
+  });
+}
+
+const response = await axios({
+  signal: controller.signal,
+  // ...
+});
+
+// 在流处理中检查
+if (controller.signal.aborted) {
+  reject(new Error('Stream request aborted'));
+}
+```
+
+### 修改的文件
+
+**停止功能相关：**
+- `src/vscode/webview/sidebar.html` - 添加停止按钮和样式
+- `src/vscode/provider/ChatViewProvider.ts` - 添加 AbortController 管理
+- `src/vscode/core/runtime.ts` - 传递取消信号
+- `src/engine/agent/AgentRuntime.ts` - 添加取消检查
+- `src/engine/agent/llmAdapter.ts` - 传递取消信号
+- `src/engine/agent/llm.ts` - 检查取消信号
+- `src/engine/ai/client.ts` - 实现流取消
+
+**Observation ACK 修复相关：**
+- `src/engine/agent/types.ts` - Observation 类型定义
+- `src/engine/agent/contextManager.ts` - Observation 类型分级
+- `src/engine/agent/llmAdapter.ts` - Prompt v3.1 升级
+- `src/engine/agent/AgentRuntime.ts` - 停止态 + 安全 ACK
+
+### 测试建议
+
+#### 测试停止功能
+
+1. **正常停止**
+   - 输入一个复杂问题
+   - 等待 AI 开始生成
+   - 点击停止按钮
+   - 预期：生成立即停止，显示"🛑 Generation stopped by user"
+
+2. **连续任务**
+   - 发送第一个任务
+   - 在生成中发送第二个任务
+   - 预期：第一个任务被取消，第二个任务开始
+
+3. **UI 状态**
+   - 发送消息：输入框禁用，停止按钮显示
+   - 完成或停止：输入框启用，停止按钮隐藏
+
+#### 测试 Observation ACK 修复
+
+见前文测试建议章节。
+
+---
+
 **修复完成时间**: 2026-01-23  
 **版本**: v3.1  
 **状态**: ✅ 已实施

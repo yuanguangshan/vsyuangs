@@ -49,6 +49,7 @@ export class AgentRuntime {
     mode: "chat" | "command" = "chat",
     onChunk?: (chunk: string) => void,
     model?: string,
+    abortSignal?: AbortSignal,
   ) {
     // ✅ 终止态检查（HALT）- v3.1 核心修复
     if (userInput && userInput.trim().toLowerCase() === 'stop') {
@@ -183,6 +184,12 @@ export class AgentRuntime {
         }
       }
 
+      // 检查是否被取消
+      if (abortSignal?.aborted) {
+        console.log(chalk.red('\n🛑 Execution aborted by user'));
+        throw new Error('Execution aborted by user');
+      }
+
       const thought = await LLMAdapter.think(
         messages,
         mode as any,
@@ -190,6 +197,7 @@ export class AgentRuntime {
         model,
         GovernanceService.getPolicyManual(),
         this.context, // 传递ContextManager以便访问ContextBuffer
+        abortSignal // ✅ 传递取消信号到 LLMAdapter
       );
 
       // === Observation Acknowledgement Gate (v3.1 - 安全版) ===

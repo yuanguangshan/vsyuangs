@@ -73,9 +73,12 @@ export async function askAI(prompt: string, model?: string): Promise<string> {
     }
 }
 
-export async function callAI_Stream(messages: AIRequestMessage[], model: string | undefined, onChunk: (content: string) => void): Promise<void> {
+export async function callAI_Stream(messages: AIRequestMessage[], model: string | undefined, onChunk: (content: string) => void, abortSignal?: AbortSignal): Promise<void> {
     const config = getUserConfig();
     const url = config.aiProxyUrl || DEFAULT_AI_PROXY_URL;
+
+    // ✅ 使用传入的 AbortSignal，或创建新的
+    const controller = abortSignal ? { signal: abortSignal, abort: () => {} } : new AbortController();
 
     const response = await axios({
         method: 'post',
@@ -86,20 +89,23 @@ export async function callAI_Stream(messages: AIRequestMessage[], model: string 
             stream: true
         },
         responseType: 'stream',
+        signal: controller.signal,
         headers: {
             'Content-Type': 'application/json',
             'X-Client-ID': 'vscode',
-            'Origin': 'https://cli.want.biz',
-            'Referer': 'https://cli.want.biz/',
-            'account': config.accountType || DEFAULT_ACCOUNT_TYPE,
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
-            'Accept': 'application/json'
         }
     });
 
     return new Promise((resolve, reject) => {
         let buffer = '';
-        response.data.on('data', (chunk: Buffer) => {
+        
+        const handleChunk = (chunk: Buffer) => {
+            // ✅ 检查取消信号
+            if (controller.signal.aborted) {
+                reject(new Error('Stream request aborted'));
+                return;
+            }
+
             buffer += chunk.toString();
             let lines = buffer.split('\n');
             buffer = lines.pop() || '';
@@ -119,8 +125,14 @@ export async function callAI_Stream(messages: AIRequestMessage[], model: string 
                     } catch (e) { }
                 }
             }
+        };
+
+        response.data.on('data', handleChunk);
+        
+        response.data.on('error', (error: any) => {
+            reject(error);
         });
-        response.data.on('error', reject);
+        
         response.data.on('end', () => {
             resolve();
         });

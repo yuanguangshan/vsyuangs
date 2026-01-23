@@ -34,12 +34,15 @@ export class VSCodeAgentRuntime {
    * @param userInput 用户输入
    * @param stream 流式输出回调
    * @param model 模型名称（可选）
+   * @param onContextInitialized 上下文初始化回调
+   * @param abortSignal 取消信号
    */
   async runChat(
     userInput: string,
     stream?: (chunk: string) => void,
     model?: string,
-    onContextInitialized?: () => void
+    onContextInitialized?: () => void,
+    abortSignal?: AbortSignal
   ) {
     try {
       console.log('[VSCodeRuntime] Starting chat execution...');
@@ -71,8 +74,8 @@ export class VSCodeAgentRuntime {
       // 启动 VS Code 事件监听器
       this.contextAdapter.setupEventListeners();
 
-      // 运行 AgentRuntime
-      await this.runtime.run(userInput, 'chat', stream, model);
+      // 运行 AgentRuntime（传递取消信号）
+      await this.runtime.run(userInput, 'chat', stream, model, abortSignal);
 
       console.log('[VSCodeRuntime] Chat execution completed');
       return this.runtime;

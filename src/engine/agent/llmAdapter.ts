@@ -15,7 +15,8 @@ export class LLMAdapter {
     onChunk?: (chunk: string) => void,
     model?: string,
     customSystemPrompt?: string,
-    contextManager?: ContextManager
+    contextManager?: ContextManager,
+    abortSignal?: AbortSignal
   ): Promise<AgentThought> {
     // 生成唯一的响应ID用于引用跟踪
     const responseId = randomUUID();
@@ -115,7 +116,8 @@ Your Output: {"action_type":"shell_cmd","reasoning":"count files","command":"ls 
       prompt,
       model: finalModel,
       stream: !!onChunk,
-      onChunk
+      onChunk,
+      abortSignal // ✅ 传递取消信号到 runLLM
     });
 
     // 解析响应并处理Context引用

@@ -302,6 +302,41 @@
         opacity: 0.9;
       }
 
+      #stop-btn {
+        background: var(--vscode-errorForeground);
+        color: var(--vscode-button-foreground);
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.2s;
+        animation: pulse 1.5s infinite;
+      }
+
+      #stop-btn:hover {
+        opacity: 0.8;
+      }
+
+      #stop-btn.visible {
+        display: flex;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(235, 86, 86, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 6px rgba(235, 86, 86, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(235, 86, 86, 0);
+        }
+      }
+
       .typing-indicator {
         display: flex;
         gap: 4px;
@@ -857,6 +892,13 @@
             />
           </svg>
         </button>
+        <button id="stop-btn" title="Stop Generation">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path
+              d="M4 4h8v8H4V4z"
+            />
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -927,6 +969,7 @@
       const chatContainer = document.getElementById("chat-container");
       const userInput = document.getElementById("user-input");
       const sendBtn = document.getElementById("send-btn");
+      const stopBtn = document.getElementById("stop-btn");
       const exportBtn = document.getElementById("export-btn");
       const clearBtn = document.getElementById("clear-btn");
       const suggestionsList = document.getElementById("suggestions-list");
@@ -1276,6 +1319,9 @@
           userInput.style.height = "auto";
           currentAiMessageElement = null;
           currentAiRawText = "";
+          userInput.disabled = true;
+          sendBtn.style.display = "none";
+          stopBtn.classList.add("visible");
 
           // 添加加载指示器
           const loader = document.createElement("div");
@@ -1288,7 +1334,13 @@
         }
       }
 
+      function handleStop() {
+        vscode.postMessage({ type: "stop" });
+        addMessage("🛑 Generation stopped by user", "system");
+      }
+
       sendBtn.addEventListener("click", handleSend);
+      stopBtn.addEventListener("click", handleStop);
 
       userInput.addEventListener("keydown", (e) => {
         if (suggestionsList.style.display === "block") {
@@ -1406,7 +1458,10 @@
             }
             break;
           case "aiChunk":
-            if (loader) loader.remove();
+            if (loader) {
+              loader.remove();
+              stopBtn.classList.add("visible");
+            }
 
             // 开始流式接收
             isStreaming = true;
@@ -1458,6 +1513,10 @@
 
             currentAiMessageElement = null;
             currentAiRawText = "";
+            userInput.disabled = false;
+            userInput.focus();
+            sendBtn.style.display = "flex";
+            stopBtn.classList.remove("visible");
             
             // 自动滚动到底部，确保新消息可见
             requestAnimationFrame(() => {
@@ -1467,10 +1526,18 @@
           case "clear":
             chatContainer.innerHTML =
               '<div class="message system-message">✨ Chat cleared.</div>';
+            userInput.disabled = false;
+            userInput.focus();
+            sendBtn.style.display = "flex";
+            stopBtn.classList.remove("visible");
             break;
           case "error":
             if (loader) loader.remove();
             addMessage("❌ Error: " + message.value, "system");
+            userInput.disabled = false;
+            userInput.focus();
+            sendBtn.style.display = "flex";
+            stopBtn.classList.remove("visible");
             break;
           case "diffApplied":
             // Diff 应用成功

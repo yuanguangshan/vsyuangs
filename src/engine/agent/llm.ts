@@ -24,13 +24,28 @@ export async function runLLM({
     model,
     stream,
     onChunk,
+    abortSignal
 }: {
     prompt: AgentPrompt;
     model: string;
     stream: boolean;
     onChunk?: (s: string) => void;
+    abortSignal?: AbortSignal;
 }): Promise<LLMResult> {
     const start = Date.now();
+
+    // ✅ 检查取消信号
+    if (abortSignal?.aborted) {
+        throw new Error('LLM request cancelled');
+    }
+
+    // ✅ 设置取消监听器
+    const cleanup = () => {};
+    if (abortSignal) {
+        abortSignal.addEventListener('abort', () => {
+            console.log('[runLLM] Request aborted');
+        });
+    }
 
     if (stream) {
         let raw = '';
@@ -38,6 +53,11 @@ export async function runLLM({
         let lastFlush = Date.now();
 
         await callAI_Stream(prompt.messages, model, (chunk) => {
+            // ✅ 在每个chunk检查取消信号
+            if (abortSignal?.aborted) {
+                throw new Error('LLM streaming cancelled');
+            }
+
             raw += chunk;
             buffer += chunk;
 

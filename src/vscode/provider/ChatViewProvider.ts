@@ -20,6 +20,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'yuangs.chatView';
     private _view?: vscode.WebviewView;
     private _messages: { role: string, content: string }[] = [];
+    private _abortController: AbortController | null = null;
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
@@ -79,7 +80,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             switch (data.type) {
                 case 'ask':
                     console.log('[ChatViewProvider] User asked question');
-                    this.handleAgentTask(data.value);
+                    await this.handleAgentTask(data.value);
+                    break;
+                case 'stop':
+                    console.log('[ChatViewProvider] User requested stop');
+                    if (this._abortController) {
+                        this._abortController.abort();
+                        this._abortController = null;
+                    }
                     break;
                 case 'getFiles':
                     const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 100);
@@ -152,6 +160,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             return;
         }
 
+        // 如果有正在运行的任务，先取消它
+        if (this._abortController) {
+            this._abortController.abort();
+        }
+
+        // 创建新的 AbortController
+        this._abortController = new AbortController();
+        const signal = this._abortController.signal;
+
         try {
             console.log('[ChatViewProvider] Starting AI task...');
             this._messages.push({ role: 'user', content: userInput });
@@ -196,7 +213,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     // Context initialized callback
                     console.log('[ChatViewProvider] Context initialized, sending to UI...');
                     this.sendContextToUI(runtime.getContextManager());
-                }
+                },
+                signal // ✅ 传递取消信号
             );
 
             // 发送上下文信息到UI（但不自动弹出面板）
@@ -211,7 +229,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             (GovernanceService as any).adjudicate = originalAdjudicate;
 
         } catch (error: any) {
-            this._view.webview.postMessage({ type: 'error', value: error.message });
+            // 检查是否是取消操作
+            if (signal.aborted) {
+                console.log('[ChatViewProvider] Task was aborted');
+                this._view?.webview.postMessage({ 
+                    type: 'error', 
+                    value: 'Generation stopped by user' 
+                });
+            } else {
+                this._view.webview.postMessage({ type: 'error', value: error.message });
+            }
+        } finally {
+            // 清理 AbortController
+            this._abortController = null;
         }
     }
 
