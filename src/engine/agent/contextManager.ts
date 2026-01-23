@@ -47,6 +47,29 @@ export class ContextManager {
     this.addMessage('system', observation);
   }
 
+  /**
+   * 调试用：仅获取 Observation（Tool / System 注入）
+   * 不包含 user / assistant
+   */
+  getObservations(): Array<{ role: 'tool' | 'system'; content: string }> {
+    return this.messages
+      .filter(m => m.role === 'tool' || m.role === 'system')
+      .map(m => ({
+        role: m.role as 'tool' | 'system',
+        content: m.content
+      }));
+  }
+
+  getLastObservation(): { role: 'tool' | 'system'; content: string } | null {
+    for (let i = this.messages.length - 1; i >= 0; i--) {
+      const m = this.messages[i];
+      if (m.role === 'tool' || m.role === 'system') {
+        return { role: m.role as any, content: m.content };
+      }
+    }
+    return null;
+  }
+
   getMessages(): Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string }> {
     return this.messages.map(({ role, content }) => ({
       role: role as 'system' | 'user' | 'assistant' | 'tool',

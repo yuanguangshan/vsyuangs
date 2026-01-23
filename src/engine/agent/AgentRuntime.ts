@@ -147,6 +147,21 @@ export class AgentRuntime {
             : undefined,
       };
 
+      // 👇👇👇 Observation-only Debug（推荐）
+      if (!onChunk) {
+        const observations = this.context.getObservations();
+        if (observations.length > 0) {
+          console.log(chalk.magenta('\n🔎 OBSERVATION DEBUG (Agent Perception)'));
+          observations.forEach((obs, i) => {
+            console.log(
+              chalk.magenta(
+                `#${i + 1} [${obs.role.toUpperCase()}]\n${obs.content}\n`
+              )
+            );
+          });
+        }
+      }
+
       const thought = await LLMAdapter.think(
         messages,
         mode as any,
@@ -155,6 +170,32 @@ export class AgentRuntime {
         GovernanceService.getPolicyManual(),
         this.context, // 传递ContextManager以便访问ContextBuffer
       );
+
+      // === Observation Acknowledgement Gate ===
+      const lastObs = this.context.getLastObservation();
+      if (lastObs) {
+          const ack = (thought.parsedPlan as any)?.acknowledged_observation;
+          // 检查 ack 是否存在且包含了 Observation 的一部分内容 (前30字符)
+          if (!ack || (lastObs.content.length > 30 && !lastObs.content.includes(ack.substring(0, 10)) && !ack.includes(lastObs.content.substring(0, 10)))) {
+               // 宽松一点的检查：只要有 ack 且不是 "NONE" 就可以，或者内容有重叠
+               if (ack === 'NONE' || !ack) {
+                    console.log(chalk.red('\n❌ OBSERVATION NOT ACKNOWLEDGED'));
+                    console.log(chalk.red('Expected observation to be restated:'));
+                    console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
+
+                    // 注入 system correction
+                    this.context.addMessage(
+                      'system',
+                      `ERROR: You failed to acknowledge the latest Observation.
+    You MUST restate it verbatim before continuing.
+    Latest Observation: ${lastObs.content}`
+                    );
+
+                    // ❗关键：不要执行 action，直接下一轮
+                    continue;
+               }
+          }
+      }
 
       const action: ProposedAction = {
         id: randomUUID(),
@@ -175,9 +216,11 @@ export class AgentRuntime {
       if (thought.isDone || action.type === "answer") {
         const result = await ToolExecutor.execute(action as any);
         if (!onChunk) {
-          console.log(chalk.green(`\n\n\n🤖 AI：${result.output}\n`));
+          console.log(chalk.green(`\n\n\n🤖 AI Action: ${result.output}\n`));
         }
-        this.context.addMessage("assistant", result.output);
+        
+        // 关键修复：将结果作为 Observation (Tool Result) 添加，而不是 Assistant 回复
+        this.context.addToolResult(action.type, result.output);
 
         // 更新executionTurn
         executionTurn.executionResult = result;
@@ -296,7 +339,8 @@ export class AgentRuntime {
         // 执行回顾性分析
         await this.retrospective({ ...executionTurn, turnId: 0 });
 
-        break;
+        // 关键修复：不要 break，而是 continue让 AI 看到 Observation 后进行下一轮思考
+        continue;
       }
 
       // === 预检 (Pre-flight) ===

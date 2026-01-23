@@ -67,9 +67,18 @@ export class LLMAdapter {
 - TALK: FORBIDDEN
 - MODE: REACT (THINK -> ACTION -> PERCEIVE)
 - CONTEXT REFERENCE: When using information from the provided context, explicitly reference it in your response using [Reference] notation or in the JSON output
+- OBSERVATION ACKNOWLEDGEMENT (MANDATORY):
+  Before proposing any action, you MUST explicitly restate the latest Observation
+  you have received in a field called "acknowledged_observation".
+  
+  If no Observation exists, output:
+  "acknowledged_observation": "NONE"
+  
+  Failure to acknowledge the latest Observation INVALIDATES this response.
 
 JSON SCHEMA:
 {
+  "acknowledged_observation": "string",
   "action_type": "tool_call" | "shell_cmd" | "code_diff" | "answer",
   "reasoning": "thought process",
   "tool_name": "list_files" | "read_file",
