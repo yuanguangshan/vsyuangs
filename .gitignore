@@ -17,4 +17,6 @@ build/debug.wasm
 # Replay system
 replay/
 logs/
-.ai/context.json
+.ai
+.sisyphus
+.weaver
