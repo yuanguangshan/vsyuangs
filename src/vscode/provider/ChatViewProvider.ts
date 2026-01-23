@@ -185,14 +185,54 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             const originalAdjudicate = GovernanceService.adjudicate;
             (GovernanceService as any).adjudicate = async (action: any) => {
                 let details = '';
+                let summary = '';
+                
                 if (action.type === 'tool_call') {
-                    details = `\nTool: ${action.payload.tool_name}\nParams: ${JSON.stringify(action.payload.parameters, null, 2)}`;
+                    const toolName = action.payload.tool_name;
+                    const params = action.payload.parameters;
+                    
+                    // For skill creation, provide a concise summary
+                    if (toolName === 'skill_create' && params) {
+                        summary = `📋 Create New Skill: ${params.name || 'Unnamed Skill'}`;
+                        details = `\n📝 Description: ${params.description || 'No description'}`;
+                        
+                        // Truncate long descriptions to avoid overflow
+                        if (details.length > 300) {
+                            details = details.substring(0, 300) + '...';
+                        }
+                        
+                        details += `\n\n💡 Use when: ${params.whenToUse || 'Not specified'}`;
+                        
+                        // Show success rate if available
+                        if (params.confidence) {
+                            details += `\n📊 Confidence: ${(params.confidence * 100).toFixed(1)}%`;
+                        }
+                    } else {
+                        // For other tools, show basic info
+                        details = `\nTool: ${toolName}`;
+                        const paramsStr = JSON.stringify(params, null, 2);
+                        // Truncate long parameter strings
+                        if (paramsStr.length > 200) {
+                            details += `\nParams: ${paramsStr.substring(0, 200)}...`;
+                        } else {
+                            details += `\nParams: ${paramsStr}`;
+                        }
+                    }
                 } else if (action.type === 'shell_cmd') {
                     details = `\nCommand: ${action.payload.command}`;
                 }
 
+                // Truncate reasoning to fit on screen
+                let reasoning = action.reasoning || 'No reason provided';
+                const maxReasoningLength = 200;
+                if (reasoning.length > maxReasoningLength) {
+                    reasoning = reasoning.substring(0, maxReasoningLength) + '...';
+                }
+
+                const message = `${summary || `Agent wants to execute ${action.type}`}${details}\n\nReason: ${reasoning}`;
+
                 const choice = await vscode.window.showInformationMessage(
-                    `Agent wants to execute ${action.type}:${details}\n\nReason: ${action.reasoning || 'No reason provided'}`,
+                    message,
                     { modal: true },
                     'Approve', 'Reject'
                 );
