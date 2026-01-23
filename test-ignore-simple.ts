@@ -48,10 +48,59 @@ class SimpleIgnoreFilter {
                 continue;
             }
 
-            patterns.push(trimmed);
+            // Convert ignore pattern to glob pattern
+            const globPattern = this.convertToGlob(trimmed);
+            if (globPattern) {
+                patterns.push(globPattern);
+            }
         }
 
         return patterns;
+    }
+
+    private convertToGlob(pattern: string): string | null {
+        // If pattern already starts with **, keep it
+        if (pattern.startsWith('**')) {
+            return pattern;
+        }
+
+        // If pattern ends with /**, keep it
+        if (pattern.endsWith('/**')) {
+            return pattern;
+        }
+
+        // If pattern ends with /, it's a directory pattern - match all files in that directory
+        if (pattern.endsWith('/')) {
+            return `${pattern}**`;
+        }
+
+        // If pattern doesn't contain /, it's a filename pattern in any directory
+        if (!pattern.includes('/')) {
+            // For wildcard patterns like *.js, use them as-is with ** prefix
+            if (pattern.includes('*')) {
+                return `**/${pattern}`;
+            }
+            // For specific filenames, match the file itself (not a directory)
+            return `**/${pattern}`;
+        }
+
+        // If pattern starts with /, it's relative to root
+        if (pattern.startsWith('/')) {
+            const subPattern = pattern.substring(1);
+            // If it ends with /, match all files in that directory
+            if (subPattern.endsWith('/')) {
+                return `${subPattern}**`;
+            }
+            return subPattern;
+        }
+
+        // If pattern ends with *, keep it
+        if (pattern.endsWith('*')) {
+            return pattern;
+        }
+
+        // Default: wrap with ** to match at any level
+        return `**/${pattern}/**`;
     }
 
     public getPatterns(): string[] {
