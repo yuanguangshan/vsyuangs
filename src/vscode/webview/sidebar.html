@@ -788,10 +788,22 @@
         background: var(--vscode-editor-background);
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 12px;
         margin-bottom: 8px;
         cursor: pointer;
         transition: all 0.2s;
+        overflow: hidden;
+      }
+
+      .context-item.collapsed .context-item-details {
+        display: none;
+      }
+
+      .context-item.collapsed {
+        padding: 8px 12px;
+      }
+
+      .context-item.expanded {
+        padding: 12px;
       }
 
       .context-item:hover {
@@ -805,6 +817,40 @@
         gap: 8px;
         margin-bottom: 8px;
       }
+
+      .context-item.collapsed .context-item-header {
+        margin-bottom: 0;
+      }
+
+      .context-item-toggle {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.6;
+        transition: transform 0.2s;
+      }
+
+      .context-item.expanded .context-item-toggle {
+        transform: rotate(90deg);
+      }
+
+      .context-item-details {
+        animation: slideDown 0.2s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
 
       .context-item-icon {
         font-size: 1.2em;
@@ -896,6 +942,54 @@
         padding: 40px 20px;
         opacity: 0.5;
         font-size: 0.9em;
+      }
+
+      /* Flash notification styles */
+      .flash-notification {
+        position: fixed;
+        top: 60px;
+        right: 400px;
+        background: var(--vscode-notificationsInfoIcon-foreground);
+        color: var(--vscode-notificationsInfoIcon-background);
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 5000;
+        font-size: 0.9em;
+        animation: slideInRight 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
+        max-width: 300px;
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+
+      /* Update indicator for context panel */
+      .context-panel-update-indicator {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        background: var(--vscode-testing-iconPassed);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
       }
     </style>
   </head>
@@ -2044,8 +2138,16 @@
 
       // 更新上下文数据
       function updateContextItems(items) {
+        const oldCount = currentContextItems.length;
         currentContextItems = items || [];
+        const newCount = currentContextItems.length;
+        
         renderContextItems();
+        
+        // 如果有更新，显示 flash 通知
+        if (newCount > oldCount) {
+          showFlashNotification(`📋 Context updated: ${newCount - oldCount} new item${newCount - oldCount > 1 ? 's' : ''} added`);
+        }
       }
 
       // 渲染上下文项目
@@ -2094,7 +2196,7 @@
       // 创建单个上下文项目元素
       function createContextItemElement(item) {
         const div = document.createElement("div");
-        div.className = "context-item";
+        div.className = "context-item collapsed"; // 默认折叠
 
         // 获取图标
         const icon = getContextIcon(item.semantic);
@@ -2115,27 +2217,38 @@
 
         div.innerHTML = `
                 <div class="context-item-header">
+                    <span class="context-item-toggle">▶</span>
                     <span class="context-item-icon">${icon}</span>
                     <span class="context-item-title">${item.alias || item.path}</span>
                     <div class="context-item-badges">${badgesHtml}</div>
                 </div>
-                <div class="context-item-stats">${statsHtml}</div>
-                <div class="context-usage-bar">
-                    <div class="context-usage-fill" style="width: ${importancePercent}%"></div>
+                <div class="context-item-details">
+                    <div class="context-item-stats">${statsHtml}</div>
+                    <div class="context-usage-bar">
+                        <div class="context-usage-fill" style="width: ${importancePercent}%"></div>
+                    </div>
+                    <div class="context-item-preview">${previewText}</div>
                 </div>
-                <div class="context-item-preview">${previewText}</div>
             `;
 
-        // 添加点击事件
-        div.addEventListener("click", () => {
-          // 发送消息打开文件
-          if (item.path) {
+        // 添加点击事件 - 切换展开/折叠
+        div.addEventListener("click", (e) => {
+          // 阻止事件冒泡，避免触发其他点击事件
+          e.stopPropagation();
+          
+          // 切换展开/折叠状态
+          div.classList.toggle("collapsed");
+          div.classList.toggle("expanded");
+          
+          // 如果展开，打开文件
+          if (!div.classList.contains("collapsed") && item.path) {
             vscode.postMessage({
               type: "open",
               path: item.path,
             });
           }
-          console.log("Context item clicked:", item);
+          
+          console.log("Context item toggled:", item, "expanded:", !div.classList.contains("collapsed"));
         });
 
         return div;
@@ -2232,6 +2345,20 @@
       function hideContextPanel() {
         contextPanel.classList.remove("open");
         contextToggle.classList.remove("visible");
+      }
+
+      // 显示 flash 通知
+      function showFlashNotification(message) {
+        const notification = document.createElement("div");
+        notification.className = "flash-notification";
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
       }
 
       // === 模型选择器功能 ===
