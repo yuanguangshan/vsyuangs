@@ -1,3 +1,4 @@
+import { snapshotFromBuffer, diffContext, ContextSnapshot } from '../../engine/agent/contextDiff';
 import { AgentRuntime } from '../../engine/agent/AgentRuntime';
 import { VSCodeContextAdapter } from './contextAdapter';
 
@@ -13,6 +14,7 @@ import { VSCodeContextAdapter } from './contextAdapter';
 export class VSCodeAgentRuntime {
   private runtime: AgentRuntime;
   private contextAdapter: VSCodeContextAdapter;
+  private lastContextSnapshot: ContextSnapshot | null = null;
 
   constructor() {
     console.log('[VSCodeRuntime] Initializing...');
@@ -36,7 +38,8 @@ export class VSCodeAgentRuntime {
   async runChat(
     userInput: string,
     stream?: (chunk: string) => void,
-    model?: string
+    model?: string,
+    onContextInitialized?: () => void
   ) {
     try {
       console.log('[VSCodeRuntime] Starting chat execution...');
@@ -44,6 +47,27 @@ export class VSCodeAgentRuntime {
       // 通过 ContextAdapter 收集 VS Code 环境中的上下文
       await this.contextAdapter.collectContext();
       
+      // 解析用户输入中的引用
+      await this.contextAdapter.resolveUserReferences(userInput);
+      
+      // 计算 Diff 并决定是否更新 UI
+      const buffer = this.runtime.getContextManager().getContextBuffer();
+      const snapshot = snapshotFromBuffer(buffer);
+      const diff = diffContext(this.lastContextSnapshot, snapshot);
+      
+      this.lastContextSnapshot = snapshot;
+
+      // 只有在新增或内容变化时才通知 UI (On-Demand Push)
+      if (onContextInitialized && (diff.added.length > 0 || diff.changed.length > 0)) {
+          console.log(`[VSCodeRuntime] Context diff detected: +${diff.added.length} ~${diff.changed.length}`);
+          onContextInitialized();
+      } else if (!this.lastContextSnapshot && onContextInitialized) {
+          // 第一次运行时，如果有内容也通知
+          if (!buffer.isEmpty()) {
+               onContextInitialized();
+          }
+      }
+
       // 启动 VS Code 事件监听器
       this.contextAdapter.setupEventListeners();
 

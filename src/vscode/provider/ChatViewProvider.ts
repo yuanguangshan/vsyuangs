@@ -99,6 +99,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 case 'applyDiff':
                     await this.handleApplyDiff(data.value);
                     break;
+                case 'open':
+                    if (data.path) {
+                        try {
+                            const uri = vscode.Uri.file(data.path);
+                            const doc = await vscode.workspace.openTextDocument(uri);
+                            await vscode.window.showTextDocument(doc, { preview: true });
+                        } catch (e) {
+                            vscode.window.showErrorMessage(`Failed to open file: ${data.path}`);
+                        }
+                    }
+                    break;
             }
         });
     }
@@ -129,8 +140,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
             const originalAdjudicate = GovernanceService.adjudicate;
             (GovernanceService as any).adjudicate = async (action: any) => {
+                let details = '';
+                if (action.type === 'tool_call') {
+                    details = `\nTool: ${action.payload.tool_name}\nParams: ${JSON.stringify(action.payload.parameters, null, 2)}`;
+                } else if (action.type === 'shell_cmd') {
+                    details = `\nCommand: ${action.payload.command}`;
+                }
+
                 const choice = await vscode.window.showInformationMessage(
-                    `Agent wants to execute ${action.type}: ${action.reasoning || 'No reason provided'}`,
+                    `Agent wants to execute ${action.type}:${details}\n\nReason: ${action.reasoning || 'No reason provided'}`,
                     { modal: true },
                     'Approve', 'Reject'
                 );
@@ -151,6 +169,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 (chunk) => {
                     fullAiResponse += chunk;
                     this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
+                },
+                undefined, // model (use default)
+                () => {
+                    // Context initialized callback
+                    console.log('[ChatViewProvider] Context initialized, sending to UI...');
+                    this.sendContextToUI(runtime.getContextManager());
                 }
             );
 
@@ -177,13 +201,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             const contextBuffer = contextManager.getContextBuffer();
             const items = contextBuffer.export();
 
-            // 发送上下文数据到webview
+            const high: any[] = [];
+            const medium: any[] = [];
+            const low: any[] = [];
+
+            for (const item of items) {
+                const confidence = item.importance?.confidence ?? 0.5;
+                // 确保 tags 存在
+                const tags = item.tags || [];
+                
+                // 将 item 转换为 UI 需要的轻量级对象
+                const payload = {
+                    ...item,
+                    tags: tags // 确保传递处理后的 tags
+                };
+
+                if (confidence >= 0.8) high.push(payload);
+                else if (confidence >= 0.4) medium.push(payload);
+                else low.push(payload);
+            }
+
+            // 发送分组后的上下文数据到webview
             this._view.webview.postMessage({
                 type: 'contextUpdate',
-                value: items
+                value: [...high, ...medium, ...low], // 暂时保持扁平列表以兼容现有UI，后续可升级为分组显示
+                groups: { high, medium, low } // 同时发送分组数据供未来使用
             });
 
-            console.log(`[ChatViewProvider] Sent ${items.length} context items to UI`);
+            // 自动打开上下文面板
+            if (items.length > 0) {
+                this._view.webview.postMessage({ type: 'showContextPanel' });
+            }
+
+            console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length})`);
         } catch (error) {
             console.error('[ChatViewProvider] Error sending context to UI:', error);
         }

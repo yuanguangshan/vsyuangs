@@ -21,6 +21,77 @@ export class VSCodeContextAdapter {
   }
 
   /**
+   * 解析用户输入中的引用 (@filename) 并加载到上下文
+   */
+  async resolveUserReferences(userInput: string): Promise<void> {
+    const references = userInput.match(/@[^\s]+/g);
+    if (!references) return;
+
+    console.log(`[ContextAdapter] Found references: ${references.join(', ')}`);
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) return;
+
+    for (const ref of references) {
+      // 移除 @ 前缀
+      const relPath = ref.substring(1);
+      
+      // 尝试找到文件
+      // 1. 直接匹配
+      let fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relPath);
+      let exists = false;
+      
+      try {
+        await vscode.workspace.fs.stat(fileUri);
+        exists = true;
+      } catch {
+        // 2. 尝试模糊匹配 (简化的，实际可能需要更复杂的查找)
+        const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 1);
+        if (files.length > 0) {
+          fileUri = files[0];
+          exists = true;
+        }
+      }
+
+      if (exists) {
+        try {
+          const document = await vscode.workspace.openTextDocument(fileUri);
+          const content = document.getText();
+          
+          await this.contextManager.addContextItemAsync({
+             type: 'file',
+             path: fileUri.fsPath,
+             content: content,
+             semantic: 'source_code',
+             summary: `User referenced file: ${path.basename(fileUri.fsPath)}`,
+             summarized: true,
+             summaryQuality: 1.0, 
+             alias: `@${relPath}`,
+             tags: ['user-referenced', 'explicit'],
+             // 强制高重要性
+             importance: {
+                 id: fileUri.fsPath,
+                 path: fileUri.fsPath,
+                 type: 'file',
+                 useCount: 1,
+                 successCount: 1,
+                 failureCount: 0,
+                 lastUsed: Date.now(),
+                 createdAt: Date.now(),
+                 confidence: 1.0 
+             }
+          });
+          console.log(`[ContextAdapter] ✅ Added referenced file: ${fileUri.fsPath}`);
+        } catch (e) {
+          console.warn(`[ContextAdapter] ⚠️ Failed to read referenced file ${relPath}: ${e}`);
+        }
+      } else {
+        console.warn(`[ContextAdapter] ⚠️ Referenced file not found: ${relPath}`);
+        vscode.window.showWarningMessage(`Yuangs AI: Could not find referenced file '${relPath}'. Please check the path.`);
+      }
+    }
+  }
+
+  /**
    * 收集当前 VS Code 环境中的上下文信息
    */
   async collectContext(): Promise<void> {
@@ -62,7 +133,19 @@ export class VSCodeContextAdapter {
       summaryQuality: 0.8,
       alias: path.basename(filePath),
       tags: ['active', 'current'],
-      projectScope: vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath || process.cwd()
+      projectScope: vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath || process.cwd(),
+      // 增加 active editor 的重要性
+      importance: {
+          id: filePath,
+          path: filePath,
+          type: 'file',
+          useCount: 1,
+          successCount: 1,
+          failureCount: 0,
+          confidence: 0.9,
+          lastUsed: Date.now(),
+          createdAt: Date.now()
+      }
     };
 
     try {
@@ -95,7 +178,19 @@ export class VSCodeContextAdapter {
       summaryQuality: 0.9,
       alias: `selection-${path.basename(filePath)}-${selectionStart}-${selectionEnd}`,
       tags: ['selection', 'highlighted'],
-      projectScope: vscode.workspace.getWorkspaceFolder(editor.document.uri)?.uri.fsPath || process.cwd()
+      projectScope: vscode.workspace.getWorkspaceFolder(editor.document.uri)?.uri.fsPath || process.cwd(),
+      // 强制 Selection 为最高重要性
+      importance: {
+          id: `selection-${filePath}`,
+          path: filePath,
+          type: 'file',
+          useCount: 1,
+          successCount: 1,
+          failureCount: 0,
+          confidence: 1.0,
+          lastUsed: Date.now(),
+          createdAt: Date.now()
+      }
     };
 
     try {
