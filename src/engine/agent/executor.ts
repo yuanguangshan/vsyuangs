@@ -1,5 +1,6 @@
 import { ProposedAction, ToolExecutionResult } from './state';
 import { VSCodeExecutor } from '../../runtime/vscode/VSCodeExecutor';
+import { addSkill } from './skills';
 
 /**
  * VS Code 适配版的 ToolExecutor
@@ -69,6 +70,18 @@ export class ToolExecutor {
         } catch (e: any) {
           return { success: false, error: e.message, output: "" };
         }
+
+      case 'skill_create':
+          try {
+              const success = addSkill(params);
+              if (success) {
+                  return { success: true, output: `Skill "${params.name}" created successfully.` };
+              } else {
+          return { success: false, error: `Skill "${params.name}" already exists.`, output: "" };
+              }
+          } catch (e: any) {
+              return { success: false, error: `Failed to create skill: ${e.message}`, output: "" };
+          }
 
       default:
         return {

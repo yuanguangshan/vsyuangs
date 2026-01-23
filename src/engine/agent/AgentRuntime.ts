@@ -7,11 +7,23 @@ import { ContextManager } from "./contextManager";
 import { evaluateProposal } from "./governance/core";
 import { ProposedAction, ExecutionTurn } from "./state";
 import { ContextBuffer } from "./contextBuffer";
-import { snapshotFromBuffer, diffContext, ContextSnapshot } from "./contextDiff";
+import {
+  snapshotFromBuffer,
+  diffContext,
+  ContextSnapshot,
+} from "./contextDiff";
 import { ExecutionRecorder } from "./executionRecorder";
-import { generateReferenceRetrospective, analyzeContextLifecycle } from "./contextProtocol";
+import {
+  generateReferenceRetrospective,
+  analyzeContextLifecycle,
+} from "./contextProtocol";
 import { ContextToSkillPromotionRules } from "./contextSkillPromotion";
-import { Skill, updateSkillStatus, learnSkillFromRecord, addSkill } from "./skills";
+import {
+  Skill,
+  updateSkillStatus,
+  learnSkillFromRecord,
+  addSkill,
+} from "./skills";
 
 export class AgentRuntime {
   private context: ContextManager;
@@ -46,27 +58,34 @@ export class AgentRuntime {
 
     if (userInput) {
       // 检查用户输入是否包含 DSL 查询，如果有则自动添加相关上下文
-      const dslContextItems = await this.context.getDSLContextForInput(userInput);
+      const dslContextItems =
+        await this.context.getDSLContextForInput(userInput);
 
       if (dslContextItems.length > 0) {
-        console.log(chalk.cyan(`\n[DSL Query] Found ${dslContextItems.length} matching context items:`));
+        console.log(
+          chalk.cyan(
+            `\n[DSL Query] Found ${dslContextItems.length} matching context items:`,
+          ),
+        );
         for (const item of dslContextItems) {
           console.log(chalk.cyan(`  - ${item.path} (${item.type})`));
         }
       }
 
       // 从 Context Bank 查询与当前任务相关的上下文
-      console.log(chalk.blue('\n[Context Bank] Loading relevant context...'));
+      console.log(chalk.blue("\n[Context Bank] Loading relevant context..."));
       try {
         await this.context.importFromContextBank({
           input: userInput,
           projectScope: process.cwd(), // 使用当前工作目录作为项目作用域
-          strategy: 'relevance',
-          limit: 5 // 最多加载5个相关上下文
+          strategy: "relevance",
+          limit: 5, // 最多加载5个相关上下文
         });
-        console.log(chalk.green('[Context Bank] Relevant context loaded'));
+        console.log(chalk.green("[Context Bank] Relevant context loaded"));
       } catch (error) {
-        console.log(chalk.yellow(`[Context Bank] Could not load context: ${error}`));
+        console.log(
+          chalk.yellow(`[Context Bank] Could not load context: ${error}`),
+        );
       }
 
       this.context.addMessage("user", userInput);
@@ -87,37 +106,45 @@ export class AgentRuntime {
       }));
 
       // === Context Diff ===
-      const currentSnapshot = snapshotFromBuffer(this.context.getContextBuffer());
-      const contextDiff = diffContext(this.lastContextSnapshot, currentSnapshot);
+      const currentSnapshot = snapshotFromBuffer(
+        this.context.getContextBuffer(),
+      );
+      const contextDiff = diffContext(
+        this.lastContextSnapshot,
+        currentSnapshot,
+      );
 
       if (
         contextDiff.added.length ||
         contextDiff.removed.length ||
         contextDiff.changed.length
       ) {
-        console.log(chalk.cyan('\n[Context Diff]'));
+        console.log(chalk.cyan("\n[Context Diff]"));
         if (contextDiff.added.length)
-          console.log('  + added:', contextDiff.added);
+          console.log("  + added:", contextDiff.added);
         if (contextDiff.removed.length)
-          console.log('  - removed:', contextDiff.removed);
+          console.log("  - removed:", contextDiff.removed);
         if (contextDiff.changed.length)
-          console.log('  ~ changed:', contextDiff.changed);
+          console.log("  ~ changed:", contextDiff.changed);
       }
 
       this.lastContextSnapshot = currentSnapshot;
 
       // 记录执行回合
-      const executionTurn: Omit<ExecutionTurn, 'turnId'> = {
+      const executionTurn: Omit<ExecutionTurn, "turnId"> = {
         startTime: Date.now(),
         contextSnapshot: {
           inputHash: this.context.getHash(),
-          systemPromptVersion: 'v1.0.0',
-          toolSetVersion: 'v1.0.0',
-          recentMessages: this.context.getRecentMessages(5)
+          systemPromptVersion: "v1.0.0",
+          toolSetVersion: "v1.0.0",
+          recentMessages: this.context.getRecentMessages(5),
         },
-        contextDiff: contextDiff.added.length || contextDiff.removed.length || contextDiff.changed.length
-          ? contextDiff
-          : undefined
+        contextDiff:
+          contextDiff.added.length ||
+          contextDiff.removed.length ||
+          contextDiff.changed.length
+            ? contextDiff
+            : undefined,
       };
 
       const thought = await LLMAdapter.think(
@@ -126,7 +153,7 @@ export class AgentRuntime {
         onChunk,
         model,
         GovernanceService.getPolicyManual(),
-        this.context  // 传递ContextManager以便访问ContextBuffer
+        this.context, // 传递ContextManager以便访问ContextBuffer
       );
 
       const action: ProposedAction = {
@@ -161,7 +188,10 @@ export class AgentRuntime {
           if (item.importance && item.importance.useCount > 0) {
             // 成功完成任务，增加成功计数
             item.importance.successCount++;
-            item.importance.confidence = Math.min(1, item.importance.confidence + 0.05);
+            item.importance.confidence = Math.min(
+              1,
+              item.importance.confidence + 0.05,
+            );
             item.importance.lastUsed = Date.now();
           }
         }
@@ -174,30 +204,45 @@ export class AgentRuntime {
           this.context.getContextBuffer(),
           this.executionId,
           userInput,
-          result.output
+          result.output,
         );
 
-        console.log(chalk.magenta('\n🔍 Context Reference Retrospective:'));
+        console.log(chalk.magenta("\n🔍 Context Reference Retrospective:"));
         console.log(retrospectiveReport);
 
         // 分析ContextItem的生命周期
-        const lifecycleAnalysis = analyzeContextLifecycle(this.context.getContextBuffer());
-        const recommendations = lifecycleAnalysis.filter(item => item.recommendation !== 'keep');
+        const lifecycleAnalysis = analyzeContextLifecycle(
+          this.context.getContextBuffer(),
+        );
+        const recommendations = lifecycleAnalysis.filter(
+          (item) => item.recommendation !== "keep",
+        );
 
         if (recommendations.length > 0) {
-          console.log(chalk.magenta('\n💡 Context Lifecycle Recommendations:'));
+          console.log(chalk.magenta("\n💡 Context Lifecycle Recommendations:"));
           for (const rec of recommendations) {
-            console.log(chalk.yellow(`  ${rec.recommendation.toUpperCase()}: ${rec.path} (quality: ${rec.qualityScore.toFixed(2)}, relevance: ${rec.relevanceScore.toFixed(2)})`));
+            console.log(
+              chalk.yellow(
+                `  ${rec.recommendation.toUpperCase()}: ${rec.path} (quality: ${rec.qualityScore.toFixed(2)}, relevance: ${rec.relevanceScore.toFixed(2)})`,
+              ),
+            );
           }
         }
 
         // 检查是否可以将某些ContextItem晋升为Skill
         const contextItems = this.context.getContextBuffer().export();
         for (const item of contextItems) {
-          const promotedSkill = ContextToSkillPromotionRules.evaluatePromotion(item);
+          const promotedSkill =
+            ContextToSkillPromotionRules.evaluatePromotion(item);
           if (promotedSkill) {
-            console.log(chalk.green(`\n🚀 PROMOTION: Context "${item.path}" qualifies to be promoted to Skill "${promotedSkill.name}"`));
-            console.log(chalk.gray(`   Description: ${promotedSkill.description}`));
+            console.log(
+              chalk.green(
+                `\n🚀 PROMOTION: Context "${item.path}" qualifies to be promoted to Skill "${promotedSkill.name}"`,
+              ),
+            );
+            console.log(
+              chalk.gray(`   Description: ${promotedSkill.description}`),
+            );
 
             // 询问用户是否确认创建技能
             const confirmed = await this.confirmSkillCreation(promotedSkill);
@@ -206,26 +251,34 @@ export class AgentRuntime {
                 // 通过治理服务审批
                 const governanceDecision = await GovernanceService.adjudicate({
                   id: randomUUID(),
-                  type: 'tool_call',
+                  type: "tool_call",
                   payload: {
-                    tool_name: 'skill_create',
-                    parameters: promotedSkill
+                    tool_name: "skill_create",
+                    parameters: promotedSkill,
                   },
-                  riskLevel: 'low',
-                  reasoning: 'Auto promotion from context'
+                  riskLevel: "low",
+                  reasoning: "Auto promotion from context",
                 });
 
-                if (governanceDecision.status === 'approved') {
+                if (governanceDecision.status === "approved") {
                   // 保存技能
                   await this.saveSkill(promotedSkill);
                   // 标记 ContextItem 已被晋升
                   (item as any).metadata = {
                     ...(item as any).metadata,
-                    promotedToSkill: true
+                    promotedToSkill: true,
                   };
-                  console.log(chalk.green(`✅ Skill "${promotedSkill.name}" created successfully`));
+                  console.log(
+                    chalk.green(
+                      `✅ Skill "${promotedSkill.name}" created successfully`,
+                    ),
+                  );
                 } else {
-                  console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${'reason' in governanceDecision ? governanceDecision.reason : 'Unknown reason'}`));
+                  console.log(
+                    chalk.yellow(
+                      `⚠️  Skill creation rejected by governance: ${"reason" in governanceDecision ? governanceDecision.reason : "Unknown reason"}`,
+                    ),
+                  );
                 }
               } catch (error) {
                 console.log(chalk.red(`❌ Failed to create skill: ${error}`));
@@ -235,7 +288,10 @@ export class AgentRuntime {
         }
 
         // 记录执行回合（只在这里记录一次）
-        this.executionRecorder.recordTurn({ ...executionTurn, turnId: 0 } as any);
+        this.executionRecorder.recordTurn({
+          ...executionTurn,
+          turnId: 0,
+        } as any);
 
         // 执行回顾性分析
         await this.retrospective({ ...executionTurn, turnId: 0 });
@@ -262,12 +318,15 @@ export class AgentRuntime {
         executionTurn.executionResult = {
           success: false,
           output: `POLICY DENIED: ${preCheck.reason}`,
-          error: preCheck.reason
+          error: preCheck.reason,
         };
         executionTurn.endTime = Date.now();
 
         // 记录执行回合
-        this.executionRecorder.recordTurn({ ...executionTurn, turnId: 0 } as any);
+        this.executionRecorder.recordTurn({
+          ...executionTurn,
+          turnId: 0,
+        } as any);
 
         continue;
       }
@@ -275,18 +334,22 @@ export class AgentRuntime {
       // === 正式治理 (WASM + 人工/自动) ===
       const decision = await GovernanceService.adjudicate(action);
       if (decision.status === "rejected") {
-        console.log(chalk.red(`[GOVERNANCE] ❌ Rejected: ${'reason' in decision ? decision.reason : 'Unknown reason'}`));
+        console.log(
+          chalk.red(
+            `[GOVERNANCE] ❌ Rejected: ${"reason" in decision ? decision.reason : "Unknown reason"}`,
+          ),
+        );
         this.context.addMessage(
           "system",
-          `Rejected by Governance: ${'reason' in decision ? decision.reason : 'Unknown reason'}`,
+          `Rejected by Governance: ${"reason" in decision ? decision.reason : "Unknown reason"}`,
         );
 
         // 更新executionTurn
         executionTurn.governance = decision;
         executionTurn.executionResult = {
           success: false,
-          output: `GOVERNANCE REJECTED: ${'reason' in decision ? decision.reason : 'Unknown reason'}`,
-          error: 'reason' in decision ? decision.reason : 'Unknown reason'
+          output: `GOVERNANCE REJECTED: ${"reason" in decision ? decision.reason : "Unknown reason"}`,
+          error: "reason" in decision ? decision.reason : "Unknown reason",
         };
         executionTurn.endTime = Date.now();
 
@@ -295,7 +358,10 @@ export class AgentRuntime {
           if (item.importance && item.importance.useCount > 0) {
             // 任务失败，增加失败计数
             item.importance.failureCount++;
-            item.importance.confidence = Math.max(0, item.importance.confidence - 0.1);
+            item.importance.confidence = Math.max(
+              0,
+              item.importance.confidence - 0.1,
+            );
             item.importance.lastUsed = Date.now();
           }
         }
@@ -304,7 +370,10 @@ export class AgentRuntime {
         await this.context.recordBankUsage(false);
 
         // 记录执行回合
-        this.executionRecorder.recordTurn({ ...executionTurn, turnId: 0 } as any);
+        this.executionRecorder.recordTurn({
+          ...executionTurn,
+          turnId: 0,
+        } as any);
 
         continue;
       }
@@ -322,9 +391,10 @@ export class AgentRuntime {
 
       if (result.success) {
         this.context.addToolResult(action.type, result.output);
-        const preview = result.output.length > 300
-          ? result.output.substring(0, 300) + '...'
-          : result.output;
+        const preview =
+          result.output.length > 300
+            ? result.output.substring(0, 300) + "..."
+            : result.output;
         console.log(chalk.green(`[SUCCESS] Result:\n${preview}`));
 
         // 更新ContextBuffer中相关项的重要性（标记为被使用）
@@ -383,7 +453,7 @@ export class AgentRuntime {
       confidence: skill.metadata?.promotionCriteria?.successRate || 0.5,
       lastUsed: now,
       createdAt: now,
-      enabled: true
+      enabled: true,
     };
 
     // 使用 addSkill 函数添加技能
@@ -395,12 +465,14 @@ export class AgentRuntime {
    */
   private async retrospective(turn: ExecutionTurn) {
     // 导出高价值上下文到 Context Bank
-    console.log(chalk.blue('\n[Context Bank] Exporting high-value context...'));
+    console.log(chalk.blue("\n[Context Bank] Exporting high-value context..."));
     try {
       await this.context.exportToContextBank(process.cwd()); // 使用当前工作目录作为项目作用域
-      console.log(chalk.green('[Context Bank] High-value context exported'));
+      console.log(chalk.green("[Context Bank] High-value context exported"));
     } catch (error) {
-      console.log(chalk.yellow(`[Context Bank] Could not export context: ${error}`));
+      console.log(
+        chalk.yellow(`[Context Bank] Could not export context: ${error}`),
+      );
     }
 
     // 评估上下文晋升
@@ -413,9 +485,14 @@ export class AgentRuntime {
   private async evaluateContextPromotion() {
     const contextItems = this.context.getContextBuffer().export();
     for (const item of contextItems) {
-      const promotedSkill = ContextToSkillPromotionRules.evaluatePromotion(item);
+      const promotedSkill =
+        ContextToSkillPromotionRules.evaluatePromotion(item);
       if (promotedSkill) {
-        console.log(chalk.green(`\n🚀 PROMOTION: Context "${item.path}" qualifies to be promoted to Skill "${promotedSkill.name}"`));
+        console.log(
+          chalk.green(
+            `\n🚀 PROMOTION: Context "${item.path}" qualifies to be promoted to Skill "${promotedSkill.name}"`,
+          ),
+        );
         console.log(chalk.gray(`   Description: ${promotedSkill.description}`));
 
         // 询问用户是否确认创建技能
@@ -425,21 +502,41 @@ export class AgentRuntime {
             // 通过治理服务审批
             const governanceDecision = await GovernanceService.adjudicate({
               id: randomUUID(),
-              type: 'tool_call',
+              type: "tool_call",
               payload: {
-                tool_name: 'skill_create',
-                parameters: promotedSkill
+                tool_name: "skill_create",
+                parameters: promotedSkill,
               },
-              riskLevel: 'low',
-              reasoning: 'Auto promotion from context'
+              riskLevel: "low",
+              reasoning: "Auto promotion from context",
             });
 
-            if (governanceDecision.status === 'approved') {
+            if (governanceDecision.status === "approved") {
               // 保存技能
               await this.saveSkill(promotedSkill);
-              console.log(chalk.green(`✅ Skill "${promotedSkill.name}" created successfully`));
+              console.log(
+                chalk.green(
+                  `✅ Skill "${promotedSkill.name}" created successfully`,
+                ),
+              );
+
+              // 反馈给 AI，让它知道技能创建成功
+              this.context.addMessage(
+                "system",
+                `System Notification: Skill "${promotedSkill.name}" has been successfully created and persisted from context "${item.path}".`,
+              );
             } else {
-              console.log(chalk.yellow(`⚠️  Skill creation rejected by governance: ${'reason' in governanceDecision ? governanceDecision.reason : 'Unknown reason'}`));
+              console.log(
+                chalk.yellow(
+                  `⚠️  Skill creation rejected by governance: ${"reason" in governanceDecision ? governanceDecision.reason : "Unknown reason"}`,
+                ),
+              );
+
+              // 反馈给 AI，让它知道被拒绝
+              this.context.addMessage(
+                "system",
+                `System Notification: Skill creation for "${promotedSkill.name}" was rejected by governance. Reason: ${"reason" in governanceDecision ? governanceDecision.reason : "Unknown reason"}`,
+              );
             }
           } catch (error) {
             console.log(chalk.red(`❌ Failed to create skill: ${error}`));
