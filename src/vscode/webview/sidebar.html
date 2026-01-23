@@ -1218,6 +1218,7 @@
           const trigger = textBeforeCursor[lastTriggerIndex];
           const query = textBeforeCursor.substring(lastTriggerIndex + 1);
 
+          // 只有当查询中没有空格时才触发（空查询也允许触发）
           if (!/\s/.test(query)) {
             suggestionType = trigger;
 
@@ -2055,14 +2056,17 @@
           userInput.value = currentValue + fileMarker;
           userInput.focus();
 
-          // 重新计算高度
+          // 重新计算高度，确保文件内容可见
           userInput.style.height = "auto";
-          userInput.style.height = userInput.scrollHeight + "px";
+          userInput.style.height = Math.max(userInput.scrollHeight, 120) + "px";
+          
+          // 确保输入框能滚动查看所有内容
+          userInput.style.overflowY = "auto";
 
-          console.log(`[handleFileContent] Inserted file content into input box, total length: ${userInput.value.length}`);
+          console.log(`[handleFileContent] Inserted file content into input box, total length: ${userInput.value.length}, height: ${userInput.style.height}`);
           
           // 显示成功提示
-          showFlashNotification(`✓ 已添加文件引用: ${filePath}`);
+          showFlashNotification(`✓ 已添加文件引用: ${filePath} (${content.length} 字符)`);
         } else {
           // 直接分析文件
           console.log(
