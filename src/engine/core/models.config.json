@@ -11,8 +11,8 @@
       "description": "平衡性能"
     },
     {
-      "id": "gemini-2.5-flash-latest",
-      "name": "Gemini 2.5 Flash Latest",
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash Lite Latest",
       "description": "极致速度"
     },
     {
