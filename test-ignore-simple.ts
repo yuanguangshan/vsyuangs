@@ -99,7 +99,22 @@ class SimpleIgnoreFilter {
             return pattern;
         }
 
-        // Default: wrap with ** to match at any level
+        // Check if this is a file path (contains a filename, not a directory)
+        // We can detect this by checking if of last part has an extension or is a specific name
+        const parts = pattern.split('/');
+        const lastPart = parts[parts.length - 1];
+
+        // If it looks like a file (has extension or is a specific filename), don't add /**
+        if (lastPart.includes('.') && !lastPart.includes('*')) {
+            return `**/${pattern}`;
+        }
+
+        // Also check if it's a known file pattern like .DS_Store, .gitignore, etc.
+        if (lastPart.startsWith('.') && !lastPart.includes('*')) {
+            return `**/${pattern}`;
+        }
+
+        // Default: treat as directory pattern, wrap with ** to match at any level
         return `**/${pattern}/**`;
     }
 
