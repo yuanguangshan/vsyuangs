@@ -168,9 +168,34 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     break;
                 case 'getFiles':
                     const excludePattern = this._ignoreFilter?.getExcludePattern() || '**/node_modules/**';
-                    const files = await vscode.workspace.findFiles('**/*', excludePattern, 100);
-                    const fileNames = files.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
-                    webviewView.webview.postMessage({ type: 'suggestions', value: fileNames, trigger: '@' });
+                    // 增加文件数量限制，确保能获取到更多文件
+                    const files = await vscode.workspace.findFiles('**/*', excludePattern, 1000);
+                    
+                    // 获取相对路径
+                    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+                    let fileNames = files.map(f => 
+                        workspaceFolder 
+                            ? path.relative(workspaceFolder.uri.fsPath, f.fsPath) 
+                            : f.fsPath
+                    );
+                    
+                    // 如果有查询词，进行模糊匹配过滤
+                    if (data.query && data.query.trim()) {
+                        const queryLower = data.query.toLowerCase();
+                        fileNames = fileNames.filter(name => 
+                            name.toLowerCase().includes(queryLower)
+                        );
+                    }
+                    
+                    // 限制返回数量，避免列表太长影响性能
+                    fileNames = fileNames.slice(0, 50);
+                    
+                    webviewView.webview.postMessage({ 
+                        type: 'suggestions', 
+                        value: fileNames, 
+                        trigger: '@' 
+                    });
+                    console.log(`[ChatViewProvider] Returned ${fileNames.length} files for query: "${data.query}"`);
                     break;
                 case 'loadFileTree':
                     const allExcludePattern = this._ignoreFilter?.getExcludePattern() || '**/node_modules/**';

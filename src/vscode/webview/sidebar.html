@@ -1287,15 +1287,17 @@
         userInput.style.height = "auto";
         userInput.style.height = userInput.scrollHeight + "px";
 
-        // 如果是 @ 文件引用，自动读取文件
+        // 如果是 @ 文件引用，自动读取文件并插入内容
         if (suggestionType === "@") {
+          console.log(`[selectSuggestion] Reading file for reference: ${value}`);
           handleFileReadForReference(value);
         }
       }
 
-      // 处理 @ 文件引用
+      // 处理 @ 文件引用 - 读取文件并插入到输入框
       async function handleFileReadForReference(filePath) {
-        // 移除系统消息，直接读取文件
+        console.log(`[handleFileReadForReference] Requesting file content: ${filePath}`);
+        // 发送读取文件请求，标记为引用模式
         vscode.postMessage({
           type: "readFile",
           filePath: filePath,
@@ -2044,6 +2046,8 @@
 
       // 处理文件内容
       function handleFileContent(filePath, content, isReference = false) {
+        console.log(`[handleFileContent] Received file: ${filePath}, isReference: ${isReference}, content length: ${content.length}`);
+        
         if (isReference) {
           // 如果是引用，在输入框中添加文件标记
           const currentValue = userInput.value;
@@ -2055,12 +2059,10 @@
           userInput.style.height = "auto";
           userInput.style.height = userInput.scrollHeight + "px";
 
-          console.log(
-            "File reference received:",
-            filePath,
-            content.length,
-            "bytes",
-          );
+          console.log(`[handleFileContent] Inserted file content into input box, total length: ${userInput.value.length}`);
+          
+          // 显示成功提示
+          showFlashNotification(`✓ 已添加文件引用: ${filePath}`);
         } else {
           // 直接分析文件
           console.log(
