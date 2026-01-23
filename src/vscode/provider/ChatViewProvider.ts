@@ -67,10 +67,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
      * 读取模型配置文件
      */
     private getModelsConfig(): ModelsConfigFile {
-        const configPath = path.join(this._context.extensionPath, 'src', 'engine', 'core', 'models.config.json');
+        // 优先从 dist 目录读取（打包后的位置）
+        const possiblePaths = [
+            path.join(this._context.extensionPath, 'dist', 'engine', 'core', 'models.config.json'),
+            path.join(this._context.extensionPath, 'src', 'engine', 'core', 'models.config.json')
+        ];
         
-        if (!fs.existsSync(configPath)) {
-            console.warn('[ChatViewProvider] Models config file not found, using defaults');
+        let configPath: string | null = null;
+        for (const testPath of possiblePaths) {
+            if (fs.existsSync(testPath)) {
+                configPath = testPath;
+                console.log(`[ChatViewProvider] Found config file at: ${configPath}`);
+                break;
+            }
+        }
+
+        if (!configPath) {
+            console.warn('[ChatViewProvider] Models config file not found at any location, using defaults');
             return {
                 availableModels: [
                     { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: '快速且高效' },
@@ -85,7 +98,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         try {
             const content = fs.readFileSync(configPath, 'utf-8');
-            return JSON.parse(content) as ModelsConfigFile;
+            const config = JSON.parse(content) as ModelsConfigFile;
+            console.log(`[ChatViewProvider] Loaded config with ${config.availableModels.length} models, default: ${config.defaultModel}`);
+            return config;
         } catch (error) {
             console.error('[ChatViewProvider] Failed to parse models config:', error);
             throw error;
