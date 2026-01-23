@@ -205,6 +205,57 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
+      /* 消息操作按钮容器 */
+      .message-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+      }
+
+      .message:hover .message-actions {
+        opacity: 1;
+      }
+
+      /* 消息操作按钮 */
+      .message-action-btn {
+        background: rgba(0, 0, 0, 0.6);
+        border: none;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .message-action-btn:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: scale(1.1);
+      }
+
+      .message-action-btn:active {
+        transform: scale(0.95);
+      }
+
+      .user-message .message-action-btn {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+      }
+
+      .user-message .message-action-btn:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
       @keyframes fadeIn {
         from {
           opacity: 0;
@@ -1309,18 +1360,75 @@
       function addMessage(text, role, isRaw = false) {
         const div = document.createElement("div");
         div.className = `message ${role}-message`;
+        div.dataset.content = text; // 保存原始文本内容
+
+        // 创建消息操作按钮容器
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "message-actions";
+
+        // 复制按钮
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "message-action-btn";
+        copyBtn.innerHTML = "📋";
+        copyBtn.title = "复制消息";
+        copyBtn.onclick = (e) => {
+          e.stopPropagation();
+          copyMessageText(text);
+        };
+
+        // 删除按钮
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "message-action-btn";
+        deleteBtn.innerHTML = "🗑️";
+        deleteBtn.title = "删除消息";
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteMessage(div);
+        };
+
+        actionsDiv.appendChild(copyBtn);
+        actionsDiv.appendChild(deleteBtn);
+        div.appendChild(actionsDiv);
+
+        // 创建消息内容容器
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "message-content";
 
         if (role === "ai") {
-          div.innerHTML = marked.parse(text);
+          contentDiv.innerHTML = marked.parse(text);
           // 处理 diff 代码块
-          processDiffBlocks(div);
+          processDiffBlocks(contentDiv);
         } else {
-          div.textContent = text;
+          contentDiv.textContent = text;
         }
 
+        div.appendChild(contentDiv);
         chatContainer.appendChild(div);
         scrollToBottom();
         return div;
+      }
+
+      // 复制消息文本
+      function copyMessageText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+          showFlashNotification("✓ 已复制到剪贴板");
+        }).catch((err) => {
+          console.error("复制失败:", err);
+          showFlashNotification("✗ 复制失败");
+        });
+      }
+
+      // 删除消息
+      function deleteMessage(messageElement) {
+        if (confirm("确定要删除这条消息吗？")) {
+          // 从 DOM 中移除
+          messageElement.remove();
+          showFlashNotification("✓ 消息已删除");
+          
+          // 通知后端更新历史记录（如果需要的话）
+          // 这里可以添加一个消息到后端，让后端从历史记录中删除这条消息
+          // vscode.postMessage({ type: "deleteMessage", index: messageIndex });
+        }
       }
 
       // 检测并处理 diff 代码块
