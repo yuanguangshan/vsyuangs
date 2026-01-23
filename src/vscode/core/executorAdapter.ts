@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ProposedAction } from '../../engine/agent/state';
+import { createIgnoreFilter } from '../utils/ignoreFilter';
 
 /**
  * Agent Action → VS Code API 适配器
@@ -12,6 +13,7 @@ import { ProposedAction } from '../../engine/agent/state';
  * - 执行 answer → 信息提示
  */
 export class VSCodeExecutorAdapter {
+  private static ignoreFilter = createIgnoreFilter();
   /**
    * 执行 Agent 提出的动作
    */
@@ -300,8 +302,9 @@ export class VSCodeExecutorAdapter {
   private static async searchInWorkspace(query: string) {
     try {
       console.log(`[Executor] Searching workspace for: ${query}`);
-      // 使用VS Code的搜索功能
-      const results = await vscode.workspace.findFiles(`**/${query}**`, '**/node_modules/**', 100);
+      // 使用VS Code的搜索功能，应用忽略规则
+      const excludePattern = this.ignoreFilter?.getExcludePattern() || '**/node_modules/**';
+      const results = await vscode.workspace.findFiles(`**/${query}**`, excludePattern, 100);
       const resultPaths = results.map(uri => uri.fsPath).join('\n');
       
       return {

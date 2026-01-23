@@ -4,6 +4,7 @@ import * as path from 'path';
 import { VSCodeAgentRuntime } from '../core/runtime';
 import { GovernanceService } from '../../engine/agent/governance';
 import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
+import { createIgnoreFilter, IgnoreFilter } from '../utils/ignoreFilter';
 
 /**
  * ChatView Provider - 侧边栏聊天视图提供者
@@ -21,11 +22,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private _messages: { role: string, content: string }[] = [];
     private _abortController: AbortController | null = null;
+    private _ignoreFilter: IgnoreFilter | null = null;
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
     ) {
         console.log('[ChatViewProvider] Initializing...');
+        // Initialize ignore filter for file selection
+        this._ignoreFilter = createIgnoreFilter();
         // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
         this.loadHistory();
     }
@@ -90,12 +94,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     }
                     break;
                 case 'getFiles':
-                    const files = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 100);
+                    const excludePattern = this._ignoreFilter?.getExcludePattern() || '**/node_modules/**';
+                    const files = await vscode.workspace.findFiles('**/*', excludePattern, 100);
                     const fileNames = files.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
                     webviewView.webview.postMessage({ type: 'suggestions', value: fileNames, trigger: '@' });
                     break;
                 case 'loadFileTree':
-                    const allFiles = await vscode.workspace.findFiles('**/*', '**/node_modules/**', 500);
+                    const allExcludePattern = this._ignoreFilter?.getExcludePattern() || '**/node_modules/**';
+                    const allFiles = await vscode.workspace.findFiles('**/*', allExcludePattern, 500);
                     const allFileNames = allFiles.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
                     webviewView.webview.postMessage({ type: 'fileTreeData', value: allFileNames });
                     break;

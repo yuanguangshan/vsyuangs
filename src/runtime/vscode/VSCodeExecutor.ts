@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { createIgnoreFilter } from '../../vscode/utils/ignoreFilter';
 
 export class VSCodeExecutor {
+    private static ignoreFilter = createIgnoreFilter();
     // 处理文件渲染/预览
     static async previewFile(filePath: string) {
         const fullPath = path.isAbsolute(filePath)
@@ -43,7 +45,20 @@ export class VSCodeExecutor {
         const fullPath = this.getAbsolutePath(dirPath);
         const uri = vscode.Uri.file(fullPath);
         const entries = await vscode.workspace.fs.readDirectory(uri);
-        return entries.map(([name, type]) => `${name}${type === vscode.FileType.Directory ? '/' : ''}`).join('\n');
+        
+        // Apply ignore filter if available
+        let filteredEntries = entries;
+        if (this.ignoreFilter) {
+            const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+            if (workspaceRoot) {
+                filteredEntries = entries.filter(([name, type]) => {
+                    const entryPath = path.join(fullPath, name);
+                    return !this.ignoreFilter!.shouldIgnore(entryPath, workspaceRoot);
+                });
+            }
+        }
+        
+        return filteredEntries.map(([name, type]) => `${name}${type === vscode.FileType.Directory ? '/' : ''}`).join('\n');
     }
 
     // 获取绝对路径辅助方法
@@ -130,4 +145,3 @@ export class VSCodeExecutor {
         });
     }
 }
-

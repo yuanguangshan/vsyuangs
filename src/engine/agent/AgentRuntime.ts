@@ -274,8 +274,11 @@ Latest Observation: ${lastObs.content}`,
           console.log(chalk.green(`\n\n\n🤖 AI Action: ${result.output}\n`));
         }
         
-        // 关键修复：将结果作为 Observation (Tool Result) 添加，而不是 Assistant 回复
-        this.context.addToolResult(action.type, result.output);
+        // ✅ 关键修复：不要将最终答案作为Observation添加，避免AI重复内容
+        // 只有在流式传输时才不添加，非流式传输（CLI模式）添加以便后续分析
+        if (!onChunk) {
+          this.context.addToolResult(action.type, result.output);
+        }
 
         // 更新executionTurn
         executionTurn.executionResult = result;
@@ -394,8 +397,8 @@ Latest Observation: ${lastObs.content}`,
         // 执行回顾性分析
         await this.retrospective({ ...executionTurn, turnId: 0 });
 
-        // 关键修复：不要 break，而是 continue让 AI 看到 Observation 后进行下一轮思考
-        continue;
+        // ✅ 关键修复：直接 break，不再进入下一轮，避免AI重复自己的回答
+        break;
       }
 
       // === 预检 (Pre-flight) ===
