@@ -839,9 +839,7 @@
     </header>
 
     <div id="chat-container">
-      <div class="message system-message">
-        ✨ Yuangs AI Agent initialized and ready.
-      </div>
+      <!-- 初始为空，等待历史记录加载 -->
     </div>
 
     <div id="input-area">
@@ -1072,9 +1070,7 @@
 
       // 处理 @ 文件引用
       async function handleFileReadForReference(filePath) {
-        addMessage(`正在读取文件引用：${filePath}`, "system");
-
-        // 发送文件读取请求
+        // 移除系统消息，直接读取文件
         vscode.postMessage({
           type: "readFile",
           filePath: filePath,
@@ -1379,6 +1375,9 @@
       // 添加一个标志来标识当前是否正在流式接收AI消息
       let isStreaming = false;
 
+      // 标记是否已经加载过历史记录
+      let historyLoaded = false;
+
       window.addEventListener("message", (event) => {
         const message = event.data;
         const loader = document.getElementById("ai-loader");
@@ -1386,6 +1385,25 @@
         switch (message.type) {
           case "suggestions":
             showSuggestions(message.value, message.trigger);
+            break;
+          case "history":
+            // 只加载一次历史记录，避免重复渲染
+            if (!historyLoaded) {
+              historyLoaded = true;
+              chatContainer.innerHTML = ""; // 清空初始化状态
+              
+              if (message.value && message.value.length > 0) {
+                message.value.forEach((msg) => {
+                  addMessage(msg.content, msg.role === "user" ? "user" : "ai");
+                });
+                // 滚动到底部
+                requestAnimationFrame(() => {
+                  scrollToBottom();
+                });
+              } else {
+                chatContainer.innerHTML = '<div class="message system-message">✨ Yuangs AI Agent initialized and ready.</div>';
+              }
+            }
             break;
           case "aiChunk":
             if (loader) loader.remove();
@@ -1422,17 +1440,6 @@
               scrollToBottom();
             });
             break;
-          case "history":
-            chatContainer.innerHTML = "";
-            if (message.value && message.value.length > 0) {
-              message.value.forEach((msg) => {
-                addMessage(msg.content, msg.role === "user" ? "user" : "ai");
-              });
-            } else {
-              chatContainer.innerHTML =
-                '<div class="message system-message">✨ Yuangs AI Agent initialized and ready.</div>';
-            }
-            break;
           case "done":
             // 流式传输结束
             if (isStreaming && currentAiMessageElement) {
@@ -1451,6 +1458,11 @@
 
             currentAiMessageElement = null;
             currentAiRawText = "";
+            
+            // 自动滚动到底部，确保新消息可见
+            requestAnimationFrame(() => {
+              scrollToBottom();
+            });
             break;
           case "clear":
             chatContainer.innerHTML =
@@ -1766,10 +1778,7 @@
 
       // 处理文件点击
       function handleFileClick(filePath) {
-        // 发送消息请求读取文件内容
-        addMessage(`正在读取文件：${filePath}`, "system");
-
-        // 发送文件读取请求到后端
+        // 移除系统消息，直接读取文件
         vscode.postMessage({
           type: "readFile",
           filePath: filePath,

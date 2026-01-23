@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { VSCodeAgentRuntime } from '../core/runtime';
 import { GovernanceService } from '../../engine/agent/governance';
+import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
 
 /**
  * ChatView Provider - 侧边栏聊天视图提供者
@@ -24,9 +25,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         private readonly _context: vscode.ExtensionContext,
     ) {
         console.log('[ChatViewProvider] Initializing...');
-        // 从 workspaceState 恢复历史记录
-        this._messages = this._context.workspaceState.get<{ role: string, content: string }[]>('chatHistory', []);
-        console.log(`[ChatViewProvider] Restored ${this._messages.length} messages from history`);
+        // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
+        this.loadHistory();
     }
 
     public resolveWebviewView(
@@ -51,8 +51,29 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             webviewView.webview.html = `<html><body><h3>Error loading view</h3><pre>${error.message}</pre></body></html>`;
         }
 
+        // 监听 webview 可见性变化
+        webviewView.onDidChangeVisibility(() => {
+            console.log(`[ChatViewProvider] Webview visibility changed. Visible: ${webviewView.visible}`);
+            // 每次 webview 变为可见时，确保发送历史记录
+            if (webviewView.visible && this._view) {
+                this._view.webview.postMessage({ type: 'history', value: this._messages });
+            }
+        });
+
+        // 监听 webview 销毁
+        webviewView.onDidDispose(() => {
+            console.log('[ChatViewProvider] Webview disposed');
+            this._view = undefined;
+        });
+
         // 当 webview 准备好后，发送历史记录
-        webviewView.webview.postMessage({ type: 'history', value: this._messages });
+        // 使用 setTimeout 确保 webview 完全初始化
+        setTimeout(() => {
+            if (this._view) {
+                console.log(`[ChatViewProvider] Sending ${this._messages.length} messages to UI`);
+                this._view.webview.postMessage({ type: 'history', value: this._messages });
+            }
+        }, 100);
 
         webviewView.webview.onDidReceiveMessage(async data => {
             switch (data.type) {
@@ -181,7 +202,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             // 发送上下文信息到UI（但不自动弹出面板）
             this.sendContextToUI(runtime.getContextManager());
 
-            this._messages.push({ role: 'assistant', content: fullAiResponse });
+            // 只保存有意义的 AI 回复，过滤空内容
+            if (fullAiResponse && fullAiResponse.trim()) {
+                this._messages.push({ role: 'assistant', content: fullAiResponse });
+            }
             this._saveHistory();
             this._view?.webview.postMessage({ type: 'done' });
             (GovernanceService as any).adjudicate = originalAdjudicate;
@@ -404,13 +428,44 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await document.save();
     }
 
-    public clear() {
+    public async clear() {
         this._messages = [];
-        this._saveHistory();
+        await this._saveHistory();
+        await chatHistoryStorage.clearChatHistory();
         this._view?.webview.postMessage({ type: 'clear' });
     }
 
+    private async loadHistory() {
+        // 优先尝试从文件系统加载
+        try {
+            const fileHistory = await chatHistoryStorage.loadChatHistory();
+            if (fileHistory && fileHistory.length > 0) {
+                // 将 AIRequestMessage 转换为内部格式
+                this._messages = fileHistory.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                }));
+                console.log(`[ChatViewProvider] Loaded ${this._messages.length} messages from file storage`);
+                return;
+            }
+        } catch (e) {
+            console.warn('[ChatViewProvider] Failed to load from file storage, falling back to workspaceState:', e);
+        }
+        
+        // 回退到 workspaceState
+        this._messages = this._context.workspaceState.get<{ role: string, content: string }[]>('chatHistory', []);
+        console.log(`[ChatViewProvider] Restored ${this._messages.length} messages from workspaceState`);
+    }
+
     private _saveHistory() {
+        // 保存到文件系统（持久化）
+        const historyForFile = this._messages.map(msg => ({
+            role: msg.role as 'system' | 'user' | 'assistant',
+            content: msg.content
+        }));
+        chatHistoryStorage.saveChatHistory(historyForFile);
+        
+        // 同时保存到 workspaceState（作为备份）
         this._context.workspaceState.update('chatHistory', this._messages);
     }
 

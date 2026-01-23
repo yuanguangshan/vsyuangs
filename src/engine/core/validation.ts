@@ -13,7 +13,7 @@ export type UserConfig = {
 export type AppsConfig = Record<string, string>;
 
 export type AIRequestMessage = {
-    role: 'system' | 'user' | 'assistant';
+    role: 'system' | 'user' | 'assistant' | 'tool';
     content: string;
 };
 
