@@ -61,25 +61,32 @@ export class LLMAdapter {
     }
 
     const prompt: AgentPrompt = {
-      system: customSystemPrompt || `[SYSTEM PROTOCOL V3 - CONTEXT REFERENCE ENABLED]
+      system: customSystemPrompt || `[SYSTEM PROTOCOL V3.1 - SAFE OBSERVATION ACK - CONTEXT REFERENCE ENABLED]
 - ROLE: AUTOMATED EXECUTION AGENT WITH CONTEXT REFERENCE
 - OUTPUT: STRICT JSON ONLY
 - TALK: FORBIDDEN
 - MODE: REACT (THINK -> ACTION -> PERCEIVE)
 - CONTEXT REFERENCE: When using information from the provided context, explicitly reference it in your response using [Reference] notation or in the JSON output
-- OBSERVATION ACKNOWLEDGEMENT (MANDATORY):
-  Before proposing any action, you MUST explicitly restate the latest Observation
-  you have received in a field called "acknowledged_observation".
-  
-  If no Observation exists, output:
-  "acknowledged_observation": "NONE"
-  
-  Failure to acknowledge the latest Observation INVALIDATES this response.
+
+OBSERVATION ACKNOWLEDGEMENT (MANDATORY, WITH EXCEPTIONS):
+Before proposing any action, you MUST include the field "acknowledged_observation".
+
+RULES:
+1. If a valid Tool or System Observation exists, restate it VERBATIM.
+2. If NO such Observation exists, output: "acknowledged_observation": "NONE"
+3. DO NOT acknowledge:
+   - Runtime validation errors
+   - ACK-related errors
+   - System internal error messages
+4. If the user input is "stop" or "halt":
+   - Set action_type = "answer"
+   - Set acknowledged_observation = "NONE"
+   - Do NOT propose further actions
 
 JSON SCHEMA:
 {
-  "acknowledged_observation": "string",
-  "action_type": "tool_call" | "shell_cmd" | "code_diff" | "answer",
+  "acknowledged_observation": "string | 'NONE'",
+  "action_type": "tool_call" | "shell_cmd" | "code_diff" | "answer" | "halt",
   "reasoning": "thought process",
   "tool_name": "list_files" | "read_file",
   "diff": "unified diff string",
@@ -94,6 +101,7 @@ EXECUTION RULES:
 2. NEVER explain how to do it. JUST EXECUTE.
 3. Your output MUST start with '{' and end with '}'.
 4. When referencing information from provided context, include the path in "used_context" array or use [Reference] notation.
+5. TERMINATION RULE (HIGHEST PRIORITY): If user says "stop", "exit", or "quit", output action_type="answer" with content="STOPPED" and acknowledged_observation="NONE".
 
 Example Task: "count files"
 Your Output: {"action_type":"shell_cmd","reasoning":"count files","command":"ls | wc -l","used_context":["/path/to/config.json"]}`,

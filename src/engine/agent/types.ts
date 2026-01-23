@@ -59,3 +59,18 @@ export type AgentAction =
     | { type: 'print'; content: string }
     | { type: 'confirm'; next: AgentAction }
     | { type: 'execute'; command: string; risk: 'low' | 'medium' | 'high' };
+
+/**
+ * Observation 类型分级（v3.1）
+ * 用于区分哪些 Observation 需要确认，哪些不需要
+ */
+export type ObservationKind = 'tool_result' | 'system_note' | 'error' | 'none';
+
+/**
+ * 完整的 Observation 接口
+ */
+export interface Observation {
+    kind: ObservationKind;
+    content: string;
+    timestamp: number;
+}

@@ -50,6 +50,27 @@ export class AgentRuntime {
     onChunk?: (chunk: string) => void,
     model?: string,
   ) {
+    // ✅ 终止态检查（HALT）- v3.1 核心修复
+    if (userInput && userInput.trim().toLowerCase() === 'stop') {
+      console.log(chalk.blue('\n🛑 TERMINATION: User requested stop'));
+      this.executionRecorder.recordTurn({
+        turnId: 0,
+        startTime: Date.now(),
+        contextSnapshot: {
+          inputHash: this.context.getHash(),
+          systemPromptVersion: 'v1.0.0',
+          toolSetVersion: 'v1.0.0',
+          recentMessages: this.context.getRecentMessages(5),
+        },
+        executionResult: {
+          success: true,
+          output: 'STOPPED'
+        },
+        endTime: Date.now()
+      } as any);
+      return; // ✅ 直接 return，不进入 REACT 循环
+    }
+
     // 确保 Context Bank 已初始化
     await this.initialize();
 
@@ -171,30 +192,56 @@ export class AgentRuntime {
         this.context, // 传递ContextManager以便访问ContextBuffer
       );
 
-      // === Observation Acknowledgement Gate ===
-      const lastObs = this.context.getLastObservation();
+      // === Observation Acknowledgement Gate (v3.1 - 安全版) ===
+      // ✅ 使用 getLastAckableObservation() 而不是 getLastObservation()
+      // 这会自动排除 error 类型的 Observation
+      const lastObs = this.context.getLastAckableObservation();
+      const ack = (thought.parsedPlan as any)?.acknowledged_observation;
+      
       if (lastObs) {
-          const ack = (thought.parsedPlan as any)?.acknowledged_observation;
-          // 检查 ack 是否存在且包含了 Observation 的一部分内容 (前30字符)
-          if (!ack || (lastObs.content.length > 30 && !lastObs.content.includes(ack.substring(0, 10)) && !ack.includes(lastObs.content.substring(0, 10)))) {
-               // 宽松一点的检查：只要有 ack 且不是 "NONE" 就可以，或者内容有重叠
-               if (ack === 'NONE' || !ack) {
-                    console.log(chalk.red('\n❌ OBSERVATION NOT ACKNOWLEDGED'));
-                    console.log(chalk.red('Expected observation to be restated:'));
-                    console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
+          // 如果有 Observation，检查是否被正确确认
+          // 检查 ack 是否存在且不为 NONE
+          if (!ack || ack === 'NONE') {
+              console.log(chalk.red('\n❌ OBSERVATION NOT ACKNOWLEDGED'));
+              console.log(chalk.red('Expected observation to be restated:'));
+              console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
 
-                    // 注入 system correction
-                    this.context.addMessage(
-                      'system',
-                      `ERROR: You failed to acknowledge the latest Observation.
-    You MUST restate it verbatim before continuing.
-    Latest Observation: ${lastObs.content}`
-                    );
+              // ✅ 关键修复：使用 error 类型，这样它不会被再次确认
+              this.context.addObservation(
+                `ERROR: You failed to acknowledge the latest Observation.
+You MUST restate it verbatim before continuing.
+Latest Observation: ${lastObs.content}`,
+                'error'  // ← 标记为 error 类型，防止死循环
+              );
 
-                    // ❗关键：不要执行 action，直接下一轮
-                    continue;
-               }
+              // ❗关键：不要执行 action，直接下一轮
+              continue;
           }
+          
+          // 宽松检查：只要 ack 包含 Observation 的一部分内容即可
+          if (lastObs.content.length > 30 && 
+              !lastObs.content.includes(ack.substring(0, 10)) && 
+              !ack.includes(lastObs.content.substring(0, 10))) {
+              console.log(chalk.red('\n❌ OBSERVATION ACK MISMATCH'));
+              console.log(chalk.red('Observation:'));
+              console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
+              console.log(chalk.red('Your ACK:'));
+              console.log(chalk.red(ack.substring(0, 100) + '...'));
+
+              // ✅ 使用 error 类型
+              this.context.addObservation(
+                `ERROR: Your acknowledgment does not match the latest Observation.
+Please restate it VERBATIM.
+Latest Observation: ${lastObs.content}`,
+                'error'  // ← 标记为 error 类型
+              );
+
+              continue;
+          }
+      } else if (ack && ack !== 'NONE') {
+          // 没有需要确认的 Observation，但 AI 确认了某个内容
+          // 这可能是误判，但不是致命错误，直接继续
+          console.log(chalk.yellow('\n⚠️  ACK provided but no Observation to acknowledge'));
       }
 
       const action: ProposedAction = {

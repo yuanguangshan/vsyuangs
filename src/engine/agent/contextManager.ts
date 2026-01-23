@@ -5,7 +5,7 @@ import { ExtendedContextProtocol } from './contextDSL';
 import { ContextBank } from './contextBank';
 
 export class ContextManager {
-  private messages: Array<{ role: string; content: string; timestamp: number }> = [];
+  private messages: Array<{ role: string; content: string; timestamp: number; metadata?: { kind?: import('./types').ObservationKind } }> = [];
   private contextBuffer: ContextBuffer;
   private contextBank: ContextBank;
   private maxHistorySize = 50;
@@ -43,8 +43,17 @@ export class ContextManager {
     this.addMessage('tool', content);
   }
 
-  addObservation(observation: string): void {
+  /**
+   * 添加 Observation，支持类型分级（v3.1）
+   * @param observation 观察内容
+   * @param kind Observation 类型：tool_result, system_note, error
+   */
+  addObservation(observation: string, kind: import('./types').ObservationKind = 'system_note'): void {
     this.addMessage('system', observation);
+    // 为最后一条消息添加 kind 元数据
+    if (this.messages.length > 0) {
+      this.messages[this.messages.length - 1].metadata = { kind };
+    }
   }
 
   /**
@@ -60,10 +69,27 @@ export class ContextManager {
       }));
   }
 
+  /**
+   * 获取最新的 Observation（向后兼容）
+   */
   getLastObservation(): { role: 'tool' | 'system'; content: string } | null {
     for (let i = this.messages.length - 1; i >= 0; i--) {
       const m = this.messages[i];
       if (m.role === 'tool' || m.role === 'system') {
+        return { role: m.role as any, content: m.content };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 获取需要 ACK 的 Observation（排除 error 类型）
+   * 这是 v3.1 的核心修复：防止 ERROR 被当成需要确认的 Observation
+   */
+  getLastAckableObservation(): { role: 'tool' | 'system'; content: string } | null {
+    for (let i = this.messages.length - 1; i >= 0; i--) {
+      const m = this.messages[i];
+      if ((m.role === 'tool' || m.role === 'system') && m.metadata?.kind !== 'error') {
         return { role: m.role as any, content: m.content };
       }
     }
