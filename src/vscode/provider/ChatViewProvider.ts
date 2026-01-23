@@ -23,6 +23,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private _messages: { role: string, content: string }[] = [];
     private _abortController: AbortController | null = null;
     private _ignoreFilter: IgnoreFilter | null = null;
+    private _currentModel: string = 'gpt-4o-mini';
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
@@ -30,6 +31,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         console.log('[ChatViewProvider] Initializing...');
         // Initialize ignore filter for file selection
         this._ignoreFilter = createIgnoreFilter();
+        // 从 workspaceState 加载保存的模型
+        this._currentModel = this._context.workspaceState.get('currentModel', 'gpt-4o-mini');
+        console.log(`[ChatViewProvider] Current model: ${this._currentModel}`);
         // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
         this.loadHistory();
     }
@@ -145,6 +149,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                         }
                     }
                     break;
+                case 'getCurrentModel':
+                    // 发送当前模型到 UI
+                    webviewView.webview.postMessage({ type: 'currentModel', value: this._currentModel });
+                    break;
+                case 'changeModel':
+                    // 更新当前模型
+                    this._currentModel = data.value;
+                    console.log(`[ChatViewProvider] Model changed to: ${this._currentModel}`);
+                    // 保存到 workspaceState
+                    this._context.workspaceState.update('currentModel', this._currentModel);
+                    break;
             }
         });
     }
@@ -254,7 +269,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     fullAiResponse += chunk;
                     this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
                 },
-                undefined, // model (use default)
+                this._currentModel, // 使用当前选中的模型
                 () => {
                     // Context initialized callback
                     console.log('[ChatViewProvider] Context initialized, sending to UI...');

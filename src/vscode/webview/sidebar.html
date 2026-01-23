@@ -81,6 +81,80 @@
         border-radius: 4px;
       }
 
+      /* 模型选择器样式 */
+      .model-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        background: var(--vscode-input-background);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .model-selector:hover {
+        border-color: var(--accent);
+      }
+
+      .model-selector-label {
+        font-size: 0.75em;
+        opacity: 0.8;
+        white-space: nowrap;
+      }
+
+      .model-selector-dropdown {
+        position: absolute;
+        top: 40px;
+        right: 12px;
+        background: var(--vscode-editor-background);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        min-width: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+        z-index: 3000;
+      }
+
+      .model-selector-dropdown.visible {
+        display: block;
+      }
+
+      .model-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85em;
+      }
+
+      .model-option:hover {
+        background: var(--vscode-list-hoverBackground);
+      }
+
+      .model-option.active {
+        background: var(--vscode-list-activeSelectionBackground);
+        color: var(--vscode-list-activeSelectionForeground);
+      }
+
+      .model-option-name {
+        flex: 1;
+      }
+
+      .model-option-icon {
+        opacity: 0.5;
+        font-size: 0.8em;
+      }
+
+      .model-option.active .model-option-icon {
+        opacity: 1;
+      }
+
       .icon-btn:hover {
         opacity: 1;
         background: var(--vscode-toolbar-hoverBackground);
@@ -830,6 +904,20 @@
     <header>
       <div class="header-title">YUANGS AI</div>
       <div class="header-actions">
+        <!-- 模型选择器 -->
+        <div class="model-selector" id="model-selector" title="Select AI Model">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.6;">
+            <path d="M8 1a7 7 0 0 1 0 14A7 7 0 0 1 8 1zM0 8a8 8 0 1 0 16 0A8 8 0 0 0 0 8zm8 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-2.5V6H7v4.5h2z"/>
+          </svg>
+          <span class="model-selector-label" id="current-model">Loading...</span>
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.5;">
+            <path d="M8 11L3 6h2.5L8 8.5L10.5 6H13L8 11z"/>
+          </svg>
+        </div>
+        <!-- 模型下拉菜单 -->
+        <div class="model-selector-dropdown" id="model-dropdown">
+          <!-- 选项将通过 JavaScript 动态生成 -->
+        </div>
         <button class="icon-btn" id="files-toggle" title="Show Files">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path
@@ -2137,6 +2225,119 @@
         contextPanel.classList.remove("open");
         contextToggle.classList.remove("visible");
       }
+
+      // === 模型选择器功能 ===
+
+      const modelSelector = document.getElementById("model-selector");
+      const modelDropdown = document.getElementById("model-dropdown");
+      const currentModelLabel = document.getElementById("current-model");
+
+      // 可用的 AI 模型列表
+      const availableModels = [
+        { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "快速且高效" },
+        { id: "gpt-4o", name: "GPT-4o", description: "平衡性能" },
+        { id: "gpt-4-turbo", name: "GPT-4 Turbo", description: "高性能" },
+        { id: "gpt-4", name: "GPT-4", description: "最强能力" },
+        { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", description: "经济实惠" }
+      ];
+
+      // 当前选中的模型
+      let currentModel = "gpt-4o-mini";
+
+      // 初始化模型选择器
+      function initModelSelector() {
+        // 从扩展获取当前模型
+        vscode.postMessage({ type: "getCurrentModel" });
+
+        // 渲染模型列表
+        renderModelOptions();
+
+        // 点击切换下拉菜单
+        modelSelector.addEventListener("click", (e) => {
+          e.stopPropagation();
+          modelDropdown.classList.toggle("visible");
+        });
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener("click", (e) => {
+          if (!modelSelector.contains(e.target) && !modelDropdown.contains(e.target)) {
+            modelDropdown.classList.remove("visible");
+          }
+        });
+
+        // 阻止下拉菜单内部点击事件冒泡
+        modelDropdown.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+      }
+
+      // 渲染模型选项
+      function renderModelOptions() {
+        modelDropdown.innerHTML = "";
+
+        availableModels.forEach((model) => {
+          const option = document.createElement("div");
+          option.className = `model-option ${model.id === currentModel ? "active" : ""}`;
+          option.innerHTML = `
+            <span class="model-option-name">
+              <strong>${model.name}</strong>
+              <br>
+              <span style="opacity: 0.6; font-size: 0.9em;">${model.description}</span>
+            </span>
+            <span class="model-option-icon">${model.id === currentModel ? "✓" : ""}</span>
+          `;
+
+          option.addEventListener("click", () => {
+            selectModel(model.id);
+          });
+
+          modelDropdown.appendChild(option);
+        });
+      }
+
+      // 选择模型
+      function selectModel(modelId) {
+        if (currentModel === modelId) {
+          modelDropdown.classList.remove("visible");
+          return;
+        }
+
+        currentModel = modelId;
+        currentModelLabel.textContent = availableModels.find(m => m.id === modelId)?.name || modelId;
+
+        // 重新渲染选项以更新选中状态
+        renderModelOptions();
+
+        // 关闭下拉菜单
+        modelDropdown.classList.remove("visible");
+
+        // 发送到扩展
+        vscode.postMessage({ type: "changeModel", value: modelId });
+
+        // 显示切换成功消息
+        addMessage(`🔄 已切换到模型: ${availableModels.find(m => m.id === modelId)?.name}`, "system");
+      }
+
+      // 更新当前模型显示
+      function updateCurrentModel(modelId) {
+        currentModel = modelId;
+        const model = availableModels.find(m => m.id === modelId);
+        currentModelLabel.textContent = model ? model.name : modelId;
+        renderModelOptions();
+      }
+
+      // 在消息监听器中添加模型相关处理
+      window.addEventListener("message", (event) => {
+        const message = event.data;
+
+        // 在现有的 switch 语句中添加新 case
+        if (message.type === "currentModel") {
+          updateCurrentModel(message.value);
+        }
+      });
+
+      // 初始化模型选择器
+      initModelSelector();
     </script>
   </body>
 </html>
