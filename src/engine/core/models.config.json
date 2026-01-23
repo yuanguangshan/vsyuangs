@@ -1,0 +1,30 @@
+{
+  "availableModels": [
+    {
+      "id": "gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "description": "快速且高效"
+    },
+    {
+      "id": "gpt-4o",
+      "name": "GPT-4o",
+      "description": "平衡性能"
+    },
+    {
+      "id": "gemini-2.5-flash-latest",
+      "name": "Gemini 2.5 Flash Latest",
+      "description": "极致速度"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "description": "快速且高效"
+    },
+    {
+      "id": "Assistant",
+      "name": "Assistant",
+      "description": "助手"
+    }
+  ],
+  "defaultModel": "Assistant"
+}

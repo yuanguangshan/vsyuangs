@@ -1685,6 +1685,14 @@
               message.isReference,
             );
             break;
+          case "modelsConfig":
+            // 接收模型配置
+            availableModels = message.value.availableModels || [];
+            currentModel = message.value.defaultModel || currentModel;
+            renderModelOptions();
+            updateCurrentModel(currentModel);
+            console.log("Models config received:", availableModels);
+            break;
         }
       });
 
@@ -2232,25 +2240,18 @@
       const modelDropdown = document.getElementById("model-dropdown");
       const currentModelLabel = document.getElementById("current-model");
 
-      // 可用的 AI 模型列表
-      const availableModels = [
-        { id: "gpt-4o-mini", name: "GPT-4o Mini", description: "快速且高效" },
-        { id: "gpt-4o", name: "GPT-4o", description: "平衡性能" },
-        { id: "gpt-4-turbo", name: "GPT-4 Turbo", description: "高性能" },
-        { id: "gpt-4", name: "GPT-4", description: "最强能力" },
-        { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", description: "经济实惠" }
-      ];
+      // 可用的 AI 模型列表（从后端加载）
+      let availableModels = [];
 
       // 当前选中的模型
       let currentModel = "gpt-4o-mini";
 
       // 初始化模型选择器
       function initModelSelector() {
-        // 从扩展获取当前模型
+        // 从扩展获取模型配置
+        vscode.postMessage({ type: "getModelsConfig" });
+        // 同时获取当前选中的模型
         vscode.postMessage({ type: "getCurrentModel" });
-
-        // 渲染模型列表
-        renderModelOptions();
 
         // 点击切换下拉菜单
         modelSelector.addEventListener("click", (e) => {

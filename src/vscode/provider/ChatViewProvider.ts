@@ -6,6 +6,18 @@ import { GovernanceService } from '../../engine/agent/governance';
 import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
 import { createIgnoreFilter, IgnoreFilter } from '../utils/ignoreFilter';
 
+// 模型配置接口
+interface ModelConfig {
+    id: string;
+    name: string;
+    description: string;
+}
+
+interface ModelsConfigFile {
+    availableModels: ModelConfig[];
+    defaultModel: string;
+}
+
 /**
  * ChatView Provider - 侧边栏聊天视图提供者
  * 
@@ -32,10 +44,52 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // Initialize ignore filter for file selection
         this._ignoreFilter = createIgnoreFilter();
         // 从 workspaceState 加载保存的模型
-        this._currentModel = this._context.workspaceState.get('currentModel', 'gpt-4o-mini');
+        this._currentModel = this._context.workspaceState.get('currentModel', this.getDefaultModel());
         console.log(`[ChatViewProvider] Current model: ${this._currentModel}`);
         // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
         this.loadHistory();
+    }
+
+    /**
+     * 获取默认模型
+     */
+    private getDefaultModel(): string {
+        try {
+            const config = this.getModelsConfig();
+            return config.defaultModel;
+        } catch (error) {
+            console.warn('[ChatViewProvider] Failed to read default model from config, using fallback');
+            return 'gpt-4o-mini';
+        }
+    }
+
+    /**
+     * 读取模型配置文件
+     */
+    private getModelsConfig(): ModelsConfigFile {
+        const configPath = path.join(this._context.extensionPath, 'src', 'engine', 'core', 'models.config.json');
+        
+        if (!fs.existsSync(configPath)) {
+            console.warn('[ChatViewProvider] Models config file not found, using defaults');
+            return {
+                availableModels: [
+                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: '快速且高效' },
+                    { id: 'gpt-4o', name: 'GPT-4o', description: '平衡性能' },
+                    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: '高性能' },
+                    { id: 'gpt-4', name: 'GPT-4', description: '最强能力' },
+                    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: '经济实惠' }
+                ],
+                defaultModel: 'gpt-4o-mini'
+            };
+        }
+
+        try {
+            const content = fs.readFileSync(configPath, 'utf-8');
+            return JSON.parse(content) as ModelsConfigFile;
+        } catch (error) {
+            console.error('[ChatViewProvider] Failed to parse models config:', error);
+            throw error;
+        }
     }
 
     public resolveWebviewView(
@@ -152,6 +206,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 case 'getCurrentModel':
                     // 发送当前模型到 UI
                     webviewView.webview.postMessage({ type: 'currentModel', value: this._currentModel });
+                    break;
+                case 'getModelsConfig':
+                    // 发送模型配置到 UI
+                    try {
+                        const config = this.getModelsConfig();
+                        webviewView.webview.postMessage({ 
+                            type: 'modelsConfig', 
+                            value: config 
+                        });
+                    } catch (error: any) {
+                        console.error('[ChatViewProvider] Failed to send models config:', error);
+                        webviewView.webview.postMessage({ 
+                            type: 'error', 
+                            value: `Failed to load models config: ${error.message}` 
+                        });
+                    }
                     break;
                 case 'changeModel':
                     // 更新当前模型

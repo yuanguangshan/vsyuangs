@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export type UserConfig = {
     defaultModel?: string;
@@ -29,8 +31,40 @@ export type AIResponse = {
 };
 
 export const DEFAULT_AI_PROXY_URL = 'https://api.openai.com/v1/chat/completions';
-export const DEFAULT_MODEL = 'gpt-4o-mini';
 export const DEFAULT_ACCOUNT_TYPE = 'free' as const;
+
+// 默认值（如果配置文件不存在）
+export const DEFAULT_MODEL_FALLBACK = 'gpt-4o-mini';
+
+// 从配置文件读取默认模型
+function loadDefaultModelFromConfig(): string {
+    try {
+        // 尝试从 __dirname 查找配置文件
+        const possiblePaths = [
+            path.join(__dirname, 'models.config.json'),
+            path.join(process.cwd(), 'src', 'engine', 'core', 'models.config.json')
+        ];
+
+        for (const configPath of possiblePaths) {
+            if (fs.existsSync(configPath)) {
+                const content = fs.readFileSync(configPath, 'utf-8');
+                const config = JSON.parse(content);
+                const model = config.defaultModel || DEFAULT_MODEL_FALLBACK;
+                console.log(`[validation] Loaded default model from config: ${model}`);
+                return model;
+            }
+        }
+
+        console.warn('[validation] Models config file not found, using fallback');
+        return DEFAULT_MODEL_FALLBACK;
+    } catch (error) {
+        console.error('[validation] Failed to read models config:', error);
+        return DEFAULT_MODEL_FALLBACK;
+    }
+}
+
+// 初始化时加载默认模型并导出
+export const DEFAULT_MODEL: string = loadDefaultModelFromConfig();
 
 export const DEFAULT_APPS = {
     shici: 'https://wealth.want.biz/shici/index.html',
