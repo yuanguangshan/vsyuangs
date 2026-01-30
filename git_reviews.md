@@ -399,3 +399,675 @@ if (retrievedItem.stableId !== 'test-stable-id-123') { ... }
 
 [↑ 返回顶部](#)
 
+
+---
+
+## 📋 Code Review - 2026/1/30 19:52:12
+
+**📊 评分:** 👍 82/100  
+**🔧 级别:** STANDARD  
+**🌿 分支:** `main`  
+**💾 提交:** `d244a99`  
+**📂 范围:** 暂存区 (3 个文件)  
+
+### 📝 总体评价
+
+该变更整体设计清晰，成功将 Git 能力与 AI 工作流集成，用户体验直观，语义层面的意图明确。但在 Git API 使用一致性、错误处理健壮性、性能与扩展性方面仍存在一些值得改进的问题。
+
+### ⚠️ 发现的问题 (6)
+
+#### 1. [WARNING] src/vscode/git/GitManager.ts:14
+
+Git API 获取逻辑在多个地方重复实现，且未统一错误处理策略
+
+**💡 建议:** 建议封装一个 getRepository() 私有方法，集中处理 Git 扩展、API 版本和仓库不存在的情况，并统一返回错误信息
+
+<details>
+<summary>代码片段</summary>
+
+```
+const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+const api = gitExtension.getAPI(1);
+const repo = api.repositories[0];
+```
+
+</details>
+
+#### 2. [WARNING] src/vscode/git/GitManager.ts:22
+
+diffIndexWithHEAD + repo.diff 的组合可能无法严格保证只获取 staged diff
+
+**💡 建议:** 建议使用 Git API 中更明确的 staged diff 方法（如 diffIndexWithHEAD + diffIndex），或在注释中明确当前实现的假设前提
+
+<details>
+<summary>代码片段</summary>
+
+```
+const changes = await repo.diffIndexWithHEAD();
+const diff = await repo.diff(change.uri.fsPath);
+```
+
+</details>
+
+#### 3. [WARNING] src/vscode/git/GitManager.ts:24
+
+对每个文件串行 await diff，可能在大量变更时造成性能问题
+
+**💡 建议:** 可考虑使用 Promise.all 并发获取 diff，或限制最大 diff 体积
+
+<details>
+<summary>代码片段</summary>
+
+```
+for (const change of changes) {
+  const diff = await repo.diff(change.uri.fsPath);
+}
+```
+
+</details>
+
+#### 4. [INFO] src/vscode/provider/ChatViewProvider.ts:347
+
+applyCommitMessage 分支中直接操作 Git API，与 GitManager 职责重复
+
+**💡 建议:** 建议复用 GitManager.setCommitMessage，保持单一职责，减少未来维护成本
+
+<details>
+<summary>代码片段</summary>
+
+```
+repo.inputBox.value = data.value;
+```
+
+</details>
+
+#### 5. [WARNING] src/vscode/provider/ChatViewProvider.ts:810
+
+handleGitAction 中构建 prompt 时未对 diff 大小进行限制
+
+**💡 建议:** 建议增加最大字符数或文件数限制，避免超大 diff 导致模型上下文溢出或性能下降
+
+<details>
+<summary>代码片段</summary>
+
+```
+const prompt = action === 'commit'
+  ? `...${changes}`
+  : `...${changes}`;
+```
+
+</details>
+
+#### 6. [INFO] src/vscode/webview/sidebar.html:2585
+
+基于正则判断 commit message 的方式较为脆弱
+
+**💡 建议:** 可考虑在消息中加入明确的结构化标记（如 JSON 或前缀标识），由 AI 明确声明这是 commit message
+
+<details>
+<summary>代码片段</summary>
+
+```
+const isCommitMsg = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)/.test(content);
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ 整体功能设计符合 VS Code 扩展架构，职责划分清晰
+- ✅ GitManager 的引入是良好的抽象尝试，为后续扩展 Git 能力奠定基础
+- ✅ 用户体验设计友好，将 Commit / Review 操作自然融入聊天界面
+- ✅ Prompt 构建明确区分 commit 与 review 两种语义任务，意图清晰
+- ✅ 前端避免重复添加按钮的防御性逻辑合理
+
+### 💡 建议
+
+- 统一 Git API 访问入口，减少重复代码并提升可维护性
+- 为 staged diff 增加大小与文件数量限制，防止极端场景下的性能问题
+- 考虑为 GitManager 增加单元测试，使用 mock Git API 验证 diff 与 commit message 行为
+- 在 Webview 与 Extension Host 之间引入更强的消息协议约束（如枚举或类型校验）
+- 长期可考虑支持多仓库场景，而不是默认 repositories[0]
+
+[↑ 返回顶部](#)
+
+
+---
+
+## 📋 Code Review - 2026/1/30 19:56:51
+
+**📊 评分:** 👍 82/100  
+**🔧 级别:** STANDARD  
+**🌿 分支:** `main`  
+**💾 提交:** `d244a99`  
+**📂 范围:** 暂存区 (3 个文件)  
+
+### 📝 总体评价
+
+整体实现目标清晰，功能完整，体现了对 VS Code Git API 和 AI 辅助开发场景的良好理解。但在健壮性、边界条件处理、API 使用规范和可维护性方面仍有若干可改进点，属于中高质量但尚未达到生产级严谨程度的变更。
+
+### ⚠️ 发现的问题 (7)
+
+#### 1. [WARNING] src/vscode/git/GitManager.ts:6
+
+直接依赖 vscode.git 扩展的 exports 和 API 版本，缺少能力检测与兼容性处理。
+
+**💡 建议:** 在调用 getAPI(1) 前显式检查 getAPI 是否存在，并在失败时给出明确错误提示或降级处理。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+return gitExtension?.getAPI(1);
+```
+
+</details>
+
+#### 2. [WARNING] src/vscode/git/GitManager.ts:11
+
+默认使用 repositories[0]，在多仓库工作区下可能行为不符合用户预期。
+
+**💡 建议:** 考虑基于当前活动编辑器、workspace folder 或用户选择来确定仓库。
+
+<details>
+<summary>代码片段</summary>
+
+```
+return api?.repositories[0];
+```
+
+</details>
+
+#### 3. [ERROR] src/vscode/provider/ChatViewProvider.ts:807
+
+重复的空值判断逻辑，且错误提示语义不一致，属于明显的逻辑冗余。
+
+**💡 建议:** 合并为一次判断，并根据 repo 不可用或 staged 为空区分错误信息。
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (!changes) {
+    this._view?.webview.postMessage({ type: 'error', value: "未检测到暂存区变更或 Git 仓库不可用" });
+    return;
+}
+if (!changes) {
+    this._view?.webview.postMessage({ type: 'error', value: "暂存区为空，请先 Stage 变更" });
+    return;
+}
+```
+
+</details>
+
+#### 4. [WARNING] src/vscode/git/GitManager.ts:26
+
+对 change 类型使用 any，降低了类型安全性。
+
+**💡 建议:** 使用 VS Code Git API 中的 Change 或 ResourceState 类型，避免运行期错误。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const diffPromises = changes.map(async (change: any) => {
+```
+
+</details>
+
+#### 5. [WARNING] src/vscode/git/GitManager.ts:27
+
+repo.diff(change.uri.fsPath) 未显式区分 staged/unstaged diff，语义可能与 diffIndexWithHEAD 不完全一致。
+
+**💡 建议:** 确认 API 行为是否符合“暂存区 diff”的预期，必要时使用更明确的 diff API。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const diff = await repo.diff(change.uri.fsPath);
+```
+
+</details>
+
+#### 6. [WARNING] src/vscode/webview/sidebar.html:2579
+
+通过正则判断 AI 输出是否为 Commit Message 的方式较为脆弱。
+
+**💡 建议:** 可考虑由后端显式标记 AI 响应类型，避免前端基于文本启发式判断。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const isCommitMsg = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?:/.test(content);
+```
+
+</details>
+
+#### 7. [INFO] src/vscode/git/GitManager.ts:35
+
+Diff 截断逻辑基于字符长度而非字节或文件边界，可能导致 diff 被截断在不完整的语义位置。
+
+**💡 建议:** 可考虑按文件或 patch 边界截断，或在 UI 中明确提示仅为部分 diff。
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (fullDiff.length > MAX_DIFF_SIZE) {
+    fullDiff = fullDiff.substring(0, MAX_DIFF_SIZE) + '\n...';
+}
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ Git 相关逻辑集中在 GitManager 中，职责划分清晰
+- ✅ 使用 Promise.all 并发获取 diff，具备性能意识
+- ✅ 在 Diff 体积上设置上限，体现了对上下文/资源约束的考虑
+- ✅ ChatViewProvider 与 WebView 之间的消息协议清晰、可扩展
+- ✅ UI 与功能结合自然，Commit / Review 工作流对用户友好
+
+### 💡 建议
+
+- 为 GitManager 添加单元测试或集成测试（可通过 mock Git API）
+- 为多仓库、多工作区场景补充设计与用户交互
+- 统一错误处理策略（例如集中返回 Result / Error 对象，而非空字符串）
+- 减少前端基于 AI 文本内容的隐式判断，改为显式协议或元数据
+- 为 Git API 调用增加更明确的失败日志，便于排查用户环境问题
+
+[↑ 返回顶部](#)
+
+
+---
+
+## 📋 Code Review - 2026/1/30 19:59:43
+
+**📊 评分:** 👍 86/100  
+**🔧 级别:** STANDARD  
+**🌿 分支:** `main`  
+**💾 提交:** `d244a99`  
+**📂 范围:** 暂存区 (3 个文件)  
+
+### 📝 总体评价
+
+本次变更整体设计清晰，功能边界明确，成功将 Git 暂存区能力与 AI 提交/审查流程集成，属于高质量的功能型增强。但在 Git API 使用健壮性、错误处理、类型安全和极端场景下的性能与 UX 方面仍有改进空间。
+
+### ⚠️ 发现的问题 (6)
+
+#### 1. [WARNING] src/vscode/git/GitManager.ts:7
+
+直接假设 vscode.git 扩展存在，缺少用户提示或降级方案。
+
+**💡 建议:** 当 gitExtension 不存在时，可提示用户启用内置 Git 扩展，或在 UI 层明确反馈 Git 不可用状态。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+```
+
+</details>
+
+#### 2. [WARNING] src/vscode/git/GitManager.ts:18
+
+通过 fsPath.startsWith 判断仓库归属在符号链接或大小写不敏感文件系统上可能不可靠。
+
+**💡 建议:** 建议使用 vscode.Uri 或 Git API 提供的 contains 方法（如有），或进行 path.normalize 后再比较。
+
+<details>
+<summary>代码片段</summary>
+
+```
+document.uri.fsPath.startsWith(r.rootUri.fsPath)
+```
+
+</details>
+
+#### 3. [WARNING] src/vscode/git/GitManager.ts:39
+
+repo.diffIndexWithHEAD() 和 repo.diff() 调用缺少 try-catch，异常会导致整个流程失败。
+
+**💡 建议:** 在 Git IO 操作外层增加 try-catch，并返回可识别的错误信息供 UI 层处理。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const changes = await repo.diffIndexWithHEAD();
+```
+
+</details>
+
+#### 4. [INFO] src/vscode/git/GitManager.ts:55
+
+并发 diff 所有文件在大量暂存文件时可能造成性能或内存压力。
+
+**💡 建议:** 可考虑限制并发数量（如 p-limit）或在达到 MAX_DIFF_SIZE 后提前中断 diff 获取。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const diffPromises = changes.map(async (change: any) => {
+```
+
+</details>
+
+#### 5. [WARNING] src/vscode/provider/ChatViewProvider.ts:801
+
+handleGitAction 未区分 commit/review 的错误场景，错误提示较笼统。
+
+**💡 建议:** 建议根据 action 类型返回更具体的错误信息（如“无法生成提交信息” vs “无法执行代码审查”）。
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (!changes) { this._view?.webview.postMessage({ type: 'error', value: "未检测到暂存区变更或 Git 仓库不可用" }); }
+```
+
+</details>
+
+#### 6. [INFO] src/vscode/webview/sidebar.html:2550
+
+通过正则判断是否为 commit message 具有一定启发式风险，可能误判 AI 输出。
+
+**💡 建议:** 可考虑由后端显式标注消息类型，或在 prompt 中要求固定格式（如 JSON）。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const isCommitMsg = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)/
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ GitManager 将 Git 相关逻辑集中封装，职责清晰，避免 UI 层直接操作 Git API
+- ✅ 多仓库场景下优先使用 activeTextEditor 推断仓库，用户体验考虑周全
+- ✅ 对 Diff 大小进行严格限制，有效防止超长上下文影响 AI 性能与稳定性
+- ✅ 前后端（Extension ↔ Webview）协议设计简洁，扩展性良好
+- ✅ UI 交互自然（生成 → 一键回填 Commit Message），符合 VS Code 使用习惯
+
+### 💡 建议
+
+- 为 GitManager 补充接口级别的类型定义，避免大量 any（如 Repository、Change）
+- 为 getStagedDiff 和 handleGitAction 添加单元测试或集成测试，覆盖多仓库、无暂存变更、Diff 过大等场景
+- 考虑在 prompt 中要求 AI 返回结构化结果（如 { type, content }），减少前端启发式解析
+- 在 Diff 拼接逻辑中使用 StringBuilder 模式或数组 join，提高可读性
+- 为 Webview 中的 Git 操作按钮增加 loading / disabled 状态，避免重复触发
+
+[↑ 返回顶部](#)
+
+
+---
+
+## 📋 Code Review - 2026/1/30 20:02:12
+
+**📊 评分:** 👍 88/100  
+**🔧 级别:** STANDARD  
+**🌿 分支:** `main`  
+**💾 提交:** `d244a99`  
+**📂 范围:** 暂存区 (3 个文件)  
+
+### 📝 总体评价
+
+这是一次质量较高、目标明确的功能性改动，引入了 Git 语义能力（Commit 生成 / Code Review）并在 VS Code Extension 架构中实现了较好的分层。整体设计思路清晰，异常与性能均有考虑，但在类型安全、Git API 使用边界、UI/逻辑解耦和可测试性方面仍有提升空间。
+
+### ⚠️ 发现的问题 (6)
+
+#### 1. [WARNING] src/vscode/git/GitManager.ts:11
+
+getGitApi 与 getRepository 使用了 any 类型，弱化了类型安全
+
+**💡 建议:** 建议引入 vscode.git 扩展的官方类型定义（GitExtension, API, Repository），或至少定义最小接口以避免 any
+
+<details>
+<summary>代码片段</summary>
+
+```
+private static getRepository(): any { ... }
+```
+
+</details>
+
+#### 2. [WARNING] src/vscode/git/GitManager.ts:20
+
+基于 path.relative 判断仓库归属在 Windows/符号链接场景下可能存在边界问题
+
+**💡 建议:** 可考虑使用 vscode.Uri.joinPath 或 Git API 提供的 contains 判断（若可用），并明确处理大小写敏感差异
+
+<details>
+<summary>代码片段</summary>
+
+```
+return !path.relative(rootPath, editorPath).startsWith('..')
+```
+
+</details>
+
+#### 3. [WARNING] src/vscode/git/GitManager.ts:52
+
+repo.diffIndexWithHEAD() 与 repo.diff(change.uri.fsPath) 属于非官方稳定 API，存在未来 VS Code 升级破坏风险
+
+**💡 建议:** 建议在代码注释中明确 API 依赖风险，或在失败时提供降级方案（如 git diff --cached 命令）
+
+<details>
+<summary>代码片段</summary>
+
+```
+const changes = await repo.diffIndexWithHEAD();
+```
+
+</details>
+
+#### 4. [INFO] src/vscode/git/GitManager.ts:69
+
+MAX_DIFF_SIZE 使用字符串长度作为近似字节大小，可能与真实 diff 体积存在偏差
+
+**💡 建议:** 如对精度要求较高，可使用 Buffer.byteLength(diff, 'utf8')
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (fullDiff.length >= MAX_DIFF_SIZE)
+```
+
+</details>
+
+#### 5. [WARNING] src/vscode/provider/ChatViewProvider.ts:800
+
+handleGitAction 将 Diff 构建、Prompt 生成与 Agent 调用耦合在一起
+
+**💡 建议:** 建议拆分为 buildGitPrompt / runGitReview 等函数，提升可读性与可测试性
+
+<details>
+<summary>代码片段</summary>
+
+```
+private async handleGitAction(action: 'commit' | 'review') { ... }
+```
+
+</details>
+
+#### 6. [INFO] src/vscode/webview/sidebar.html:2520
+
+processCommitSuggestions 通过正则和长度判断提交信息，可能误判部分合法提交
+
+**💡 建议:** 可考虑让后端明确返回结构化结果（如 type: commitMessage），减少前端启发式判断
+
+<details>
+<summary>代码片段</summary>
+
+```
+const isCommitMsg = /^(feat|fix|docs|...)/.test(content);
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ GitManager 将 Git 相关逻辑集中封装，避免污染 Provider 层
+- ✅ 对性能有明确意识：批处理、并发控制、Diff 大小熔断设计合理
+- ✅ 异常处理整体完善，避免 Git 错误导致插件崩溃
+- ✅ UI 与功能结合自然，Commit / Review 操作用户路径清晰
+- ✅ Commit Message 自动回填设计提升了用户工作流效率
+
+### 💡 建议
+
+- 为 GitManager.getStagedDiff 添加单元测试（可通过 mock Git API）
+- 在 README 或代码注释中明确对 vscode.git API 的依赖假设
+- 考虑为 AI 返回结果定义更明确的协议，而非依赖文本正则解析
+- 未来可引入取消机制（CancellationToken），避免长时间 Diff 阻塞
+- 将 Git 相关 Prompt 模板集中管理，便于后续多语言或策略扩展
+
+[↑ 返回顶部](#)
+
+
+---
+
+## 📋 Code Review - 2026/1/30 20:05:26
+
+**📊 评分:** 👍 86/100  
+**🔧 级别:** STANDARD  
+**🌿 分支:** `main`  
+**💾 提交:** `d244a99`  
+**📂 范围:** 暂存区 (3 个文件)  
+
+### 📝 总体评价
+
+该变更整体设计成熟，清晰地引入了 Git 语义能力（Commit 生成 / Code Review），并在性能与稳定性上有明显考量。核心逻辑合理、用户体验良好，但在类型安全、边界条件、Git API 假设以及前后端状态管理方面仍存在一些可改进之处。
+
+### ⚠️ 发现的问题 (7)
+
+#### 1. [WARNING] src/vscode/git/GitManager.ts:6
+
+Git API 和 Repository 使用了 any 类型，降低了类型安全和可维护性
+
+**💡 建议:** 建议引入 vscode.git 扩展的 API 类型定义（如 GitExtension、Repository），或至少定义最小接口以约束 repo.diff / inputBox 等行为
+
+<details>
+<summary>代码片段</summary>
+
+```
+private static getRepository(): any {
+```
+
+</details>
+
+#### 2. [WARNING] src/vscode/git/GitManager.ts:18
+
+通过 path.relative 判断仓库归属在多根工作区、符号链接或大小写敏感文件系统下可能不可靠
+
+**💡 建议:** 可优先使用 Git API 提供的 getRepository(uri)（如果可用），或明确处理 symlink / 多 workspace folder 场景
+
+<details>
+<summary>代码片段</summary>
+
+```
+return !path.relative(rootPath, editorPath).startsWith('..')
+```
+
+</details>
+
+#### 3. [WARNING] src/vscode/git/GitManager.ts:44
+
+MAX_DIFF_SIZE 基于字符串 length（字符数），在多字节字符或 diff 编码变化时不等同于真实大小
+
+**💡 建议:** 如大小限制对 API 或模型调用很敏感，建议基于 Buffer.byteLength 进行计算
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (fullDiff.length >= MAX_DIFF_SIZE)
+```
+
+</details>
+
+#### 4. [INFO] src/vscode/git/GitManager.ts:63
+
+Promise.all 在 batch 内并发执行 diff，若单次 diff 本身较重，仍可能产生瞬时 IO 峰值
+
+**💡 建议:** 当前 BATCH_SIZE=5 是合理的，可考虑未来将其配置化，或在极端仓库下改为串行策略
+
+<details>
+<summary>代码片段</summary>
+
+```
+const batchResults = await Promise.all(batch.map(async (change: any) => {
+```
+
+</details>
+
+#### 5. [WARNING] src/vscode/provider/ChatViewProvider.ts:801
+
+handleGitAction 中构造的 prompt 直接拼接 diff，未对极端内容（如二进制 diff）做过滤
+
+**💡 建议:** 建议在 GitManager 层或此处过滤 binary / large file diff，或增加提示占位符
+
+<details>
+<summary>代码片段</summary>
+
+```
+const prompt = action === 'commit' ? `你是一位资深开发者...
+```
+
+</details>
+
+#### 6. [INFO] src/vscode/webview/sidebar.html:2498
+
+lastGitAction 使用全局变量 + setTimeout 重置，在并发触发或未来功能扩展时可能产生状态竞争
+
+**💡 建议:** 可考虑将 Git action 状态与具体 messageId 绑定，或通过一次性 token / context 传递
+
+<details>
+<summary>代码片段</summary>
+
+```
+let lastGitAction = null;
+```
+
+</details>
+
+#### 7. [WARNING] src/vscode/webview/sidebar.html:2520
+
+processCommitSuggestions 对 commit message 的长度和内容判断较宽松，可能误判普通回复
+
+**💡 建议:** 即便在 commit flow 下，也可增加简单结构校验（如是否包含 type: 前缀）以降低误触发
+
+<details>
+<summary>代码片段</summary>
+
+```
+isCommitMsg = content.length > 0 && content.length < 500;
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ GitManager 抽象清晰，将 Git 相关逻辑与 UI/Provider 解耦
+- ✅ 获取 staged diff 时充分考虑了性能、并发和失败隔离（batch + try/catch）
+- ✅ 良好的用户体验设计：Commit / Review 一键触发 + Apply 按钮闭环
+- ✅ 错误处理整体偏保守，不会因为 Git 异常影响插件主流程
+- ✅ 前端对 Commit 场景做了上下文感知（lastGitAction），减少误识别
+
+### 💡 建议
+
+- 为 GitManager 编写单元测试或集成测试，至少覆盖无仓库、多仓库、超大 diff 场景
+- 引入 Git API 的显式类型定义，减少 any 带来的隐性运行时错误
+- 将 MAX_DIFF_SIZE、BATCH_SIZE 抽为配置或常量，便于未来调整
+- 在 prompt 构建前增加 diff 预处理（binary、vendor、lockfile 过滤）以提升 AI 输出质量
+- 考虑为 WebView 与 Extension 之间的消息定义明确的协议/类型（如 discriminated union）
+
+[↑ 返回顶部](#)
+

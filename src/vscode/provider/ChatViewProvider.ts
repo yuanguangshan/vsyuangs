@@ -5,6 +5,7 @@ import { VSCodeAgentRuntime } from '../core/runtime';
 import { GovernanceService } from '../../engine/agent/governance';
 import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
 import { createIgnoreFilter, IgnoreFilter } from '../utils/ignoreFilter';
+import { GitManager } from '../git/GitManager';
 
 // 模型配置接口
 interface ModelConfig {
@@ -343,6 +344,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     console.log(`[ChatViewProvider] Model changed to: ${this._currentModel}`);
                     // 保存到 workspaceState
                     this._context.workspaceState.update('currentModel', this._currentModel);
+                    break;
+                case 'gitAction':
+                    await this.handleGitAction(data.action);
+                    break;
+                case 'applyCommitMessage':
+                    try {
+                        await GitManager.setCommitMessage(data.value);
+                        vscode.window.setStatusBarMessage("已更新 Git 提交信息", 3000);
+                    } catch (err) {
+                        this._view?.webview.postMessage({ type: 'error', value: "无法访问 Git 仓库" });
+                    }
                     break;
             }
         });
@@ -785,6 +797,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             fs.writeFileSync(uri.fsPath, mdContent);
             vscode.window.showInformationMessage('Chat history exported successfully!');
         }
+    }
+
+    private async handleGitAction(action: 'commit' | 'review') {
+        // 获取暂存区 Diff
+        const changes = await GitManager.getStagedDiff();
+        if (!changes) {
+            this._view?.webview.postMessage({ type: 'error', value: "未检测到暂存区变更或 Git 仓库不可用" });
+            return;
+        }
+
+
+        // 构建提示词
+        const prompt = action === 'commit'
+            ? `你是一位资深开发者。请根据以下代码变更生成一条简洁、符合 Conventional Commits 规范的提交消息。只需返回消息内容本身：\n\n${changes}`
+            : `你是一位代码审查专家。请对以下变更进行语义级别的审查，指出潜在风险、性能问题和最佳实践建议：\n\n${changes}`;
+
+        // 发送给 AI 处理
+        await this.handleAgentTask(prompt);
     }
 
     private _getHtmlForWebview(webview: vscode.Webview) {

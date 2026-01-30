@@ -1047,6 +1047,90 @@
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
+
+    /* Code Review & Git Styles */
+    .git-toolbar {
+      padding: 8px 12px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--vscode-sideBar-background);
+    }
+
+    .secondary-btn {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      border: 1px solid var(--vscode-button-border);
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85em;
+      transition: filter 0.2s;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .secondary-btn:hover {
+      filter: brightness(1.2);
+    }
+
+    .apply-commit-btn {
+      margin-top: 8px;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: 1px solid var(--vscode-button-border);
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: filter 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .apply-commit-btn:hover {
+      opacity: 0.9;
+    }
+
+    /* Review Tags */
+    .review-tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .tag-error {
+      background: #f14c4c;
+      color: white;
+    }
+
+    .tag-warning {
+      background: #cca700;
+      color: white;
+    }
+
+    .tag-info {
+      background: #3794ef;
+      color: white;
+    }
+
+    .review-item {
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+      margin: 8px 0;
+      background: rgba(127, 127, 127, 0.1);
+      padding: 8px;
+      border-radius: 0 4px 4px 0;
+    }
   </style>
 </head>
 
@@ -1096,6 +1180,16 @@
       </button>
     </div>
   </header>
+
+  <div class="git-toolbar">
+    <button class="secondary-btn" onclick="triggerGit('commit')"
+      title="Generate Conventional Commit Message based on staged changes">
+      <span>📝</span> Commit
+    </button>
+    <button class="secondary-btn" onclick="triggerGit('review')" title="Run Expert Code Review on staged changes">
+      <span>🔍</span> Review
+    </button>
+  </div>
 
   <div id="chat-container">
     <!-- 初始为空，等待历史记录加载 -->
@@ -1774,13 +1868,22 @@
 
             // 处理diff块和其他后处理
             processDiffBlocks(currentAiMessageElement);
+            processCommitSuggestions(currentAiMessageElement, currentAiRawText);
 
             // 添加淡入效果或其他完成动效
             currentAiMessageElement.classList.add("final-render");
+
+            // 重要：处理完一次 AI 回复后，如果是 commit flow，重置状态
+            // 但不能立即重置，因为可能还有后续渲染帧。
+            // 这里我们依赖下一次 triggerGit 来覆盖状态，或者设置一个超时
+            if (lastGitAction === 'commit') {
+              setTimeout(() => { lastGitAction = null; }, 1000);
+            }
           }
 
           currentAiMessageElement = null;
           currentAiRawText = "";
+          currentThinkingBlock = null;
           userInput.disabled = false;
           userInput.focus();
           sendBtn.style.display = "flex";
@@ -2498,7 +2601,53 @@
       addMessage(`🔄 已切换到模型: ${availableModels.find(m => m.id === modelId)?.name}`, "system");
     }
 
-    // 更新当前模型显示
+    // === Git Operations ===
+    let lastGitAction = null; // Track the last action type for context
+
+    function triggerGit(actionType) {
+      lastGitAction = actionType;
+      addMessage(`Running Git ${actionType === 'commit' ? 'Commit Generation' : 'Code Review'} on staged changes...`, 'system');
+      vscode.postMessage({
+        type: 'gitAction',
+        action: actionType
+      });
+    }
+
+    function processCommitSuggestions(messageElement, rawText) {
+      // If the user explicitly requested a commit message, be more lenient with detection
+      // Otherwise, stick to stricter regex to avoid false positives in general chat
+      const content = rawText.trim();
+      let isCommitMsg = false;
+
+      if (lastGitAction === 'commit') {
+        // Context-aware: If we just asked for a commit, almost any non-empty short text is likely one
+        isCommitMsg = content.length > 0 && content.length < 500;
+        // Reset after processing to avoid affecting future messages
+        // (Wait a bit in case of streaming chunks affecting logic, but here we process final block)
+      } else {
+        // Fallback: Standard heuristic detection
+        isCommitMsg = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?:/.test(content) && content.length < 300;
+      }
+
+      if (isCommitMsg) {
+        // Avoid adding duplicate buttons
+        if (!messageElement.querySelector('.apply-commit-btn')) {
+          const applyBtn = document.createElement('button');
+          applyBtn.className = 'apply-commit-btn';
+          applyBtn.innerHTML = `<span>📥</span> Apply to Git Input`;
+          applyBtn.onclick = () => {
+            vscode.postMessage({
+              type: 'applyCommitMessage',
+              value: content
+            });
+            applyBtn.innerHTML = `<span>✅</span> Applied`;
+            applyBtn.disabled = true;
+            applyBtn.style.opacity = '0.7';
+          };
+          messageElement.appendChild(applyBtn);
+        }
+      }
+    }
     function updateCurrentModel(modelId) {
       currentModel = modelId;
       const model = availableModels.find(m => m.id === modelId);
