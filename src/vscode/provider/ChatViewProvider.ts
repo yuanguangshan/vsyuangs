@@ -434,6 +434,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       const contextManager = this._runtime.getContextManager();
 
+      // 1. 预处理：扫描用户输入中的 @引用并自动加载
+      const fileRefs = userInput.match(/@([^\s]+)/g);
+      if (fileRefs) {
+          for (const ref of fileRefs) {
+              const filePath = ref.substring(1); // 去掉 @
+              await this.autoLoadFileToContext(filePath);
+          }
+      }
+
       let fullAiResponse = '';
       await this._runtime.runChat(
         userInput,
@@ -647,6 +656,50 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         await vscode.workspace.applyEdit(edit);
         await document.save();
+    }
+
+    /**
+     * 辅助方法：尝试根据路径将文件加载到上下文
+     */
+    private async autoLoadFileToContext(relativePath: string) {
+        try {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) return;
+
+            // 尝试解析绝对路径
+            const fullPath = path.isAbsolute(relativePath)
+                ? relativePath
+                : path.join(workspaceFolder.uri.fsPath, relativePath);
+
+            if (fs.existsSync(fullPath) && fs.lstatSync(fullPath).isFile()) {
+                const content = fs.readFileSync(fullPath, 'utf-8');
+
+                if (!this._runtime) this._runtime = new VSCodeAgentRuntime();
+                const contextManager = this._runtime.getContextManager();
+
+                await contextManager.addContextItemAsync({
+                    type: 'file',
+                    path: fullPath,
+                    content: content,
+                    semantic: 'source_code',
+                    alias: path.basename(fullPath),
+                    importance: {
+                        id: path.basename(fullPath) + '-' + Date.now(), // 生成唯一ID
+                        path: fullPath,
+                        type: 'file',
+                        useCount: 1,
+                        successCount: 1,
+                        failureCount: 0,
+                        lastUsed: Date.now(),
+                        createdAt: Date.now(),
+                        confidence: 1.0 // 显式引用给最高权重
+                    }
+                });
+                console.log(`[ChatViewProvider] Auto-loaded @ reference: ${relativePath}`);
+            }
+        } catch (e) {
+            console.warn(`[ChatViewProvider] Failed to auto-load @ reference: ${relativePath}`, e);
+        }
     }
 
     public async clear() {

@@ -1324,6 +1324,8 @@
         const textAfterCursor = text.substring(cursorPos);
 
         const lastTriggerIndex = textBeforeCursor.lastIndexOf(suggestionType);
+
+        // 1. 更新输入框文字
         const newText =
           textBeforeCursor.substring(0, lastTriggerIndex) +
           suggestionType +
@@ -1335,12 +1337,17 @@
         hideSuggestions();
         userInput.focus();
 
+        // 2. 如果是文件引用 (@)，立即通知后端读取该文件内容到上下文
+        if (suggestionType === '@') {
+            vscode.postMessage({
+                type: 'readFile', // 复用你已有的 readFile 逻辑
+                path: value      // 注意：这里的 value 应该是相对路径或绝对路径
+            });
+        }
+
         // 重新计算高度
         userInput.style.height = "auto";
         userInput.style.height = userInput.scrollHeight + "px";
-
-        // 不再调用 handleFileReadForReference，
-        // 让后端通过 resolveUserReferences 自动处理 @filename 引用
       }
 
       function addMessage(text, role, isRaw = false) {
