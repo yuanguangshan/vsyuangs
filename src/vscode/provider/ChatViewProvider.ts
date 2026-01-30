@@ -6,6 +6,18 @@ import { GovernanceService } from '../../engine/agent/governance';
 import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
 import { createIgnoreFilter, IgnoreFilter } from '../utils/ignoreFilter';
 
+// 模型配置接口
+interface ModelConfig {
+    id: string;
+    name: string;
+    description: string;
+}
+
+interface ModelsConfigFile {
+    availableModels: ModelConfig[];
+    defaultModel: string;
+}
+
 /**
  * ChatView Provider - 侧边栏聊天视图提供者
  * 
@@ -23,6 +35,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private _messages: { role: string, content: string }[] = [];
     private _abortController: AbortController | null = null;
     private _ignoreFilter: IgnoreFilter | null = null;
+    private _currentModel: string = 'gpt-4o-mini';
+    private _runtime: VSCodeAgentRuntime | null = null;
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
@@ -30,8 +44,68 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         console.log('[ChatViewProvider] Initializing...');
         // Initialize ignore filter for file selection
         this._ignoreFilter = createIgnoreFilter();
+        // 从 workspaceState 加载保存的模型
+        this._currentModel = this._context.workspaceState.get('currentModel', this.getDefaultModel());
+        console.log(`[ChatViewProvider] Current model: ${this._currentModel}`);
         // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
         this.loadHistory();
+    }
+
+    /**
+     * 获取默认模型
+     */
+    private getDefaultModel(): string {
+        try {
+            const config = this.getModelsConfig();
+            return config.defaultModel;
+        } catch (error) {
+            console.warn('[ChatViewProvider] Failed to read default model from config, using fallback');
+            return 'gpt-4o-mini';
+        }
+    }
+
+    /**
+     * 读取模型配置文件
+     */
+    private getModelsConfig(): ModelsConfigFile {
+        // 优先从 dist 目录读取（打包后的位置）
+        const possiblePaths = [
+            path.join(this._context.extensionPath, 'dist', 'engine', 'core', 'models.config.json'),
+            path.join(this._context.extensionPath, 'src', 'engine', 'core', 'models.config.json')
+        ];
+        
+        let configPath: string | null = null;
+        for (const testPath of possiblePaths) {
+            if (fs.existsSync(testPath)) {
+                configPath = testPath;
+                console.log(`[ChatViewProvider] Found config file at: ${configPath}`);
+                break;
+            }
+        }
+
+        if (!configPath) {
+            console.warn('[ChatViewProvider] Models config file not found at any location, using defaults');
+            return {
+                availableModels: [
+                    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: '快速且高效' },
+                    { id: 'gpt-4o', name: 'GPT-4o', description: '平衡性能' },
+                    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: '高性能' },
+                    { id: 'gpt-4', name: 'GPT-4', description: '最强能力' },
+                    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: '经济实惠' }
+                ],
+                defaultModel: 'gpt-4o-mini'
+            };
+        }
+
+        try {
+            const content = fs.readFileSync(configPath, 'utf-8');
+            const config = JSON.parse(content) as ModelsConfigFile;
+            console.log(`[ChatViewProvider] Loaded config with ${config.availableModels.length} models, default: ${config.defaultModel}`);
+            return config;
+        } catch (error) {
+            console.error('[ChatViewProvider] Failed to parse models config:', error);
+            throw error;
+        }
     }
 
     public resolveWebviewView(
@@ -95,9 +169,34 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     break;
                 case 'getFiles':
                     const excludePattern = this._ignoreFilter?.getExcludePattern() || '**/node_modules/**';
-                    const files = await vscode.workspace.findFiles('**/*', excludePattern, 100);
-                    const fileNames = files.map(f => path.relative(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', f.fsPath));
-                    webviewView.webview.postMessage({ type: 'suggestions', value: fileNames, trigger: '@' });
+                    // 增加文件数量限制，确保能获取到更多文件
+                    const files = await vscode.workspace.findFiles('**/*', excludePattern, 1000);
+                    
+                    // 获取相对路径
+                    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+                    let fileNames = files.map(f => 
+                        workspaceFolder 
+                            ? path.relative(workspaceFolder.uri.fsPath, f.fsPath) 
+                            : f.fsPath
+                    );
+                    
+                    // 如果有查询词，进行模糊匹配过滤
+                    if (data.query && data.query.trim()) {
+                        const queryLower = data.query.toLowerCase();
+                        fileNames = fileNames.filter(name => 
+                            name.toLowerCase().includes(queryLower)
+                        );
+                    }
+                    
+                    // 限制返回数量，避免列表太长影响性能
+                    fileNames = fileNames.slice(0, 50);
+                    
+                    webviewView.webview.postMessage({ 
+                        type: 'suggestions', 
+                        value: fileNames, 
+                        trigger: '@' 
+                    });
+                    console.log(`[ChatViewProvider] Returned ${fileNames.length} files for query: "${data.query}"`);
                     break;
                 case 'loadFileTree':
                     const allExcludePattern = this._ignoreFilter?.getExcludePattern() || '**/node_modules/**';
@@ -106,7 +205,64 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     webviewView.webview.postMessage({ type: 'fileTreeData', value: allFileNames });
                     break;
                 case 'readFile':
-                    await this.handleReadFile(webviewView, data.filePath, data.isReference || false);
+                    // 读取文件内容并添加到上下文
+                    if (data.path) {
+                        try {
+                            const uri = vscode.Uri.file(data.path);
+                            const doc = await vscode.workspace.openTextDocument(uri);
+                            const content = doc.getText();
+                            
+                            // 获取或创建 VSCodeAgentRuntime 实例
+                            if (!this._runtime) {
+                                this._runtime = new VSCodeAgentRuntime();
+                            }
+                            const contextManager = this._runtime.getContextManager();
+                            
+                            // 将文件内容添加到上下文
+                            await contextManager.addContextItemAsync({
+                                type: 'file',
+                                path: uri.fsPath,
+                                content: content,
+                                semantic: 'source_code',
+                                summary: `User selected file: ${path.basename(uri.fsPath)}`,
+                                summarized: true,
+                                summaryQuality: 1.0,
+                                alias: path.basename(uri.fsPath),
+                                tags: ['user-selected', 'explicit', 'file-panel'],
+                                importance: {
+                                    id: uri.fsPath,
+                                    path: uri.fsPath,
+                                    type: 'file',
+                                    useCount: 1,
+                                    successCount: 1,
+                                    failureCount: 0,
+                                    lastUsed: Date.now(),
+                                    createdAt: Date.now(),
+                                    confidence: 1.0
+                                }
+                            });
+                            
+                            console.log(`[ChatViewProvider] ✅ File added to context: ${data.path}`);
+                            
+                            // 发送成功消息到 UI
+                            webviewView.webview.postMessage({
+                                type: 'success',
+                                value: `📄 File loaded: ${path.basename(uri.fsPath)}`
+                            });
+                            
+                            // 同时打开文件供用户查看
+                            await vscode.window.showTextDocument(doc, { preview: true });
+                            
+                            // 关闭文件面板
+                            webviewView.webview.postMessage({ type: 'closeFilesPanel' });
+                        } catch (error: any) {
+                            console.error(`[ChatViewProvider] Failed to read file ${data.path}:`, error);
+                            webviewView.webview.postMessage({
+                                type: 'error',
+                                value: `Failed to read file: ${error.message}`
+                            });
+                        }
+                    }
                     break;
                 case 'exportChat':
                     this.exportChatHistory();
@@ -145,6 +301,33 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                         }
                     }
                     break;
+                case 'getCurrentModel':
+                    // 发送当前模型到 UI
+                    webviewView.webview.postMessage({ type: 'currentModel', value: this._currentModel });
+                    break;
+                case 'getModelsConfig':
+                    // 发送模型配置到 UI
+                    try {
+                        const config = this.getModelsConfig();
+                        webviewView.webview.postMessage({ 
+                            type: 'modelsConfig', 
+                            value: config 
+                        });
+                    } catch (error: any) {
+                        console.error('[ChatViewProvider] Failed to send models config:', error);
+                        webviewView.webview.postMessage({ 
+                            type: 'error', 
+                            value: `Failed to load models config: ${error.message}` 
+                        });
+                    }
+                    break;
+                case 'changeModel':
+                    // 更新当前模型
+                    this._currentModel = data.value;
+                    console.log(`[ChatViewProvider] Model changed to: ${this._currentModel}`);
+                    // 保存到 workspaceState
+                    this._context.workspaceState.update('currentModel', this._currentModel);
+                    break;
             }
         });
     }
@@ -160,136 +343,140 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await this.handleAgentTask(userInput);
     }
 
-    private async handleAgentTask(userInput: string) {
-        if (!this._view) {
-            console.warn('[ChatViewProvider] No webview available');
-            return;
-        }
-
-        // 如果有正在运行的任务，先取消它
-        if (this._abortController) {
-            this._abortController.abort();
-        }
-
-        // 创建新的 AbortController
-        this._abortController = new AbortController();
-        const signal = this._abortController.signal;
-
-        try {
-            console.log('[ChatViewProvider] Starting AI task...');
-            this._messages.push({ role: 'user', content: userInput });
-            this._saveHistory();
-
-            await GovernanceService.init(this._context.extensionUri.fsPath);
-
-            const originalAdjudicate = GovernanceService.adjudicate;
-            (GovernanceService as any).adjudicate = async (action: any) => {
-                let details = '';
-                let summary = '';
-                
-                if (action.type === 'tool_call') {
-                    const toolName = action.payload.tool_name;
-                    const params = action.payload.parameters;
-                    
-                    // For skill creation, provide a concise summary
-                    if (toolName === 'skill_create' && params) {
-                        summary = `📋 Create New Skill: ${params.name || 'Unnamed Skill'}`;
-                        details = `\n📝 Description: ${params.description || 'No description'}`;
-                        
-                        // Truncate long descriptions to avoid overflow
-                        if (details.length > 300) {
-                            details = details.substring(0, 300) + '...';
-                        }
-                        
-                        details += `\n\n💡 Use when: ${params.whenToUse || 'Not specified'}`;
-                        
-                        // Show success rate if available
-                        if (params.confidence) {
-                            details += `\n📊 Confidence: ${(params.confidence * 100).toFixed(1)}%`;
-                        }
-                    } else {
-                        // For other tools, show basic info
-                        details = `\nTool: ${toolName}`;
-                        const paramsStr = JSON.stringify(params, null, 2);
-                        // Truncate long parameter strings
-                        if (paramsStr.length > 200) {
-                            details += `\nParams: ${paramsStr.substring(0, 200)}...`;
-                        } else {
-                            details += `\nParams: ${paramsStr}`;
-                        }
-                    }
-                } else if (action.type === 'shell_cmd') {
-                    details = `\nCommand: ${action.payload.command}`;
-                }
-
-                // Truncate reasoning to fit on screen
-                let reasoning = action.reasoning || 'No reason provided';
-                const maxReasoningLength = 200;
-                if (reasoning.length > maxReasoningLength) {
-                    reasoning = reasoning.substring(0, maxReasoningLength) + '...';
-                }
-
-                const message = `${summary || `Agent wants to execute ${action.type}`}${details}\n\nReason: ${reasoning}`;
-
-                const choice = await vscode.window.showInformationMessage(
-                    message,
-                    { modal: true },
-                    'Approve', 'Reject'
-                );
-
-                if (choice === 'Approve') {
-                    return { status: 'approved', by: 'human', timestamp: Date.now() };
-                } else {
-                    return { status: 'rejected', by: 'human', reason: 'User Denied via VS Code UI', timestamp: Date.now() };
-                }
-            };
-
-            // 使用 VSCodeAgentRuntime 替代原始的 AgentRuntime
-            const runtime = new VSCodeAgentRuntime();
-
-            let fullAiResponse = '';
-            await runtime.runChat(
-                userInput,
-                (chunk) => {
-                    fullAiResponse += chunk;
-                    this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
-                },
-                undefined, // model (use default)
-                () => {
-                    // Context initialized callback
-                    console.log('[ChatViewProvider] Context initialized, sending to UI...');
-                    this.sendContextToUI(runtime.getContextManager());
-                },
-                signal // ✅ 传递取消信号
-            );
-
-            // 发送上下文信息到UI（但不自动弹出面板）
-            this.sendContextToUI(runtime.getContextManager());
-
-            // 只保存有意义的 AI 回复，过滤空内容
-            if (fullAiResponse && fullAiResponse.trim()) {
-                this._messages.push({ role: 'assistant', content: fullAiResponse });
-            }
-            this._saveHistory();
-            this._view?.webview.postMessage({ type: 'done' });
-            (GovernanceService as any).adjudicate = originalAdjudicate;
-
-        } catch (error: any) {
-            // 检查是否是取消操作
-            if (signal.aborted) {
-                console.log('[ChatViewProvider] Task was aborted');
-                this._view?.webview.postMessage({ 
-                    type: 'error', 
-                    value: 'Generation stopped by user' 
-                });
-            } else {
-                this._view.webview.postMessage({ type: 'error', value: error.message });
-            }
-        } finally {
-            // 清理 AbortController
-            this._abortController = null;
-        }
+  private async handleAgentTask(userInput: string) {
+    if (!this._view) {
+      console.warn('[ChatViewProvider] No webview available');
+      return;
     }
+
+    // 如果有正在运行的任务，先取消它
+    if (this._abortController) {
+      this._abortController.abort();
+    }
+
+    // 创建新的 AbortController
+    this._abortController = new AbortController();
+    const signal = this._abortController.signal;
+
+    try {
+      console.log('[ChatViewProvider] Starting AI task...');
+      this._messages.push({ role: 'user', content: userInput });
+      this._saveHistory();
+
+      await GovernanceService.init(this._context.extensionUri.fsPath);
+
+      const originalAdjudicate = GovernanceService.adjudicate;
+      (GovernanceService as any).adjudicate = async (action: any) => {
+        let details = '';
+        let summary = '';
+        
+        if (action.type === 'tool_call') {
+          const toolName = action.payload.tool_name;
+          const params = action.payload.parameters;
+          
+          // For skill creation, provide a concise summary
+          if (toolName === 'skill_create' && params) {
+            summary = `📋 Create New Skill: ${params.name || 'Unnamed Skill'}`;
+            details = `\n📝 Description: ${params.description || 'No description'}`;
+            
+            // Truncate long descriptions to avoid overflow
+            if (details.length > 300) {
+              details = details.substring(0, 300) + '...';
+            }
+            
+            details += `\n\n💡 Use when: ${params.whenToUse || 'Not specified'}`;
+            
+            // Show success rate if available
+            if (params.confidence) {
+              details += `\n📊 Confidence: ${(params.confidence * 100).toFixed(1)}%`;
+            }
+          } else {
+            // For other tools, show basic info
+            details = `\nTool: ${toolName}`;
+            const paramsStr = JSON.stringify(params, null, 2);
+            // Truncate long parameter strings
+            if (paramsStr.length > 200) {
+              details += `\nParams: ${paramsStr.substring(0, 200)}...`;
+            } else {
+              details += `\nParams: ${paramsStr}`;
+            }
+          }
+        } else if (action.type === 'shell_cmd') {
+          details = `\nCommand: ${action.payload.command}`;
+        }
+
+        // Truncate reasoning to fit on screen
+        let reasoning = action.reasoning || 'No reason provided';
+        const maxReasoningLength = 200;
+        if (reasoning.length > maxReasoningLength) {
+          reasoning = reasoning.substring(0, maxReasoningLength) + '...';
+        }
+
+        const message = `${summary || `Agent wants to execute ${action.type}`}${details}\n\nReason: ${reasoning}`;
+
+        const choice = await vscode.window.showInformationMessage(
+          message,
+          { modal: true },
+          'Approve', 'Reject'
+        );
+
+        if (choice === 'Approve') {
+          return { status: 'approved', by: 'human', timestamp: Date.now() };
+        } else {
+          return { status: 'rejected', by: 'human', reason: 'User Denied via VS Code UI', timestamp: Date.now() };
+        }
+      };
+
+      // 使用 VSCodeAgentRuntime 替代原始的 AgentRuntime
+      // 复用已存在的 runtime 实例，确保上下文一致
+      if (!this._runtime) {
+          this._runtime = new VSCodeAgentRuntime();
+      }
+      const contextManager = this._runtime.getContextManager();
+
+      let fullAiResponse = '';
+      await this._runtime.runChat(
+        userInput,
+        (chunk: string) => {
+          fullAiResponse += chunk;
+          this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
+        },
+        this._currentModel, // 使用当前选中的模型
+        () => {
+          // Context initialized callback
+          console.log('[ChatViewProvider] Context initialized, sending to UI...');
+          this.sendContextToUI(contextManager);
+        },
+        signal // ✅ 传递取消信号
+      );
+
+      // 发送上下文信息到UI（但不自动弹出面板）
+      this.sendContextToUI(contextManager);
+
+      // 只保存有意义的 AI 回复，过滤空内容
+      if (fullAiResponse && fullAiResponse.trim()) {
+        this._messages.push({ role: 'assistant', content: fullAiResponse });
+      }
+      this._saveHistory();
+      this._view?.webview.postMessage({ type: 'done' });
+      (GovernanceService as any).adjudicate = originalAdjudicate;
+
+    } catch (error: any) {
+      // 检查是否是取消操作
+      if (signal.aborted) {
+        console.log('[ChatViewProvider] Task was aborted');
+        this._view?.webview.postMessage({ 
+          type: 'error', 
+          value: 'Generation stopped by user' 
+        });
+      } else {
+        this._view.webview.postMessage({ type: 'error', value: error.message });
+      }
+    } finally {
+      // 清理 AbortController
+      this._abortController = null;
+    }
+  }
 
     /**
      * 发送上下文信息到UI
@@ -328,51 +515,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 groups: { high, medium, low } // 同时发送分组数据供未来使用
             });
 
-            // 自动打开上下文面板
-            if (items.length > 0) {
-                this._view.webview.postMessage({ type: 'showContextPanel' });
-            }
-
             console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length})`);
         } catch (error) {
             console.error('[ChatViewProvider] Error sending context to UI:', error);
-        }
-    }
-
-    private async handleReadFile(webviewView: vscode.WebviewView, filePath: string, isReference: boolean = false) {
-        try {
-            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-            if (!workspaceFolder) {
-                webviewView.webview.postMessage({ 
-                    type: 'error', 
-                    value: 'No workspace folder open' 
-                });
-                return;
-            }
-
-            const fileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
-            const document = await vscode.workspace.openTextDocument(fileUri);
-            const content = document.getText();
-            
-            // 发送文件内容到 UI
-            webviewView.webview.postMessage({
-                type: 'fileContent',
-                filePath: filePath,
-                content: content,
-                isReference: isReference
-            });
-            
-            // 只有不是引用时才自动分析
-            if (!isReference) {
-                const message = `请分析以下文件：${filePath}\n\n\`\`\`\`${this.getFileLanguage(filePath)}\n${content}\n\`\`\``;
-                await this.handleAgentTask(message);
-            }
-            
-        } catch (error: any) {
-            webviewView.webview.postMessage({ 
-                type: 'error', 
-                value: `Failed to read file: ${error.message}` 
-            });
         }
     }
 

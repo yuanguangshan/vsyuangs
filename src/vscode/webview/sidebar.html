@@ -81,6 +81,80 @@
         border-radius: 4px;
       }
 
+      /* 模型选择器样式 */
+      .model-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px;
+        background: var(--vscode-input-background);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .model-selector:hover {
+        border-color: var(--accent);
+      }
+
+      .model-selector-label {
+        font-size: 0.75em;
+        opacity: 0.8;
+        white-space: nowrap;
+      }
+
+      .model-selector-dropdown {
+        position: absolute;
+        top: 40px;
+        right: 12px;
+        background: var(--vscode-editor-background);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        min-width: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+        display: none;
+        z-index: 3000;
+      }
+
+      .model-selector-dropdown.visible {
+        display: block;
+      }
+
+      .model-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85em;
+      }
+
+      .model-option:hover {
+        background: var(--vscode-list-hoverBackground);
+      }
+
+      .model-option.active {
+        background: var(--vscode-list-activeSelectionBackground);
+        color: var(--vscode-list-activeSelectionForeground);
+      }
+
+      .model-option-name {
+        flex: 1;
+      }
+
+      .model-option-icon {
+        opacity: 0.5;
+        font-size: 0.8em;
+      }
+
+      .model-option.active .model-option-icon {
+        opacity: 1;
+      }
+
       .icon-btn:hover {
         opacity: 1;
         background: var(--vscode-toolbar-hoverBackground);
@@ -129,6 +203,57 @@
         animation: fadeIn 0.3s ease-out;
         line-height: 1.5;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      /* 消息操作按钮容器 */
+      .message-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+      }
+
+      .message:hover .message-actions {
+        opacity: 1;
+      }
+
+      /* 消息操作按钮 */
+      .message-action-btn {
+        background: rgba(0, 0, 0, 0.6);
+        border: none;
+        color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .message-action-btn:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: scale(1.1);
+      }
+
+      .message-action-btn:active {
+        transform: scale(0.95);
+      }
+
+      .user-message .message-action-btn {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+      }
+
+      .user-message .message-action-btn:hover {
+        background: rgba(255, 255, 255, 0.5);
       }
 
       @keyframes fadeIn {
@@ -714,10 +839,22 @@
         background: var(--vscode-editor-background);
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 12px;
         margin-bottom: 8px;
         cursor: pointer;
         transition: all 0.2s;
+        overflow: hidden;
+      }
+
+      .context-item.collapsed .context-item-details {
+        display: none;
+      }
+
+      .context-item.collapsed {
+        padding: 8px 12px;
+      }
+
+      .context-item.expanded {
+        padding: 12px;
       }
 
       .context-item:hover {
@@ -731,6 +868,40 @@
         gap: 8px;
         margin-bottom: 8px;
       }
+
+      .context-item.collapsed .context-item-header {
+        margin-bottom: 0;
+      }
+
+      .context-item-toggle {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.6;
+        transition: transform 0.2s;
+      }
+
+      .context-item.expanded .context-item-toggle {
+        transform: rotate(90deg);
+      }
+
+      .context-item-details {
+        animation: slideDown 0.2s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
 
       .context-item-icon {
         font-size: 1.2em;
@@ -823,6 +994,54 @@
         opacity: 0.5;
         font-size: 0.9em;
       }
+
+      /* Flash notification styles */
+      .flash-notification {
+        position: fixed;
+        top: 60px;
+        right: 400px;
+        background: var(--vscode-notificationsInfoIcon-foreground);
+        color: var(--vscode-notificationsInfoIcon-background);
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 5000;
+        font-size: 0.9em;
+        animation: slideInRight 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
+        max-width: 300px;
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+
+      /* Update indicator for context panel */
+      .context-panel-update-indicator {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        background: var(--vscode-testing-iconPassed);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
     </style>
   </head>
 
@@ -830,6 +1049,20 @@
     <header>
       <div class="header-title">YUANGS AI</div>
       <div class="header-actions">
+        <!-- 模型选择器 -->
+        <div class="model-selector" id="model-selector" title="Select AI Model">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.6;">
+            <path d="M8 1a7 7 0 0 1 0 14A7 7 0 0 1 8 1zM0 8a8 8 0 1 0 16 0A8 8 0 0 0 0 8zm8 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-2.5V6H7v4.5h2z"/>
+          </svg>
+          <span class="model-selector-label" id="current-model">Loading...</span>
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.5;">
+            <path d="M8 11L3 6h2.5L8 8.5L10.5 6H13L8 11z"/>
+          </svg>
+        </div>
+        <!-- 模型下拉菜单 -->
+        <div class="model-selector-dropdown" id="model-dropdown">
+          <!-- 选项将通过 JavaScript 动态生成 -->
+        </div>
         <button class="icon-btn" id="files-toggle" title="Show Files">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
             <path
@@ -1036,6 +1269,7 @@
           const trigger = textBeforeCursor[lastTriggerIndex];
           const query = textBeforeCursor.substring(lastTriggerIndex + 1);
 
+          // 只有当查询中没有空格时才触发（空查询也允许触发）
           if (!/\s/.test(query)) {
             suggestionType = trigger;
 
@@ -1105,37 +1339,82 @@
         userInput.style.height = "auto";
         userInput.style.height = userInput.scrollHeight + "px";
 
-        // 如果是 @ 文件引用，自动读取文件
-        if (suggestionType === "@") {
-          handleFileReadForReference(value);
-        }
-      }
-
-      // 处理 @ 文件引用
-      async function handleFileReadForReference(filePath) {
-        // 移除系统消息，直接读取文件
-        vscode.postMessage({
-          type: "readFile",
-          filePath: filePath,
-          isReference: true, // 标记这是引用，不是直接分析
-        });
+        // 不再调用 handleFileReadForReference，
+        // 让后端通过 resolveUserReferences 自动处理 @filename 引用
       }
 
       function addMessage(text, role, isRaw = false) {
         const div = document.createElement("div");
         div.className = `message ${role}-message`;
+        div.dataset.content = text; // 保存原始文本内容
+
+        // 创建消息操作按钮容器
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "message-actions";
+
+        // 复制按钮
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "message-action-btn";
+        copyBtn.innerHTML = "📋";
+        copyBtn.title = "复制消息";
+        copyBtn.onclick = (e) => {
+          e.stopPropagation();
+          copyMessageText(text);
+        };
+
+        // 删除按钮
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "message-action-btn";
+        deleteBtn.innerHTML = "🗑️";
+        deleteBtn.title = "删除消息";
+        deleteBtn.onclick = (e) => {
+          e.stopPropagation();
+          deleteMessage(div);
+        };
+
+        actionsDiv.appendChild(copyBtn);
+        actionsDiv.appendChild(deleteBtn);
+        div.appendChild(actionsDiv);
+
+        // 创建消息内容容器
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "message-content";
 
         if (role === "ai") {
-          div.innerHTML = marked.parse(text);
+          contentDiv.innerHTML = marked.parse(text);
           // 处理 diff 代码块
-          processDiffBlocks(div);
+          processDiffBlocks(contentDiv);
         } else {
-          div.textContent = text;
+          contentDiv.textContent = text;
         }
 
+        div.appendChild(contentDiv);
         chatContainer.appendChild(div);
         scrollToBottom();
         return div;
+      }
+
+      // 复制消息文本
+      function copyMessageText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+          showFlashNotification("✓ 已复制到剪贴板");
+        }).catch((err) => {
+          console.error("复制失败:", err);
+          showFlashNotification("✗ 复制失败");
+        });
+      }
+
+      // 删除消息
+      function deleteMessage(messageElement) {
+        if (confirm("确定要删除这条消息吗？")) {
+          // 从 DOM 中移除
+          messageElement.remove();
+          showFlashNotification("✓ 消息已删除");
+          
+          // 通知后端更新历史记录（如果需要的话）
+          // 这里可以添加一个消息到后端，让后端从历史记录中删除这条消息
+          // vscode.postMessage({ type: "deleteMessage", index: messageIndex });
+        }
       }
 
       // 检测并处理 diff 代码块
@@ -1435,6 +1714,10 @@
         const loader = document.getElementById("ai-loader");
 
         switch (message.type) {
+          case "closeFilesPanel":
+            // 关闭文件面板
+            filesPanel.classList.remove("open");
+            break;
           case "suggestions":
             showSuggestions(message.value, message.trigger);
             break;
@@ -1539,6 +1822,10 @@
             sendBtn.style.display = "flex";
             stopBtn.classList.remove("visible");
             break;
+          case "success":
+            // 成功消息，显示为系统消息
+            showFlashNotification(message.value);
+            break;
           case "diffApplied":
             // Diff 应用成功
             const successButtons = document.querySelectorAll(
@@ -1589,13 +1876,13 @@
             // 接收文件树数据
             handleFileTreeData(message.value);
             break;
-          case "fileContent":
-            // 接收文件内容
-            handleFileContent(
-              message.filePath,
-              message.content,
-              message.isReference,
-            );
+          case "modelsConfig":
+            // 接收模型配置
+            availableModels = message.value.availableModels || [];
+            currentModel = message.value.defaultModel || currentModel;
+            renderModelOptions();
+            updateCurrentModel(currentModel);
+            console.log("Models config received:", availableModels);
             break;
         }
       });
@@ -1852,36 +2139,6 @@
         });
       }
 
-      // 处理文件内容
-      function handleFileContent(filePath, content, isReference = false) {
-        if (isReference) {
-          // 如果是引用，在输入框中添加文件标记
-          const currentValue = userInput.value;
-          const fileMarker = `\`\`\`${getFileLanguage(filePath)}\n// File: ${filePath}\n${content}\n\`\`\`\n\n`;
-          userInput.value = currentValue + fileMarker;
-          userInput.focus();
-
-          // 重新计算高度
-          userInput.style.height = "auto";
-          userInput.style.height = userInput.scrollHeight + "px";
-
-          console.log(
-            "File reference received:",
-            filePath,
-            content.length,
-            "bytes",
-          );
-        } else {
-          // 直接分析文件
-          console.log(
-            "File content received for analysis:",
-            filePath,
-            content.length,
-            "bytes",
-          );
-        }
-      }
-
       // 获取文件语言（辅助函数）
       function getFileLanguage(filename) {
         const ext = filename.split(".").pop()?.toLowerCase() || "";
@@ -1948,8 +2205,16 @@
 
       // 更新上下文数据
       function updateContextItems(items) {
+        const oldCount = currentContextItems.length;
         currentContextItems = items || [];
+        const newCount = currentContextItems.length;
+        
         renderContextItems();
+        
+        // 如果有更新，显示 flash 通知
+        if (newCount > oldCount) {
+          showFlashNotification(`📋 Context updated: ${newCount - oldCount} new item${newCount - oldCount > 1 ? 's' : ''} added`);
+        }
       }
 
       // 渲染上下文项目
@@ -1998,7 +2263,7 @@
       // 创建单个上下文项目元素
       function createContextItemElement(item) {
         const div = document.createElement("div");
-        div.className = "context-item";
+        div.className = "context-item collapsed"; // 默认折叠
 
         // 获取图标
         const icon = getContextIcon(item.semantic);
@@ -2019,27 +2284,38 @@
 
         div.innerHTML = `
                 <div class="context-item-header">
+                    <span class="context-item-toggle">▶</span>
                     <span class="context-item-icon">${icon}</span>
                     <span class="context-item-title">${item.alias || item.path}</span>
                     <div class="context-item-badges">${badgesHtml}</div>
                 </div>
-                <div class="context-item-stats">${statsHtml}</div>
-                <div class="context-usage-bar">
-                    <div class="context-usage-fill" style="width: ${importancePercent}%"></div>
+                <div class="context-item-details">
+                    <div class="context-item-stats">${statsHtml}</div>
+                    <div class="context-usage-bar">
+                        <div class="context-usage-fill" style="width: ${importancePercent}%"></div>
+                    </div>
+                    <div class="context-item-preview">${previewText}</div>
                 </div>
-                <div class="context-item-preview">${previewText}</div>
             `;
 
-        // 添加点击事件
-        div.addEventListener("click", () => {
-          // 发送消息打开文件
-          if (item.path) {
+        // 添加点击事件 - 切换展开/折叠
+        div.addEventListener("click", (e) => {
+          // 阻止事件冒泡，避免触发其他点击事件
+          e.stopPropagation();
+          
+          // 切换展开/折叠状态
+          div.classList.toggle("collapsed");
+          div.classList.toggle("expanded");
+          
+          // 如果展开，打开文件
+          if (!div.classList.contains("collapsed") && item.path) {
             vscode.postMessage({
               type: "open",
               path: item.path,
             });
           }
-          console.log("Context item clicked:", item);
+          
+          console.log("Context item toggled:", item, "expanded:", !div.classList.contains("collapsed"));
         });
 
         return div;
@@ -2137,6 +2413,126 @@
         contextPanel.classList.remove("open");
         contextToggle.classList.remove("visible");
       }
+
+      // 显示 flash 通知
+      function showFlashNotification(message) {
+        const notification = document.createElement("div");
+        notification.className = "flash-notification";
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      }
+
+      // === 模型选择器功能 ===
+
+      const modelSelector = document.getElementById("model-selector");
+      const modelDropdown = document.getElementById("model-dropdown");
+      const currentModelLabel = document.getElementById("current-model");
+
+      // 可用的 AI 模型列表（从后端加载）
+      let availableModels = [];
+
+      // 当前选中的模型
+      let currentModel = "gpt-4o-mini";
+
+      // 初始化模型选择器
+      function initModelSelector() {
+        // 从扩展获取模型配置
+        vscode.postMessage({ type: "getModelsConfig" });
+        // 同时获取当前选中的模型
+        vscode.postMessage({ type: "getCurrentModel" });
+
+        // 点击切换下拉菜单
+        modelSelector.addEventListener("click", (e) => {
+          e.stopPropagation();
+          modelDropdown.classList.toggle("visible");
+        });
+
+        // 点击外部关闭下拉菜单
+        document.addEventListener("click", (e) => {
+          if (!modelSelector.contains(e.target) && !modelDropdown.contains(e.target)) {
+            modelDropdown.classList.remove("visible");
+          }
+        });
+
+        // 阻止下拉菜单内部点击事件冒泡
+        modelDropdown.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+      }
+
+      // 渲染模型选项
+      function renderModelOptions() {
+        modelDropdown.innerHTML = "";
+
+        availableModels.forEach((model) => {
+          const option = document.createElement("div");
+          option.className = `model-option ${model.id === currentModel ? "active" : ""}`;
+          option.innerHTML = `
+            <span class="model-option-name">
+              <strong>${model.name}</strong>
+              <br>
+              <span style="opacity: 0.6; font-size: 0.9em;">${model.description}</span>
+            </span>
+            <span class="model-option-icon">${model.id === currentModel ? "✓" : ""}</span>
+          `;
+
+          option.addEventListener("click", () => {
+            selectModel(model.id);
+          });
+
+          modelDropdown.appendChild(option);
+        });
+      }
+
+      // 选择模型
+      function selectModel(modelId) {
+        if (currentModel === modelId) {
+          modelDropdown.classList.remove("visible");
+          return;
+        }
+
+        currentModel = modelId;
+        currentModelLabel.textContent = availableModels.find(m => m.id === modelId)?.name || modelId;
+
+        // 重新渲染选项以更新选中状态
+        renderModelOptions();
+
+        // 关闭下拉菜单
+        modelDropdown.classList.remove("visible");
+
+        // 发送到扩展
+        vscode.postMessage({ type: "changeModel", value: modelId });
+
+        // 显示切换成功消息
+        addMessage(`🔄 已切换到模型: ${availableModels.find(m => m.id === modelId)?.name}`, "system");
+      }
+
+      // 更新当前模型显示
+      function updateCurrentModel(modelId) {
+        currentModel = modelId;
+        const model = availableModels.find(m => m.id === modelId);
+        currentModelLabel.textContent = model ? model.name : modelId;
+        renderModelOptions();
+      }
+
+      // 在消息监听器中添加模型相关处理
+      window.addEventListener("message", (event) => {
+        const message = event.data;
+
+        // 在现有的 switch 语句中添加新 case
+        if (message.type === "currentModel") {
+          updateCurrentModel(message.value);
+        }
+      });
+
+      // 初始化模型选择器
+      initModelSelector();
     </script>
   </body>
 </html>
