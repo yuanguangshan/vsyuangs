@@ -1,0 +1,221 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/yuanguangshan/vsyuangs/schemas/reviewResult-v1.json",
+  "title": "Review Result v1",
+  "description": "Schema for AI code review results (v1.0)",
+  "type": "object",
+  "required": ["schemaVersion", "meta", "summary", "issues"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version identifier"
+    },
+    "meta": {
+      "type": "object",
+      "required": ["model", "generatedAt", "reviewType"],
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "AI model used for review (e.g., 'gpt-4', 'claude-3')"
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the review was generated"
+        },
+        "reviewType": {
+          "type": "string",
+          "enum": ["commit", "diff", "file"],
+          "description": "Type of review: commit (staged changes), diff (provided diff), or file (single file)"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["riskLevel", "issueCount", "suggestionCount"],
+      "properties": {
+        "riskLevel": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Overall risk level of the changes"
+        },
+        "issueCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of issues found (must match issues.length)"
+        },
+        "suggestionCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of suggestions (must match suggestions?.length)"
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ReviewIssue"
+      },
+      "description": "Array of issues found in the code review"
+    },
+    "suggestions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ReviewSuggestion"
+      },
+      "description": "Array of fix suggestions (optional)"
+    }
+  },
+  "definitions": {
+    "ReviewIssue": {
+      "type": "object",
+      "required": ["id", "type", "severity", "message"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this issue (used for tracking)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["bug", "security", "performance", "style", "logic", "best_practice"],
+          "description": "Category of the issue"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warning", "error"],
+          "description": "Severity level (maps to VS Code DiagnosticSeverity)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Primary message describing the issue"
+        },
+        "location": {
+          "type": "object",
+          "required": ["filePath"],
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "Relative path to the file in the workspace"
+            },
+            "range": {
+              "type": "object",
+              "description": "Line and character range (0-based, matches VS Code API)",
+              "properties": {
+                "startLine": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0-based line number (inclusive)"
+                },
+                "startChar": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0-based character position (inclusive)"
+                },
+                "endLine": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0-based line number (inclusive)"
+                },
+                "endChar": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0-based character position (exclusive)"
+                }
+              }
+            }
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Detailed explanation of why this is an issue"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "AI's confidence in this finding (0.0 to 1.0)"
+        },
+        "codeSnippet": {
+          "type": "string",
+          "description": "Relevant code snippet (optional)"
+        }
+      }
+    },
+    "ReviewSuggestion": {
+      "type": "object",
+      "required": ["id", "title", "safety"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this suggestion"
+        },
+        "title": {
+          "type": "string",
+          "description": "Short title describing the suggestion"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the suggestion"
+        },
+        "appliesTo": {
+          "type": "object",
+          "required": ["filePath"],
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "Relative path to the file this suggestion applies to"
+            },
+            "range": {
+              "type": "object",
+              "description": "Line range (0-based, matches VS Code API)",
+              "properties": {
+                "startLine": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0-based line number (inclusive)"
+                },
+                "endLine": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0-based line number (inclusive)"
+                }
+              }
+            }
+          }
+        },
+        "diff": {
+          "type": "object",
+          "required": ["type", "content"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "unified",
+              "description": "Diff format type"
+            },
+            "content": {
+              "type": "string",
+              "description": "Unified diff content"
+            }
+          }
+        },
+        "safety": {
+          "type": "object",
+          "required": ["risk"],
+          "properties": {
+            "risk": {
+              "type": "string",
+              "enum": ["low", "medium", "high"],
+              "description": "Risk level of applying this suggestion"
+            },
+            "requiresConfirmation": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether this suggestion requires user confirmation before applying (defaults to true for high/medium risk)"
+            }
+          }
+        }
+      }
+    }
+  }
+}
