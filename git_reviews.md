@@ -155,3 +155,247 @@ console.error('❌ 测试失败: 无法从银行导入项目'); return;
 
 [↑ 返回顶部](#)
 
+
+---
+
+## 📋 Code Review - 2026/1/30 17:07:47
+
+**📊 评分:** 👍 82/100  
+**🔧 级别:** STANDARD  
+**💾 提交:** `d25c563`  
+**📂 范围:** 4 个文件  
+
+### 📝 总体评价
+
+本次变更整体思路清晰，成功修复了文件读取与上下文不共享的核心问题，引入的 runtime 复用机制在语义和设计层面是正确的。但在健壮性、边界条件、安全性和可维护性方面仍有若干值得改进之处，尤其是文件读取安全、上下文膨胀风险以及部分职责耦合问题。
+
+### ⚠️ 发现的问题 (6)
+
+#### 1. [WARNING] src/vscode/provider/ChatViewProvider.ts:208
+
+直接使用 data.path 构造 Uri.file，缺少对路径合法性和工作区范围的校验。
+
+**💡 建议:** 建议校验路径是否位于当前 workspace 内（例如使用 vscode.workspace.getWorkspaceFolder），防止读取任意系统文件。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const uri = vscode.Uri.file(data.path);
+```
+
+</details>
+
+#### 2. [WARNING] src/vscode/provider/ChatViewProvider.ts:210
+
+未对大文件或二进制文件进行限制，可能导致内存占用过高或上下文污染。
+
+**💡 建议:** 在读取前检查文件大小（fs.stat）及 MIME/扩展名，并设置合理的大小上限。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const content = doc.getText();
+```
+
+</details>
+
+#### 3. [INFO] src/vscode/provider/ChatViewProvider.ts:216
+
+runtime 的懒加载逻辑在多个位置重复出现。
+
+**💡 建议:** 考虑提取为私有方法（如 getRuntime()），以减少重复并集中管理生命周期。
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (!this._runtime) {
+    this._runtime = new VSCodeAgentRuntime();
+}
+```
+
+</details>
+
+#### 4. [WARNING] src/vscode/provider/ChatViewProvider.ts:228
+
+importance 中的 useCount、successCount 等字段在每次加载时硬编码为 1，语义上可能不准确。
+
+**💡 建议:** 如果这些字段用于统计或排序，建议由 ContextManager 内部统一维护，而不是在调用方初始化为固定值。
+
+<details>
+<summary>代码片段</summary>
+
+```
+useCount: 1,
+successCount: 1
+```
+
+</details>
+
+#### 5. [INFO] src/vscode/provider/ChatViewProvider.ts:371
+
+ChatViewProvider 同时负责 UI 消息处理、文件 I/O、上下文管理和 runtime 生命周期，职责略显集中。
+
+**💡 建议:** 中长期可考虑将文件加载逻辑或 ContextManager 交互抽离为独立服务类，降低类复杂度。
+
+<details>
+<summary>代码片段</summary>
+
+```
+case 'readFile':
+```
+
+</details>
+
+#### 6. [INFO] src/vscode/webview/sidebar.html:1716
+
+closeFilesPanel 仅通过 class 操作关闭面板，未校验当前状态。
+
+**💡 建议:** 可以在关闭前判断面板是否处于 open 状态，或封装为统一的 UI 状态管理函数。
+
+<details>
+<summary>代码片段</summary>
+
+```
+filesPanel.classList.remove("open");
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ 清晰识别并修复了 ContextManager 不共享这一根本设计问题
+- ✅ readFile 功能实现完整，包含错误处理和用户反馈
+- ✅ 通过 tags 和 importance 明确区分用户显式选择的高优先级上下文
+- ✅ runtime 复用保证了 @filename 引用与文件面板加载的一致语义
+- ✅ 文档 FILE_READING_FIX.md 详尽，便于后续维护和团队理解
+
+### 💡 建议
+
+- 为文件读取逻辑添加单元测试或集成测试（覆盖大文件、非法路径、重复加载等场景）
+- 引入文件大小和类型白名单机制，防止上下文被无关或危险文件污染
+- 封装 runtime/contextManager 的获取逻辑，减少重复代码
+- 考虑为 ContextManager 增加去重策略，避免同一文件被多次加入上下文
+- 在 README 或开发文档中补充安全模型说明（文件读取信任边界）
+
+[↑ 返回顶部](#)
+
+
+---
+
+## 📋 Code Review - 2026/1/30 17:26:57
+
+**📊 评分:** 👍 82/100  
+**🔧 级别:** STANDARD  
+**💾 提交:** `5a43a34`  
+**📂 范围:** 5 个文件  
+
+### 📝 总体评价
+
+此次变更主要集中在测试与集成层面，体现了 Context / Bank / Skill 全链路的设计意图，整体结构清晰、覆盖面较广。但测试代码存在一定的可维护性问题，对实现细节耦合较深，部分语义与注释存在不一致，且错误处理与测试框架规范性有改进空间。
+
+### ⚠️ 发现的问题 (5)
+
+#### 1. [WARNING] test/test-context-integration.ts:38
+
+测试代码直接使用 console.log / console.error 并通过 return 结束测试，未使用标准断言机制
+
+**💡 建议:** 建议引入测试框架（如 Jest / Vitest），使用 expect/assert 明确表达测试意图并确保失败能被 CI 捕获
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (!importedItem) {
+  console.error('❌ 测试失败: 无法从银行导入项目');
+  return;
+}
+```
+
+</details>
+
+#### 2. [WARNING] test/test-context-integration.ts:185
+
+测试代码直接修改 item.importance 内部字段，破坏封装并依赖实现细节
+
+**💡 建议:** 建议通过 ContextManager / ContextBuffer 提供的接口模拟使用行为，而不是直接修改 importance 对象
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (item.importance) {
+  for (let i = 0; i < 5; i++) {
+    item.importance.successCount++;
+  }
+}
+```
+
+</details>
+
+#### 3. [WARNING] test/test-context-integration.ts:302
+
+stableId 行为的注释与代码逻辑存在潜在语义混淆
+
+**💡 建议:** 明确 stableId 的设计契约（是否包含 semantic），并统一注释、测试断言与实现
+
+<details>
+<summary>代码片段</summary>
+
+```
+// stableId 应该包含语义类型，所以即使路径和内容相同，语义不同也应该有不同的 stableId
+```
+
+</details>
+
+#### 4. [MINOR] test/test-context-integration.ts:17
+
+测试文件中存在大量重复的初始化与清理逻辑
+
+**💡 建议:** 可抽取公共的 setup/teardown 辅助函数以提升可维护性
+
+<details>
+<summary>代码片段</summary>
+
+```
+const manager = new ContextManager();
+const bank = new ContextBank(path.join(__dirname, '.test-xxx-bank'));
+await bank.initialize();
+```
+
+</details>
+
+#### 5. [MINOR] test/test-context-stable-id.ts:108
+
+测试依赖硬编码的 stableId 字符串，对实现变化较为敏感
+
+**💡 建议:** 可通过规则验证（如一致性、非空性）替代完全硬编码的 stableId 值
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (retrievedItem.stableId !== 'test-stable-id-123') { ... }
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ 测试覆盖了 Context → Bank → Skill 的完整业务链路，体现了良好的系统级思考
+- ✅ stableId、importance、promotion 等核心概念在测试中被明确验证
+- ✅ 测试用例命名和日志输出清晰，便于人工调试与理解执行流程
+- ✅ 通过删除 .test-context-bank 的持久化文件，减少了对仓库状态的污染
+
+### 💡 建议
+
+- 将当前脚本式集成测试迁移到正式测试框架，提升自动化与可维护性
+- 减少测试对内部字段（如 importance.successCount）的直接依赖，强化封装边界
+- 统一 semantic 的枚举或常量定义（如 source_code / config），避免测试与实现语义漂移
+- 为 stableId 的设计增加文档或注释说明，明确哪些字段是稳定身份的一部分
+- 考虑为 ContextBank 使用临时目录工具（如 fs.mkdtemp）以避免路径冲突
+
+[↑ 返回顶部](#)
+
