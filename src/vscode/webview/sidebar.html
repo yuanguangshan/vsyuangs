@@ -1,2295 +1,2273 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Yuangs Premium AI</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-      :root {
-        --bubble-user: var(--vscode-button-background);
-        --bubble-ai: var(--vscode-editor-background);
-        --text-main: var(--vscode-foreground);
-        --accent: var(--vscode-focusBorder);
-        --border: var(--vscode-panel-border);
-        --input-bg: var(--vscode-input-background);
-      }
 
-      body {
-        font-family:
-          var(--vscode-font-family),
-          "Inter",
-          -apple-system,
-          sans-serif;
-        font-size: var(--vscode-font-size);
-        color: var(--text-main);
-        background: var(--vscode-sideBar-background);
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yuangs Premium AI</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bubble-user: var(--vscode-button-background);
+      --bubble-ai: var(--vscode-editor-background);
+      --text-main: var(--vscode-foreground);
+      --accent: var(--vscode-focusBorder);
+      --border: var(--vscode-panel-border);
+      --input-bg: var(--vscode-input-background);
+    }
 
-      /* 顶部装饰线与标题栏 */
-      header {
-        height: 40px;
-        width: 100%;
-        background: var(--vscode-sideBar-background);
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 12px;
-        box-sizing: border-box;
-        z-index: 100;
-      }
+    body {
+      font-family:
+        var(--vscode-font-family),
+        "Inter",
+        -apple-system,
+        sans-serif;
+      font-size: var(--vscode-font-size);
+      color: var(--text-main);
+      background: var(--vscode-sideBar-background);
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
 
-      header::before {
-        content: "";
-        height: 2px;
-        width: 100%;
-        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
+    /* 顶部装饰线与标题栏 */
+    header {
+      height: 40px;
+      width: 100%;
+      background: var(--vscode-sideBar-background);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      box-sizing: border-box;
+      z-index: 100;
+    }
 
-      .header-title {
-        font-size: 0.9em;
-        font-weight: bold;
-        opacity: 0.8;
-      }
+    header::before {
+      content: "";
+      height: 2px;
+      width: 100%;
+      background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
 
-      .header-actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        z-index: 2000;
-      }
+    .header-title {
+      font-size: 0.9em;
+      font-weight: bold;
+      opacity: 0.8;
+    }
 
-      .icon-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-main);
-        cursor: pointer;
-        opacity: 0.6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px;
-        border-radius: 4px;
-      }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      z-index: 2000;
+    }
 
-      /* 模型选择器样式 */
-      .model-selector {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 4px 8px;
-        background: var(--vscode-input-background);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      opacity: 0.6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 4px;
+    }
 
-      .model-selector:hover {
-        border-color: var(--accent);
-      }
+    /* 模型选择器样式 */
+    .model-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      background: var(--vscode-input-background);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-      .model-selector-label {
-        font-size: 0.75em;
-        opacity: 0.8;
-        white-space: nowrap;
-      }
+    .model-selector:hover {
+      border-color: var(--accent);
+    }
 
-      .model-selector-dropdown {
-        position: absolute;
-        top: 40px;
-        right: 12px;
-        background: var(--vscode-editor-background);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        min-width: 200px;
-        max-height: 300px;
-        overflow-y: auto;
-        display: none;
-        z-index: 3000;
-      }
+    .model-selector-label {
+      font-size: 0.75em;
+      opacity: 0.8;
+      white-space: nowrap;
+    }
 
-      .model-selector-dropdown.visible {
-        display: block;
-      }
+    .model-selector-dropdown {
+      position: absolute;
+      top: 40px;
+      right: 12px;
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      min-width: 200px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+      z-index: 3000;
+    }
 
-      .model-option {
-        padding: 8px 12px;
-        cursor: pointer;
-        transition: background 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 0.85em;
-      }
+    .model-selector-dropdown.visible {
+      display: block;
+    }
 
-      .model-option:hover {
-        background: var(--vscode-list-hoverBackground);
-      }
+    .model-option {
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85em;
+    }
 
-      .model-option.active {
-        background: var(--vscode-list-activeSelectionBackground);
-        color: var(--vscode-list-activeSelectionForeground);
-      }
+    .model-option:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
 
-      .model-option-name {
-        flex: 1;
-      }
+    .model-option.active {
+      background: var(--vscode-list-activeSelectionBackground);
+      color: var(--vscode-list-activeSelectionForeground);
+    }
 
-      .model-option-icon {
-        opacity: 0.5;
-        font-size: 0.8em;
-      }
+    .model-option-name {
+      flex: 1;
+    }
 
-      .model-option.active .model-option-icon {
-        opacity: 1;
-      }
+    .model-option-icon {
+      opacity: 0.5;
+      font-size: 0.8em;
+    }
 
-      .icon-btn:hover {
-        opacity: 1;
-        background: var(--vscode-toolbar-hoverBackground);
-      }
+    .model-option.active .model-option-icon {
+      opacity: 1;
+    }
 
-      .icon-btn.context-btn {
-        opacity: 1 !important;
-        background: var(--vscode-button-background);
-        color: var(--vscode-button-foreground);
-        border: 1px solid var(--vscode-focusBorder);
-        z-index: 2000;
-        padding: 6px 12px;
-      }
+    .icon-btn:hover {
+      opacity: 1;
+      background: var(--vscode-toolbar-hoverBackground);
+    }
 
-      .icon-btn.context-btn:hover {
-        opacity: 1;
-        background: var(--vscode-button-hoverBackground);
-      }
+    .icon-btn.context-btn {
+      opacity: 1 !important;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: 1px solid var(--vscode-focusBorder);
+      z-index: 2000;
+      padding: 6px 12px;
+    }
 
-      #chat-container {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        scroll-behavior: smooth;
-      }
+    .icon-btn.context-btn:hover {
+      opacity: 1;
+      background: var(--vscode-button-hoverBackground);
+    }
 
-      /* 自定义滚动条 */
-      #chat-container::-webkit-scrollbar {
-        width: 6px;
-      }
+    #chat-container {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
 
-      #chat-container::-webkit-scrollbar-thumb {
-        background: var(--vscode-scrollbarSlider-background);
-        border-radius: 10px;
-      }
+    /* 自定义滚动条 */
+    #chat-container::-webkit-scrollbar {
+      width: 6px;
+    }
 
-      .message {
-        padding: 12px 16px;
-        border-radius: 12px;
-        max-width: 85%;
-        word-wrap: break-word;
-        position: relative;
-        animation: fadeIn 0.3s ease-out;
-        line-height: 1.5;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
+    #chat-container::-webkit-scrollbar-thumb {
+      background: var(--vscode-scrollbarSlider-background);
+      border-radius: 10px;
+    }
 
-      /* 消息操作按钮容器 */
-      .message-actions {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        display: flex;
-        gap: 4px;
+    .message {
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      word-wrap: break-word;
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
+      line-height: 1.5;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 消息操作按钮容器 */
+    .message-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 10;
+    }
+
+    .message:hover .message-actions {
+      opacity: 1;
+    }
+
+    /* 消息操作按钮 */
+    .message-action-btn {
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .message-action-btn:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: scale(1.1);
+    }
+
+    .message-action-btn:active {
+      transform: scale(0.95);
+    }
+
+    .user-message .message-action-btn {
+      background: rgba(255, 255, 255, 0.3);
+      color: white;
+    }
+
+    .user-message .message-action-btn:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    @keyframes fadeIn {
+      from {
         opacity: 0;
-        transition: opacity 0.2s;
-        z-index: 10;
+        transform: translateY(10px);
       }
 
-      .message:hover .message-actions {
+      to {
         opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .user-message {
+      align-self: flex-end;
+      background: var(--bubble-user);
+      color: var(--vscode-button-foreground);
+      border-bottom-right-radius: 2px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .ai-message {
+      align-self: flex-start;
+      background: var(--bubble-ai);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 2px;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Markdown 样式 */
+    .ai-message pre {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 8px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+      position: relative;
+    }
+
+    /* Diff 代码块样式 */
+    .ai-message pre.diff-block {
+      border: 1px solid var(--vscode-editorWidget-border);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .ai-message pre.diff-block::before {
+      content: "📝 Diff";
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      font-size: 0.75em;
+      opacity: 0.6;
+      font-family: var(--vscode-font-family);
+    }
+
+    /* 应用按钮 */
+    .apply-diff-btn {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75em;
+      font-family: var(--vscode-font-family);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0;
+      transition:
+        opacity 0.2s,
+        background 0.2s;
+      z-index: 10;
+    }
+
+    .ai-message pre.diff-block:hover .apply-diff-btn {
+      opacity: 1;
+    }
+
+    .apply-diff-btn:hover {
+      background: var(--vscode-button-hoverBackground);
+    }
+
+    .apply-diff-btn:active {
+      transform: scale(0.95);
+    }
+
+    .apply-diff-btn.applied {
+      background: var(--vscode-testing-iconPassed);
+      opacity: 1;
+    }
+
+    .apply-diff-btn.error {
+      background: var(--vscode-testing-iconFailed);
+      opacity: 1;
+    }
+
+    .ai-message code {
+      font-family: var(--vscode-editor-font-family);
+      background: rgba(0, 0, 0, 0.1);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .system-message {
+      align-self: center;
+      font-size: 0.85em;
+      color: var(--vscode-descriptionForeground);
+      background: transparent;
+      box-shadow: none;
+      text-align: center;
+      opacity: 0.7;
+    }
+
+    #input-area {
+      padding: 16px;
+      background: var(--vscode-sideBar-background);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+
+    .input-wrapper {
+      display: flex;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--accent);
+    }
+
+    #user-input {
+      flex-grow: 1;
+      background: transparent;
+      color: var(--vscode-input-foreground);
+      border: none;
+      padding: 8px;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      min-height: 24px;
+      font-family: inherit;
+    }
+
+    #send-btn {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+
+    #send-btn:hover {
+      opacity: 0.9;
+    }
+
+    #stop-btn {
+      background: var(--vscode-errorForeground);
+      color: var(--vscode-button-foreground);
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+      animation: pulse 1.5s infinite;
+    }
+
+    #stop-btn:hover {
+      opacity: 0.8;
+    }
+
+    #stop-btn.visible {
+      display: flex;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(235, 86, 86, 0.7);
       }
 
-      /* 消息操作按钮 */
-      .message-action-btn {
-        background: rgba(0, 0, 0, 0.6);
-        border: none;
-        color: white;
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        font-size: 14px;
-        transition: all 0.2s;
+      70% {
+        box-shadow: 0 0 0 6px rgba(235, 86, 86, 0);
       }
 
-      .message-action-btn:hover {
-        background: rgba(0, 0, 0, 0.8);
-        transform: scale(1.1);
+      100% {
+        box-shadow: 0 0 0 0 rgba(235, 86, 86, 0);
+      }
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: #aaa;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .dot:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0);
       }
 
-      .message-action-btn:active {
-        transform: scale(0.95);
+      40% {
+        transform: scale(1);
       }
+    }
 
-      .user-message .message-action-btn {
-        background: rgba(255, 255, 255, 0.3);
-        color: white;
-      }
+    /* 建议列表样式 */
+    #suggestions-list {
+      position: absolute;
+      bottom: 100%;
+      left: 16px;
+      right: 16px;
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1000;
+      margin-bottom: 8px;
+    }
 
-      .user-message .message-action-btn:hover {
-        background: rgba(255, 255, 255, 0.5);
-      }
+    .suggestion-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
 
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
+    .suggestion-item:hover,
+    .suggestion-item.selected {
+      background: var(--vscode-list-hoverBackground);
+      color: var(--vscode-list-hoverForeground);
+    }
 
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
+    .suggestion-icon {
+      opacity: 0.7;
+      font-size: 1.1em;
+    }
 
-      .user-message {
-        align-self: flex-end;
-        background: var(--bubble-user);
-        color: var(--vscode-button-foreground);
-        border-bottom-right-radius: 2px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      }
+    /* 流式传输期间的草稿态样式 */
+    .streaming-draft {
+      font-family: "Courier New", Consolas, Monaco, monospace;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      line-height: 1.4;
+    }
 
-      .ai-message {
-        align-self: flex-start;
-        background: var(--bubble-ai);
-        border: 1px solid var(--border);
-        border-bottom-left-radius: 2px;
-        backdrop-filter: blur(10px);
-      }
+    .streaming-content {
+      margin: 0;
+      padding: 0;
+      font-family: inherit;
+      line-height: inherit;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
 
-      /* Markdown 样式 */
-      .ai-message pre {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 8px;
-        border-radius: 6px;
-        overflow-x: auto;
-        margin: 8px 0;
-        position: relative;
-      }
+    .final-render {
+      /* 最终渲染完成后的样式 */
+    }
 
-      /* Diff 代码块样式 */
-      .ai-message pre.diff-block {
-        border: 1px solid var(--vscode-editorWidget-border);
-        background: rgba(0, 0, 0, 0.3);
-      }
+    /* 光标闪烁效果 */
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--text-main);
+      margin-left: 4px;
+      animation: blink 1s step-start infinite;
+      vertical-align: middle;
+      opacity: 0.8;
+      border-radius: 1px;
+    }
 
-      .ai-message pre.diff-block::before {
-        content: "📝 Diff";
-        position: absolute;
-        top: 4px;
-        left: 8px;
-        font-size: 0.75em;
-        opacity: 0.6;
-        font-family: var(--vscode-font-family);
-      }
-
-      /* 应用按钮 */
-      .apply-diff-btn {
-        position: absolute;
-        top: 4px;
-        right: 8px;
-        background: var(--vscode-button-background);
-        color: var(--vscode-button-foreground);
-        border: none;
-        padding: 4px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.75em;
-        font-family: var(--vscode-font-family);
-        display: flex;
-        align-items: center;
-        gap: 4px;
+    @keyframes blink {
+      50% {
         opacity: 0;
-        transition:
-          opacity 0.2s,
-          background 0.2s;
-        z-index: 10;
+      }
+    }
+
+    /* 文件面板样式 */
+    #files-panel {
+      position: fixed;
+      top: 40px;
+      left: -400px;
+      width: 380px;
+      height: calc(100vh - 40px);
+      background: var(--vscode-sideBar-background);
+      border-right: 1px solid var(--border);
+      border-top: 1px solid var(--border);
+      z-index: 1000;
+      transition: left 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
+    }
+
+    #files-panel.open {
+      left: 0;
+    }
+
+    .files-panel-header {
+      padding: 12px 16px;
+      background: var(--vscode-editor-background);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .files-panel-title {
+      font-weight: bold;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .files-panel-stats {
+      font-size: 0.75em;
+      opacity: 0.7;
+    }
+
+    .files-panel-close {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.6;
+    }
+
+    .files-panel-close:hover {
+      opacity: 1;
+    }
+
+    .files-panel-controls {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .files-search {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 10px;
+      color: var(--vscode-input-foreground);
+      font-size: 0.85em;
+      outline: none;
+    }
+
+    .files-search:focus {
+      border-color: var(--accent);
+    }
+
+    .files-panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    .file-tree-item {
+      display: flex;
+      align-items: center;
+      padding: 4px 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+      user-select: none;
+    }
+
+    .file-tree-item:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
+
+    .file-tree-item.selected {
+      background: var(--vscode-list-activeSelectionBackground);
+      color: var(--vscode-list-activeSelectionForeground);
+    }
+
+    .file-tree-icon {
+      margin-right: 6px;
+      font-size: 1em;
+      opacity: 0.8;
+      flex-shrink: 0;
+    }
+
+    .file-tree-icon.expanded::before {
+      content: "▼";
+      font-size: 0.7em;
+      margin-right: 2px;
+    }
+
+    .file-tree-icon.collapsed::before {
+      content: "▶";
+      font-size: 0.7em;
+      margin-right: 2px;
+    }
+
+    .file-tree-name {
+      flex: 1;
+      font-size: 0.85em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-tree-children {
+      display: none;
+    }
+
+    .file-tree-children.expanded {
+      display: block;
+    }
+
+    .file-tree-item.folder {
+      font-weight: 500;
+    }
+
+    .file-tree-item.file {
+      opacity: 0.9;
+    }
+
+    .file-empty {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+
+    .file-loading {
+      text-align: center;
+      padding: 20px;
+      opacity: 0.7;
+    }
+
+    /* 上下文面板样式 */
+    #context-panel {
+      position: fixed;
+      top: 40px;
+      right: -400px;
+      width: 380px;
+      height: calc(100vh - 40px);
+      background: var(--vscode-sideBar-background);
+      border-left: 1px solid var(--border);
+      border-top: 1px solid var(--border);
+      z-index: 1000;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
+    }
+
+    #context-panel.open {
+      right: 0;
+    }
+
+    .context-panel-header {
+      padding: 12px 16px;
+      background: var(--vscode-editor-background);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .context-panel-title {
+      font-weight: bold;
+      font-size: 0.9em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .context-panel-stats {
+      font-size: 0.75em;
+      opacity: 0.7;
+    }
+
+    .context-panel-close {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.6;
+    }
+
+    .context-panel-close:hover {
+      opacity: 1;
+    }
+
+    .context-panel-controls {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .context-search {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 10px;
+      color: var(--vscode-input-foreground);
+      font-size: 0.85em;
+      outline: none;
+    }
+
+    .context-search:focus {
+      border-color: var(--accent);
+    }
+
+    .context-filter-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 0.75em;
+      transition: all 0.2s;
+    }
+
+    .context-filter-btn:hover,
+    .context-filter-btn.active {
+      background: var(--accent);
+      color: var(--vscode-button-foreground);
+      border-color: var(--accent);
+    }
+
+    .context-panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .context-item {
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+    }
+
+    .context-item.collapsed .context-item-details {
+      display: none;
+    }
+
+    .context-item.collapsed {
+      padding: 8px 12px;
+    }
+
+    .context-item.expanded {
+      padding: 12px;
+    }
+
+    .context-item:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .context-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .context-item.collapsed .context-item-header {
+      margin-bottom: 0;
+    }
+
+    .context-item-toggle {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      transition: transform 0.2s;
+    }
+
+    .context-item.expanded .context-item-toggle {
+      transform: rotate(90deg);
+    }
+
+    .context-item-details {
+      animation: slideDown 0.2s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
       }
 
-      .ai-message pre.diff-block:hover .apply-diff-btn {
+      to {
         opacity: 1;
-      }
-
-      .apply-diff-btn:hover {
-        background: var(--vscode-button-hoverBackground);
-      }
-
-      .apply-diff-btn:active {
-        transform: scale(0.95);
-      }
-
-      .apply-diff-btn.applied {
-        background: var(--vscode-testing-iconPassed);
-        opacity: 1;
-      }
-
-      .apply-diff-btn.error {
-        background: var(--vscode-testing-iconFailed);
-        opacity: 1;
-      }
-
-      .ai-message code {
-        font-family: var(--vscode-editor-font-family);
-        background: rgba(0, 0, 0, 0.1);
-        padding: 2px 4px;
-        border-radius: 4px;
-      }
-
-      .system-message {
-        align-self: center;
-        font-size: 0.85em;
-        color: var(--vscode-descriptionForeground);
-        background: transparent;
-        box-shadow: none;
-        text-align: center;
-        opacity: 0.7;
-      }
-
-      #input-area {
-        padding: 16px;
-        background: var(--vscode-sideBar-background);
-        border-top: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        position: relative;
-      }
-
-      .input-wrapper {
-        display: flex;
-        background: var(--input-bg);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 4px 8px;
-        align-items: center;
-        transition: border-color 0.2s;
-      }
-
-      .input-wrapper:focus-within {
-        border-color: var(--accent);
-      }
-
-      #user-input {
-        flex-grow: 1;
-        background: transparent;
-        color: var(--vscode-input-foreground);
-        border: none;
-        padding: 8px;
-        outline: none;
-        resize: none;
-        max-height: 120px;
-        min-height: 24px;
-        font-family: inherit;
-      }
-
-      #send-btn {
-        background: var(--vscode-button-background);
-        color: var(--vscode-button-foreground);
-        border: none;
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.2s;
-      }
-
-      #send-btn:hover {
-        opacity: 0.9;
-      }
-
-      #stop-btn {
-        background: var(--vscode-errorForeground);
-        color: var(--vscode-button-foreground);
-        border: none;
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.2s;
-        animation: pulse 1.5s infinite;
-      }
-
-      #stop-btn:hover {
-        opacity: 0.8;
-      }
-
-      #stop-btn.visible {
-        display: flex;
-      }
-
-      @keyframes pulse {
-        0% {
-          box-shadow: 0 0 0 0 rgba(235, 86, 86, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 6px rgba(235, 86, 86, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(235, 86, 86, 0);
-        }
-      }
-
-      .typing-indicator {
-        display: flex;
-        gap: 4px;
-        padding: 4px;
-      }
-
-      .dot {
-        width: 6px;
-        height: 6px;
-        background: #aaa;
-        border-radius: 50%;
-        animation: bounce 1.4s infinite ease-in-out both;
-      }
-
-      .dot:nth-child(1) {
-        animation-delay: -0.32s;
-      }
-
-      .dot:nth-child(2) {
-        animation-delay: -0.16s;
-      }
-
-      @keyframes bounce {
-        0%,
-        80%,
-        100% {
-          transform: scale(0);
-        }
-
-        40% {
-          transform: scale(1);
-        }
-      }
-
-      /* 建议列表样式 */
-      #suggestions-list {
-        position: absolute;
-        bottom: 100%;
-        left: 16px;
-        right: 16px;
-        background: var(--vscode-editor-background);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
-        max-height: 200px;
-        overflow-y: auto;
-        display: none;
-        z-index: 1000;
-        margin-bottom: 8px;
-      }
-
-      .suggestion-item {
-        padding: 8px 12px;
-        cursor: pointer;
-        transition: background 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.9em;
-      }
-
-      .suggestion-item:hover,
-      .suggestion-item.selected {
-        background: var(--vscode-list-hoverBackground);
-        color: var(--vscode-list-hoverForeground);
-      }
-
-      .suggestion-icon {
-        opacity: 0.7;
-        font-size: 1.1em;
-      }
-
-      /* 流式传输期间的草稿态样式 */
-      .streaming-draft {
-        font-family: "Courier New", Consolas, Monaco, monospace;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        line-height: 1.4;
-      }
-
-      .streaming-content {
-        margin: 0;
-        padding: 0;
-        font-family: inherit;
-        line-height: inherit;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-      }
-
-      .final-render {
-        /* 最终渲染完成后的样式 */
-      }
-
-      /* 光标闪烁效果 */
-      .cursor {
-        display: inline-block;
-        width: 8px;
-        height: 16px;
-        background: var(--text-main);
-        margin-left: 4px;
-        animation: blink 1s step-start infinite;
-        vertical-align: middle;
-        opacity: 0.8;
-        border-radius: 1px;
-      }
-
-      @keyframes blink {
-        50% {
-          opacity: 0;
-        }
-      }
-
-      /* 文件面板样式 */
-      #files-panel {
-        position: fixed;
-        top: 40px;
-        left: -400px;
-        width: 380px;
-        height: calc(100vh - 40px);
-        background: var(--vscode-sideBar-background);
-        border-right: 1px solid var(--border);
-        border-top: 1px solid var(--border);
-        z-index: 1000;
-        transition: left 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.2);
-      }
-
-      #files-panel.open {
-        left: 0;
-      }
-
-      .files-panel-header {
-        padding: 12px 16px;
-        background: var(--vscode-editor-background);
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .files-panel-title {
-        font-weight: bold;
-        font-size: 0.9em;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .files-panel-stats {
-        font-size: 0.75em;
-        opacity: 0.7;
-      }
-
-      .files-panel-close {
-        background: transparent;
-        border: none;
-        color: var(--text-main);
-        cursor: pointer;
-        padding: 4px;
-        opacity: 0.6;
-      }
-
-      .files-panel-close:hover {
-        opacity: 1;
-      }
-
-      .files-panel-controls {
-        padding: 8px 16px;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        gap: 8px;
-      }
-
-      .files-search {
-        flex: 1;
-        background: var(--input-bg);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 6px 10px;
-        color: var(--vscode-input-foreground);
-        font-size: 0.85em;
-        outline: none;
-      }
-
-      .files-search:focus {
-        border-color: var(--accent);
-      }
-
-      .files-panel-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 8px 0;
-      }
-
-      .file-tree-item {
-        display: flex;
-        align-items: center;
-        padding: 4px 16px;
-        cursor: pointer;
-        transition: background 0.2s;
-        user-select: none;
-      }
-
-      .file-tree-item:hover {
-        background: var(--vscode-list-hoverBackground);
-      }
-
-      .file-tree-item.selected {
-        background: var(--vscode-list-activeSelectionBackground);
-        color: var(--vscode-list-activeSelectionForeground);
-      }
-
-      .file-tree-icon {
-        margin-right: 6px;
-        font-size: 1em;
-        opacity: 0.8;
-        flex-shrink: 0;
-      }
-
-      .file-tree-icon.expanded::before {
-        content: "▼";
-        font-size: 0.7em;
-        margin-right: 2px;
-      }
-
-      .file-tree-icon.collapsed::before {
-        content: "▶";
-        font-size: 0.7em;
-        margin-right: 2px;
-      }
-
-      .file-tree-name {
-        flex: 1;
-        font-size: 0.85em;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .file-tree-children {
-        display: none;
-      }
-
-      .file-tree-children.expanded {
-        display: block;
-      }
-
-      .file-tree-item.folder {
-        font-weight: 500;
-      }
-
-      .file-tree-item.file {
-        opacity: 0.9;
-      }
-
-      .file-empty {
-        text-align: center;
-        padding: 40px 20px;
-        opacity: 0.5;
-        font-size: 0.9em;
-      }
-
-      .file-loading {
-        text-align: center;
-        padding: 20px;
-        opacity: 0.7;
-      }
-
-      /* 上下文面板样式 */
-      #context-panel {
-        position: fixed;
-        top: 40px;
-        right: -400px;
-        width: 380px;
-        height: calc(100vh - 40px);
-        background: var(--vscode-sideBar-background);
-        border-left: 1px solid var(--border);
-        border-top: 1px solid var(--border);
-        z-index: 1000;
-        transition: right 0.3s ease;
-        display: flex;
-        flex-direction: column;
-        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.2);
-      }
-
-      #context-panel.open {
-        right: 0;
-      }
-
-      .context-panel-header {
-        padding: 12px 16px;
-        background: var(--vscode-editor-background);
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .context-panel-title {
-        font-weight: bold;
-        font-size: 0.9em;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .context-panel-stats {
-        font-size: 0.75em;
-        opacity: 0.7;
-      }
-
-      .context-panel-close {
-        background: transparent;
-        border: none;
-        color: var(--text-main);
-        cursor: pointer;
-        padding: 4px;
-        opacity: 0.6;
-      }
-
-      .context-panel-close:hover {
-        opacity: 1;
-      }
-
-      .context-panel-controls {
-        padding: 8px 16px;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .context-search {
-        flex: 1;
-        background: var(--input-bg);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 6px 10px;
-        color: var(--vscode-input-foreground);
-        font-size: 0.85em;
-        outline: none;
-      }
-
-      .context-search:focus {
-        border-color: var(--accent);
-      }
-
-      .context-filter-btn {
-        background: var(--input-bg);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 4px 8px;
-        color: var(--text-main);
-        cursor: pointer;
-        font-size: 0.75em;
-        transition: all 0.2s;
-      }
-
-      .context-filter-btn:hover,
-      .context-filter-btn.active {
-        background: var(--accent);
-        color: var(--vscode-button-foreground);
-        border-color: var(--accent);
-      }
-
-      .context-panel-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 12px;
-      }
-
-      .context-item {
-        background: var(--vscode-editor-background);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        margin-bottom: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        overflow: hidden;
-      }
-
-      .context-item.collapsed .context-item-details {
-        display: none;
-      }
-
-      .context-item.collapsed {
-        padding: 8px 12px;
-      }
-
-      .context-item.expanded {
-        padding: 12px;
-      }
-
-      .context-item:hover {
-        border-color: var(--accent);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .context-item-header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .context-item.collapsed .context-item-header {
-        margin-bottom: 0;
-      }
-
-      .context-item-toggle {
-        width: 16px;
-        height: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0.6;
-        transition: transform 0.2s;
-      }
-
-      .context-item.expanded .context-item-toggle {
-        transform: rotate(90deg);
-      }
-
-      .context-item-details {
-        animation: slideDown 0.2s ease-out;
-      }
-
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-
-      .context-item-icon {
-        font-size: 1.2em;
-      }
-
-      .context-item-title {
-        flex: 1;
-        font-weight: 500;
-        font-size: 0.85em;
-        word-break: break-all;
-      }
-
-      .context-item-badges {
-        display: flex;
-        gap: 4px;
-      }
-
-      .context-badge {
-        background: rgba(127, 127, 127, 0.2);
-        border-radius: 4px;
-        padding: 2px 6px;
-        font-size: 0.7em;
-        opacity: 0.8;
-      }
-
-      .context-badge.source_code {
-        background: rgba(86, 156, 214, 0.2);
-      }
-
-      .context-badge.log {
-        background: rgba(152, 195, 121, 0.2);
-      }
-
-      .context-badge.git {
-        background: rgba(229, 192, 123, 0.2);
-      }
-
-      .context-badge.diagnostics {
-        background: rgba(224, 108, 117, 0.2);
-      }
-
-      .context-item-stats {
-        display: flex;
-        gap: 12px;
-        font-size: 0.75em;
-        opacity: 0.7;
-        margin-bottom: 8px;
-      }
-
-      .context-stat {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .context-usage-bar {
-        height: 3px;
-        background: rgba(127, 127, 127, 0.2);
-        border-radius: 2px;
-        overflow: hidden;
-        margin-bottom: 8px;
-      }
-
-      .context-usage-fill {
-        height: 100%;
-        background: linear-gradient(
-          90deg,
+        transform: translateY(0);
+      }
+    }
+
+
+    .context-item-icon {
+      font-size: 1.2em;
+    }
+
+    .context-item-title {
+      flex: 1;
+      font-weight: 500;
+      font-size: 0.85em;
+      word-break: break-all;
+    }
+
+    .context-item-badges {
+      display: flex;
+      gap: 4px;
+    }
+
+    .context-badge {
+      background: rgba(127, 127, 127, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7em;
+      opacity: 0.8;
+    }
+
+    .context-badge.source_code {
+      background: rgba(86, 156, 214, 0.2);
+    }
+
+    .context-badge.log {
+      background: rgba(152, 195, 121, 0.2);
+    }
+
+    .context-badge.git {
+      background: rgba(229, 192, 123, 0.2);
+    }
+
+    .context-badge.diagnostics {
+      background: rgba(224, 108, 117, 0.2);
+    }
+
+    .context-item-stats {
+      display: flex;
+      gap: 12px;
+      font-size: 0.75em;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .context-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .context-usage-bar {
+      height: 3px;
+      background: rgba(127, 127, 127, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .context-usage-fill {
+      height: 100%;
+      background: linear-gradient(90deg,
           var(--vscode-focusBorder),
-          var(--accent)
-        );
-        border-radius: 2px;
-        transition: width 0.3s ease;
+          var(--accent));
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .context-item-preview {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      padding: 8px;
+      font-family: var(--vscode-editor-font-family);
+      font-size: 0.8em;
+      max-height: 100px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .context-empty {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.5;
+      font-size: 0.9em;
+    }
+
+    /* Flash notification styles */
+    .flash-notification {
+      position: fixed;
+      top: 60px;
+      right: 400px;
+      background: var(--vscode-notificationsInfoIcon-foreground);
+      color: var(--vscode-notificationsInfoIcon-background);
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 5000;
+      font-size: 0.9em;
+      animation: slideInRight 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
+      max-width: 300px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
       }
 
-      .context-item-preview {
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 6px;
-        padding: 8px;
-        font-family: var(--vscode-editor-font-family);
-        font-size: 0.8em;
-        max-height: 100px;
-        overflow-y: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
       }
 
-      .context-empty {
-        text-align: center;
-        padding: 40px 20px;
-        opacity: 0.5;
-        font-size: 0.9em;
+      to {
+        opacity: 0;
       }
+    }
 
-      /* Flash notification styles */
-      .flash-notification {
-        position: fixed;
-        top: 60px;
-        right: 400px;
-        background: var(--vscode-notificationsInfoIcon-foreground);
-        color: var(--vscode-notificationsInfoIcon-background);
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        z-index: 5000;
-        font-size: 0.9em;
-        animation: slideInRight 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
-        max-width: 300px;
-      }
+    /* Update indicator for context panel */
+    .context-panel-update-indicator {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      background: var(--vscode-testing-iconPassed);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+  </style>
+</head>
 
-      @keyframes slideInRight {
-        from {
-          opacity: 0;
-          transform: translateX(100%);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(0);
-        }
-      }
-
-      @keyframes fadeOut {
-        from {
-          opacity: 1;
-        }
-        to {
-          opacity: 0;
-        }
-      }
-
-      /* Update indicator for context panel */
-      .context-panel-update-indicator {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 8px;
-        height: 8px;
-        background: var(--vscode-testing-iconPassed);
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-      }
-    </style>
-  </head>
-
-  <body>
-    <header>
-      <div class="header-title">YUANGS AI</div>
-      <div class="header-actions">
-        <!-- 模型选择器 -->
-        <div class="model-selector" id="model-selector" title="Select AI Model">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.6;">
-            <path d="M8 1a7 7 0 0 1 0 14A7 7 0 0 1 8 1zM0 8a8 8 0 1 0 16 0A8 8 0 0 0 0 8zm8 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-2.5V6H7v4.5h2z"/>
-          </svg>
-          <span class="model-selector-label" id="current-model">Loading...</span>
-          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.5;">
-            <path d="M8 11L3 6h2.5L8 8.5L10.5 6H13L8 11z"/>
-          </svg>
-        </div>
-        <!-- 模型下拉菜单 -->
-        <div class="model-selector-dropdown" id="model-dropdown">
-          <!-- 选项将通过 JavaScript 动态生成 -->
-        </div>
-        <button class="icon-btn" id="files-toggle" title="Show Files">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M1 3.5A1.5 1.5 0 0 1 2.5 2h3.879a1.5 1.5 0 0 1 1.06.44l1.122 1.12A1.5 1.5 0 0 0 9.62 4H13.5A1.5 1.5 0 0 1 15 5.5v8a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-10zM2.5 3a.5.5 0 0 0-.5.5V13a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V5.5a.5.5 0 0 0-.5-.5H9.62a1.5 1.5 0 0 1-1.06-.44l-1.12-1.12A1.5 1.5 0 0 0 6.38 3H2.5zM4 7.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zM4 10a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5z"
-            />
-          </svg>
-        </button>
-        <button
-          class="icon-btn context-btn"
-          id="context-toggle"
-          title="Show Context Panel"
-          style="z-index: 2000"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L10.293 7.5H4.5z"
-            />
-          </svg>
-          <span style="margin-left: 4px; font-size: 0.8em">Context</span>
-        </button>
-        <button
-          class="icon-btn"
-          id="export-btn"
-          title="Export Chat History (.md)"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zM13 5H9V1h4v4zM3 2v12h10V6H8V2H3z"
-            />
-          </svg>
-        </button>
-        <button class="icon-btn" id="clear-btn" title="Clear Chat">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 4v9h7V4H4z"
-            />
-          </svg>
-        </button>
+<body>
+  <header>
+    <div class="header-title">YUANGS AI</div>
+    <div class="header-actions">
+      <!-- 模型选择器 -->
+      <div class="model-selector" id="model-selector" title="Select AI Model">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.6;">
+          <path
+            d="M8 1a7 7 0 0 1 0 14A7 7 0 0 1 8 1zM0 8a8 8 0 1 0 16 0A8 8 0 0 0 0 8zm8 5a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm1-2.5V6H7v4.5h2z" />
+        </svg>
+        <span class="model-selector-label" id="current-model">Loading...</span>
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.5;">
+          <path d="M8 11L3 6h2.5L8 8.5L10.5 6H13L8 11z" />
+        </svg>
       </div>
-    </header>
-
-    <div id="chat-container">
-      <!-- 初始为空，等待历史记录加载 -->
+      <!-- 模型下拉菜单 -->
+      <div class="model-selector-dropdown" id="model-dropdown">
+        <!-- 选项将通过 JavaScript 动态生成 -->
+      </div>
+      <button class="icon-btn" id="files-toggle" title="Show Files">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path
+            d="M1 3.5A1.5 1.5 0 0 1 2.5 2h3.879a1.5 1.5 0 0 1 1.06.44l1.122 1.12A1.5 1.5 0 0 0 9.62 4H13.5A1.5 1.5 0 0 1 15 5.5v8a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-10zM2.5 3a.5.5 0 0 0-.5.5V13a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V5.5a.5.5 0 0 0-.5-.5H9.62a1.5 1.5 0 0 1-1.06-.44l-1.12-1.12A1.5 1.5 0 0 0 6.38 3H2.5zM4 7.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zM4 10a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5z" />
+        </svg>
+      </button>
+      <button class="icon-btn context-btn" id="context-toggle" title="Show Context Panel" style="z-index: 2000">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path
+            d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM4.5 7.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L10.293 7.5H4.5z" />
+        </svg>
+        <span style="margin-left: 4px; font-size: 0.8em">Context</span>
+      </button>
+      <button class="icon-btn" id="export-btn" title="Export Chat History (.md)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path
+            d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zM13 5H9V1h4v4zM3 2v12h10V6H8V2H3z" />
+        </svg>
+      </button>
+      <button class="icon-btn" id="clear-btn" title="Clear Chat">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path fill-rule="evenodd" clip-rule="evenodd"
+            d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 4v9h7V4H4z" />
+        </svg>
+      </button>
     </div>
+  </header>
 
-    <div id="input-area">
-      <div id="suggestions-list"></div>
-      <div class="input-wrapper">
-        <textarea
-          id="user-input"
-          rows="1"
-          placeholder="Type your message..."
-        ></textarea>
-        <button id="send-btn">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M1.146 1.146a.5.5 0 0 1 .538-.093l13 5a.5.5 0 0 1 0 .94l-13 5a.5.5 0 0 1-.667-.615L2.854 8 1.017 2.618a.5.5 0 0 1 .129-.472zM3.854 8l-1.5 4.34L13.84 8 2.354 3.66 3.854 8z"
-            />
-          </svg>
-        </button>
-        <button id="stop-btn" title="Stop Generation">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M4 4h8v8H4V4z"
-            />
-          </svg>
-        </button>
-      </div>
+  <div id="chat-container">
+    <!-- 初始为空，等待历史记录加载 -->
+  </div>
+
+  <div id="input-area">
+    <div id="suggestions-list"></div>
+    <div class="input-wrapper">
+      <textarea id="user-input" rows="1" placeholder="Type your message..."></textarea>
+      <button id="send-btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path
+            d="M1.146 1.146a.5.5 0 0 1 .538-.093l13 5a.5.5 0 0 1 0 .94l-13 5a.5.5 0 0 1-.667-.615L2.854 8 1.017 2.618a.5.5 0 0 1 .129-.472zM3.854 8l-1.5 4.34L13.84 8 2.354 3.66 3.854 8z" />
+        </svg>
+      </button>
+      <button id="stop-btn" title="Stop Generation">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4 4h8v8H4V4z" />
+        </svg>
+      </button>
     </div>
+  </div>
 
-    <!-- 文件面板 -->
-    <div id="files-panel">
-      <div class="files-panel-header">
-        <div class="files-panel-title">
-          <span>📁 Files</span>
-          <span class="files-panel-stats" id="files-stats">Loading...</span>
-        </div>
-        <button class="files-panel-close" id="files-close">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"
-            />
-          </svg>
-        </button>
+  <!-- 文件面板 -->
+  <div id="files-panel">
+    <div class="files-panel-header">
+      <div class="files-panel-title">
+        <span>📁 Files</span>
+        <span class="files-panel-stats" id="files-stats">Loading...</span>
       </div>
-      <div class="files-panel-controls">
-        <input
-          type="text"
-          class="files-search"
-          id="files-search"
-          placeholder="Search files..."
-        />
-      </div>
-      <div class="files-panel-content" id="files-panel-content">
-        <div class="file-loading">Loading files...</div>
-      </div>
+      <button class="files-panel-close" id="files-close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path
+            d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+        </svg>
+      </button>
     </div>
-
-    <!-- 上下文面板 -->
-    <div id="context-panel">
-      <div class="context-panel-header">
-        <div class="context-panel-title">
-          <span>📋 Context</span>
-          <span class="context-panel-stats" id="context-stats">0 items</span>
-        </div>
-        <button class="context-panel-close" id="context-close">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path
-              d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"
-            />
-          </svg>
-        </button>
-      </div>
-      <div class="context-panel-controls">
-        <input
-          type="text"
-          class="context-search"
-          id="context-search"
-          placeholder="Search context..."
-        />
-        <button class="context-filter-btn active" data-filter="all">All</button>
-        <button class="context-filter-btn" data-filter="source_code">
-          Code
-        </button>
-        <button class="context-filter-btn" data-filter="log">Log</button>
-        <button class="context-filter-btn" data-filter="git">Git</button>
-      </div>
-      <div class="context-panel-content" id="context-panel-content">
-        <div class="context-empty">No context available</div>
-      </div>
+    <div class="files-panel-controls">
+      <input type="text" class="files-search" id="files-search" placeholder="Search files..." />
     </div>
+    <div class="files-panel-content" id="files-panel-content">
+      <div class="file-loading">Loading files...</div>
+    </div>
+  </div>
 
-    <script>
-      const vscode = acquireVsCodeApi();
-      const chatContainer = document.getElementById("chat-container");
-      const userInput = document.getElementById("user-input");
-      const sendBtn = document.getElementById("send-btn");
-      const stopBtn = document.getElementById("stop-btn");
-      const exportBtn = document.getElementById("export-btn");
-      const clearBtn = document.getElementById("clear-btn");
-      const suggestionsList = document.getElementById("suggestions-list");
+  <!-- 上下文面板 -->
+  <div id="context-panel">
+    <div class="context-panel-header">
+      <div class="context-panel-title">
+        <span>📋 Context</span>
+        <span class="context-panel-stats" id="context-stats">0 items</span>
+      </div>
+      <button class="context-panel-close" id="context-close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path
+            d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+        </svg>
+      </button>
+    </div>
+    <div class="context-panel-controls">
+      <input type="text" class="context-search" id="context-search" placeholder="Search context..." />
+      <button class="context-filter-btn active" data-filter="all">All</button>
+      <button class="context-filter-btn" data-filter="source_code">
+        Code
+      </button>
+      <button class="context-filter-btn" data-filter="log">Log</button>
+      <button class="context-filter-btn" data-filter="git">Git</button>
+    </div>
+    <div class="context-panel-content" id="context-panel-content">
+      <div class="context-empty">No context available</div>
+    </div>
+  </div>
 
-      // 上下文面板相关元素
-      const filesPanel = document.getElementById("files-panel");
-      const filesToggle = document.getElementById("files-toggle");
-      const filesClose = document.getElementById("files-close");
-      const filesPanelContent = document.getElementById("files-panel-content");
-      const filesSearch = document.getElementById("files-search");
-      const filesStats = document.getElementById("files-stats");
+  <script>
+    const vscode = acquireVsCodeApi();
+    const chatContainer = document.getElementById("chat-container");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    const exportBtn = document.getElementById("export-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const suggestionsList = document.getElementById("suggestions-list");
 
-      const contextPanel = document.getElementById("context-panel");
-      const contextToggle = document.getElementById("context-toggle");
-      const contextClose = document.getElementById("context-close");
-      const contextPanelContent = document.getElementById(
-        "context-panel-content",
-      );
-      const contextSearch = document.getElementById("context-search");
-      const contextStats = document.getElementById("context-stats");
-      const contextFilterBtns = document.querySelectorAll(
-        ".context-filter-btn",
-      );
+    // 上下文面板相关元素
+    const filesPanel = document.getElementById("files-panel");
+    const filesToggle = document.getElementById("files-toggle");
+    const filesClose = document.getElementById("files-close");
+    const filesPanelContent = document.getElementById("files-panel-content");
+    const filesSearch = document.getElementById("files-search");
+    const filesStats = document.getElementById("files-stats");
 
-      let currentAiMessageElement = null;
-      let currentAiRawText = "";
-      let suggestionType = null; // '@' or '#'
-      let selectedSuggestionIndex = -1;
-      let currentSuggestions = [];
+    const contextPanel = document.getElementById("context-panel");
+    const contextToggle = document.getElementById("context-toggle");
+    const contextClose = document.getElementById("context-close");
+    const contextPanelContent = document.getElementById(
+      "context-panel-content",
+    );
+    const contextSearch = document.getElementById("context-search");
+    const contextStats = document.getElementById("context-stats");
+    const contextFilterBtns = document.querySelectorAll(
+      ".context-filter-btn",
+    );
 
-      // 上下文相关状态
-      let currentContextItems = [];
-      let currentFilter = "all";
-      let currentSearchQuery = "";
+    let currentAiMessageElement = null;
+    let currentAiRawText = "";
+    let suggestionType = null; // '@' or '#'
+    let selectedSuggestionIndex = -1;
+    let currentSuggestions = [];
 
-      // 文件相关状态
-      let fileTreeData = null;
-      let currentFileSearchQuery = "";
-      let allFiles = [];
+    // 上下文相关状态
+    let currentContextItems = [];
+    let currentFilter = "all";
+    let currentSearchQuery = "";
 
-      // 输入框高度自动伸缩
-      userInput.addEventListener("input", (e) => {
-        userInput.style.height = "auto";
-        userInput.style.height = userInput.scrollHeight + "px";
+    // 文件相关状态
+    let fileTreeData = null;
+    let currentFileSearchQuery = "";
+    let allFiles = [];
 
-        handleTriggerDetection(e);
-      });
+    // 输入框高度自动伸缩
+    userInput.addEventListener("input", (e) => {
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
 
-      function handleTriggerDetection(e) {
-        const value = userInput.value;
-        const cursorPos = userInput.selectionStart;
-        const textBeforeCursor = value.substring(0, cursorPos);
+      handleTriggerDetection(e);
+    });
 
-        // 检测触发符
-        const lastAt = textBeforeCursor.lastIndexOf("@");
-        const lastHash = textBeforeCursor.lastIndexOf("#");
-        const lastTriggerIndex = Math.max(lastAt, lastHash);
+    function handleTriggerDetection(e) {
+      const value = userInput.value;
+      const cursorPos = userInput.selectionStart;
+      const textBeforeCursor = value.substring(0, cursorPos);
 
-        if (
-          lastTriggerIndex !== -1 &&
-          (lastTriggerIndex === 0 ||
-            /\s/.test(textBeforeCursor[lastTriggerIndex - 1]))
-        ) {
-          const trigger = textBeforeCursor[lastTriggerIndex];
-          const query = textBeforeCursor.substring(lastTriggerIndex + 1);
+      // 检测触发符
+      const lastAt = textBeforeCursor.lastIndexOf("@");
+      const lastHash = textBeforeCursor.lastIndexOf("#");
+      const lastTriggerIndex = Math.max(lastAt, lastHash);
 
-          // 只有当查询中没有空格时才触发（空查询也允许触发）
-          if (!/\s/.test(query)) {
-            suggestionType = trigger;
+      if (
+        lastTriggerIndex !== -1 &&
+        (lastTriggerIndex === 0 ||
+          /\s/.test(textBeforeCursor[lastTriggerIndex - 1]))
+      ) {
+        const trigger = textBeforeCursor[lastTriggerIndex];
+        const query = textBeforeCursor.substring(lastTriggerIndex + 1);
 
-            // 立即显示加载状态
-            suggestionsList.innerHTML =
-              '<div class="suggestion-item">🔍 Loading...</div>';
-            suggestionsList.style.display = "block";
+        // 只有当查询中没有空格时才触发（空查询也允许触发）
+        if (!/\s/.test(query)) {
+          suggestionType = trigger;
 
-            if (trigger === "@") {
-              vscode.postMessage({ type: "getFiles", query });
-            } else {
-              vscode.postMessage({ type: "getSymbols", query });
-            }
-            return;
+          // 立即显示加载状态
+          suggestionsList.innerHTML =
+            '<div class="suggestion-item">🔍 Loading...</div>';
+          suggestionsList.style.display = "block";
+
+          if (trigger === "@") {
+            vscode.postMessage({ type: "getFiles", query });
+          } else {
+            vscode.postMessage({ type: "getSymbols", query });
           }
-        }
-
-        hideSuggestions();
-      }
-
-      function showSuggestions(suggestions, trigger) {
-        currentSuggestions = suggestions;
-        if (suggestions.length === 0) {
-          hideSuggestions();
           return;
         }
-
-        suggestionsList.innerHTML = "";
-        suggestionsList.style.display = "block";
-        selectedSuggestionIndex = 0;
-
-        suggestions.forEach((item, index) => {
-          const div = document.createElement("div");
-          div.className = "suggestion-item" + (index === 0 ? " selected" : "");
-          const icon = trigger === "@" ? "📄" : "🔧";
-          div.innerHTML = `<span class="suggestion-icon">${icon}</span><span>${item}</span>`;
-          div.onclick = () => selectSuggestion(item);
-          suggestionsList.appendChild(div);
-        });
       }
 
-      function hideSuggestions() {
-        suggestionsList.style.display = "none";
-        suggestionType = null;
-        selectedSuggestionIndex = -1;
-      }
+      hideSuggestions();
+    }
 
-      function selectSuggestion(value) {
-        const text = userInput.value;
-        const cursorPos = userInput.selectionStart;
-        const textBeforeCursor = text.substring(0, cursorPos);
-        const textAfterCursor = text.substring(cursorPos);
-
-        const lastTriggerIndex = textBeforeCursor.lastIndexOf(suggestionType);
-
-        // 1. 更新输入框文字
-        const newText =
-          textBeforeCursor.substring(0, lastTriggerIndex) +
-          suggestionType +
-          value +
-          " " +
-          textAfterCursor;
-
-        userInput.value = newText;
+    function showSuggestions(suggestions, trigger) {
+      currentSuggestions = suggestions;
+      if (suggestions.length === 0) {
         hideSuggestions();
-        userInput.focus();
-
-        // 2. 如果是文件引用 (@)，立即通知后端读取该文件内容到上下文
-        if (suggestionType === '@') {
-            vscode.postMessage({
-                type: 'readFile', // 复用你已有的 readFile 逻辑
-                path: value      // 注意：这里的 value 应该是相对路径或绝对路径
-            });
-        }
-
-        // 重新计算高度
-        userInput.style.height = "auto";
-        userInput.style.height = userInput.scrollHeight + "px";
+        return;
       }
 
-      function addMessage(text, role, isRaw = false) {
+      suggestionsList.innerHTML = "";
+      suggestionsList.style.display = "block";
+      selectedSuggestionIndex = 0;
+
+      suggestions.forEach((item, index) => {
         const div = document.createElement("div");
-        div.className = `message ${role}-message`;
-        div.dataset.content = text; // 保存原始文本内容
+        div.className = "suggestion-item" + (index === 0 ? " selected" : "");
+        const icon = trigger === "@" ? "📄" : "🔧";
+        div.innerHTML = `<span class="suggestion-icon">${icon}</span><span>${item}</span>`;
+        div.onclick = () => selectSuggestion(item);
+        suggestionsList.appendChild(div);
+      });
+    }
 
-        // 创建消息操作按钮容器
-        const actionsDiv = document.createElement("div");
-        actionsDiv.className = "message-actions";
+    function hideSuggestions() {
+      suggestionsList.style.display = "none";
+      suggestionType = null;
+      selectedSuggestionIndex = -1;
+    }
 
-        // 复制按钮
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "message-action-btn";
-        copyBtn.innerHTML = "📋";
-        copyBtn.title = "复制消息";
-        copyBtn.onclick = (e) => {
-          e.stopPropagation();
-          copyMessageText(text);
-        };
+    function selectSuggestion(value) {
+      const text = userInput.value;
+      const cursorPos = userInput.selectionStart;
+      const textBeforeCursor = text.substring(0, cursorPos);
+      const textAfterCursor = text.substring(cursorPos);
 
-        // 删除按钮
-        const deleteBtn = document.createElement("button");
-        deleteBtn.className = "message-action-btn";
-        deleteBtn.innerHTML = "🗑️";
-        deleteBtn.title = "删除消息";
-        deleteBtn.onclick = (e) => {
-          e.stopPropagation();
-          deleteMessage(div);
-        };
+      const lastTriggerIndex = textBeforeCursor.lastIndexOf(suggestionType);
 
-        actionsDiv.appendChild(copyBtn);
-        actionsDiv.appendChild(deleteBtn);
-        div.appendChild(actionsDiv);
+      // 1. 更新输入框文字
+      const newText =
+        textBeforeCursor.substring(0, lastTriggerIndex) +
+        suggestionType +
+        value +
+        " " +
+        textAfterCursor;
 
-        // 创建消息内容容器
-        const contentDiv = document.createElement("div");
-        contentDiv.className = "message-content";
+      userInput.value = newText;
+      hideSuggestions();
+      userInput.focus();
 
-        if (role === "ai") {
-          contentDiv.innerHTML = marked.parse(text);
-          // 处理 diff 代码块
-          processDiffBlocks(contentDiv);
-        } else {
-          contentDiv.textContent = text;
-        }
-
-        div.appendChild(contentDiv);
-        chatContainer.appendChild(div);
-        scrollToBottom();
-        return div;
-      }
-
-      // 复制消息文本
-      function copyMessageText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-          showFlashNotification("✓ 已复制到剪贴板");
-        }).catch((err) => {
-          console.error("复制失败:", err);
-          showFlashNotification("✗ 复制失败");
-        });
-      }
-
-      // 删除消息
-      function deleteMessage(messageElement) {
-        if (confirm("确定要删除这条消息吗？")) {
-          // 从 DOM 中移除
-          messageElement.remove();
-          showFlashNotification("✓ 消息已删除");
-          
-          // 通知后端更新历史记录（如果需要的话）
-          // 这里可以添加一个消息到后端，让后端从历史记录中删除这条消息
-          // vscode.postMessage({ type: "deleteMessage", index: messageIndex });
-        }
-      }
-
-      // 检测并处理 diff 代码块
-      function processDiffBlocks(messageElement) {
-        const codeBlocks = messageElement.querySelectorAll("pre code");
-
-        codeBlocks.forEach((codeBlock, index) => {
-          const content = codeBlock.textContent;
-          const preElement = codeBlock.parentElement;
-
-          // 检测是否是 diff 格式
-          if (isDiffContent(content)) {
-            preElement.classList.add("diff-block");
-
-            // 添加应用按钮
-            const applyBtn = document.createElement("button");
-            applyBtn.className = "apply-diff-btn";
-            applyBtn.innerHTML = "✓ Apply";
-            applyBtn.title = "Apply this diff to your code";
-
-            // 存储 diff 内容
-            applyBtn.dataset.diffContent = content;
-            applyBtn.dataset.diffIndex = index;
-
-            applyBtn.onclick = () => applyDiff(applyBtn, content);
-
-            preElement.appendChild(applyBtn);
-          }
-        });
-      }
-
-      // 检测是否是 diff 内容
-      function isDiffContent(content) {
-        const lines = content.trim().split("\n");
-
-        // 检测常见的 diff 格式特征
-        const hasDiffMarkers = lines.some(
-          (line) =>
-            line.startsWith("+++") ||
-            line.startsWith("---") ||
-            line.startsWith("@@") ||
-            line.match(/^diff --git/),
-        );
-
-        // 或者检测是否有足够多的 +/- 行
-        const changeLines = lines.filter(
-          (line) => line.startsWith("+") || line.startsWith("-"),
-        );
-
-        return (
-          hasDiffMarkers ||
-          (changeLines.length >= 3 && changeLines.length / lines.length > 0.3)
-        );
-      }
-
-      // 应用 diff
-      function applyDiff(button, diffContent) {
-        button.disabled = true;
-        button.innerHTML = "⏳ Applying...";
-
-        // 解析 diff 内容
-        const diffData = parseDiff(diffContent);
-
-        if (!diffData) {
-          button.innerHTML = "✗ Invalid Diff";
-          button.classList.add("error");
-          setTimeout(() => {
-            button.disabled = false;
-            button.innerHTML = "✓ Apply";
-            button.classList.remove("error");
-          }, 2000);
-          return;
-        }
-
-        // 发送到 VS Code 扩展进行应用
+      // 2. 如果是文件引用 (@)，立即通知后端读取该文件内容到上下文
+      if (suggestionType === '@') {
         vscode.postMessage({
-          type: "applyDiff",
-          value: diffData,
+          type: 'readFile', // 复用你已有的 readFile 逻辑
+          path: value      // 注意：这里的 value 应该是相对路径或绝对路径
         });
-
-        // 等待响应
-        button.dataset.pending = "true";
       }
+
+      // 重新计算高度
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
+    }
+
+    function addMessage(text, role, isRaw = false) {
+      const div = document.createElement("div");
+      div.className = `message ${role}-message`;
+      div.dataset.content = text; // 保存原始文本内容
+
+      // 创建消息操作按钮容器
+      const actionsDiv = document.createElement("div");
+      actionsDiv.className = "message-actions";
+
+      // 复制按钮
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "message-action-btn";
+      copyBtn.innerHTML = "📋";
+      copyBtn.title = "复制消息";
+      copyBtn.onclick = (e) => {
+        e.stopPropagation();
+        copyMessageText(text);
+      };
+
+      // 删除按钮
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "message-action-btn";
+      deleteBtn.innerHTML = "🗑️";
+      deleteBtn.title = "删除消息";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteMessage(div);
+      };
+
+      actionsDiv.appendChild(copyBtn);
+      actionsDiv.appendChild(deleteBtn);
+      div.appendChild(actionsDiv);
+
+      // 创建消息内容容器
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+
+      if (role === "ai") {
+        contentDiv.innerHTML = marked.parse(text);
+        // 处理 diff 代码块
+        processDiffBlocks(contentDiv);
+      } else {
+        contentDiv.textContent = text;
+      }
+
+      div.appendChild(contentDiv);
+      chatContainer.appendChild(div);
+      scrollToBottom();
+      return div;
+    }
+
+    // 复制消息文本
+    function copyMessageText(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showFlashNotification("✓ 已复制到剪贴板");
+      }).catch((err) => {
+        console.error("复制失败:", err);
+        showFlashNotification("✗ 复制失败");
+      });
+    }
+
+    // 删除消息
+    function deleteMessage(messageElement) {
+      if (confirm("确定要删除这条消息吗？")) {
+        // 从 DOM 中移除
+        messageElement.remove();
+        showFlashNotification("✓ 消息已删除");
+
+        // 通知后端更新历史记录（如果需要的话）
+        // 这里可以添加一个消息到后端，让后端从历史记录中删除这条消息
+        // vscode.postMessage({ type: "deleteMessage", index: messageIndex });
+      }
+    }
+
+    // 检测并处理 diff 代码块
+    function processDiffBlocks(messageElement) {
+      const codeBlocks = messageElement.querySelectorAll("pre code");
+
+      codeBlocks.forEach((codeBlock, index) => {
+        const content = codeBlock.textContent;
+        const preElement = codeBlock.parentElement;
+
+        // 检测是否是 diff 格式
+        if (isDiffContent(content)) {
+          preElement.classList.add("diff-block");
+
+          // 添加应用按钮
+          const applyBtn = document.createElement("button");
+          applyBtn.className = "apply-diff-btn";
+          applyBtn.innerHTML = "✓ Apply";
+          applyBtn.title = "Apply this diff to your code";
+
+          // 存储 diff 内容
+          applyBtn.dataset.diffContent = content;
+          applyBtn.dataset.diffIndex = index;
+
+          applyBtn.onclick = () => applyDiff(applyBtn, content);
+
+          preElement.appendChild(applyBtn);
+        }
+      });
+    }
+
+    // 检测是否是 diff 内容
+    function isDiffContent(content) {
+      const lines = content.trim().split("\n");
+
+      // 检测常见的 diff 格式特征
+      const hasDiffMarkers = lines.some(
+        (line) =>
+          line.startsWith("+++") ||
+          line.startsWith("---") ||
+          line.startsWith("@@") ||
+          line.match(/^diff --git/),
+      );
+
+      // 或者检测是否有足够多的 +/- 行
+      const changeLines = lines.filter(
+        (line) => line.startsWith("+") || line.startsWith("-"),
+      );
+
+      return (
+        hasDiffMarkers ||
+        (changeLines.length >= 3 && changeLines.length / lines.length > 0.3)
+      );
+    }
+
+    // 应用 diff
+    function applyDiff(button, diffContent) {
+      button.disabled = true;
+      button.innerHTML = "⏳ Applying...";
 
       // 解析 diff 内容
-      function parseDiff(diffContent) {
-        const lines = diffContent.trim().split("\n");
-        let currentFile = null;
-        const files = [];
+      const diffData = parseDiff(diffContent);
 
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
+      if (!diffData) {
+        button.innerHTML = "✗ Invalid Diff";
+        button.classList.add("error");
+        setTimeout(() => {
+          button.disabled = false;
+          button.innerHTML = "✓ Apply";
+          button.classList.remove("error");
+        }, 2000);
+        return;
+      }
 
-          // 检测文件名
-          if (line.startsWith("--- ") || line.startsWith("+++ ")) {
-            const match = line.match(/^[+-]{3}\s+(?:a\/|b\/)?(.+?)(?:\s+|$)/);
-            if (match) {
-              const filename = match[1];
-              if (line.startsWith("---")) {
-                currentFile = { oldFile: filename, newFile: null, hunks: [] };
-              } else if (currentFile) {
-                currentFile.newFile = filename;
-                files.push(currentFile);
-              }
-            }
-          }
+      // 发送到 VS Code 扩展进行应用
+      vscode.postMessage({
+        type: "applyDiff",
+        value: diffData,
+      });
 
-          // 检测 hunk 头部 (@@)
-          if (line.startsWith("@@") && currentFile) {
-            const hunkMatch = line.match(
-              /@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/,
-            );
-            if (hunkMatch) {
-              const hunk = {
-                oldStart: parseInt(hunkMatch[1]),
-                oldLines: parseInt(hunkMatch[2] || "1"),
-                newStart: parseInt(hunkMatch[3]),
-                newLines: parseInt(hunkMatch[4] || "1"),
-                lines: [],
-              };
+      // 等待响应
+      button.dataset.pending = "true";
+    }
 
-              // 收集 hunk 的内容
-              i++;
-              while (
-                i < lines.length &&
-                !lines[i].startsWith("@@") &&
-                !lines[i].startsWith("---")
-              ) {
-                hunk.lines.push(lines[i]);
-                i++;
-              }
-              i--; // 回退一行
+    // 解析 diff 内容
+    function parseDiff(diffContent) {
+      const lines = diffContent.trim().split("\n");
+      let currentFile = null;
+      const files = [];
 
-              currentFile.hunks.push(hunk);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // 检测文件名
+        if (line.startsWith("--- ") || line.startsWith("+++ ")) {
+          const match = line.match(/^[+-]{3}\s+(?:a\/|b\/)?(.+?)(?:\s+|$)/);
+          if (match) {
+            const filename = match[1];
+            if (line.startsWith("---")) {
+              currentFile = { oldFile: filename, newFile: null, hunks: [] };
+            } else if (currentFile) {
+              currentFile.newFile = filename;
+              files.push(currentFile);
             }
           }
         }
 
-        // 如果没有找到标准格式，尝试简单的 +/- 格式
-        if (files.length === 0) {
-          const addedLines = [];
-          const removedLines = [];
-          const contextLines = [];
-
-          lines.forEach((line) => {
-            if (line.startsWith("+") && !line.startsWith("+++")) {
-              addedLines.push(line.substring(1));
-            } else if (line.startsWith("-") && !line.startsWith("---")) {
-              removedLines.push(line.substring(1));
-            } else if (!line.startsWith("@@")) {
-              contextLines.push(line);
-            }
-          });
-
-          if (addedLines.length > 0 || removedLines.length > 0) {
-            return {
-              type: "simple",
-              added: addedLines,
-              removed: removedLines,
-              context: contextLines,
-              raw: diffContent,
+        // 检测 hunk 头部 (@@)
+        if (line.startsWith("@@") && currentFile) {
+          const hunkMatch = line.match(
+            /@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/,
+          );
+          if (hunkMatch) {
+            const hunk = {
+              oldStart: parseInt(hunkMatch[1]),
+              oldLines: parseInt(hunkMatch[2] || "1"),
+              newStart: parseInt(hunkMatch[3]),
+              newLines: parseInt(hunkMatch[4] || "1"),
+              lines: [],
             };
+
+            // 收集 hunk 的内容
+            i++;
+            while (
+              i < lines.length &&
+              !lines[i].startsWith("@@") &&
+              !lines[i].startsWith("---")
+            ) {
+              hunk.lines.push(lines[i]);
+              i++;
+            }
+            i--; // 回退一行
+
+            currentFile.hunks.push(hunk);
           }
         }
-
-        return files.length > 0
-          ? { type: "unified", files, raw: diffContent }
-          : null;
       }
 
-      function scrollToBottom() {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+      // 如果没有找到标准格式，尝试简单的 +/- 格式
+      if (files.length === 0) {
+        const addedLines = [];
+        const removedLines = [];
+        const contextLines = [];
+
+        lines.forEach((line) => {
+          if (line.startsWith("+") && !line.startsWith("+++")) {
+            addedLines.push(line.substring(1));
+          } else if (line.startsWith("-") && !line.startsWith("---")) {
+            removedLines.push(line.substring(1));
+          } else if (!line.startsWith("@@")) {
+            contextLines.push(line);
+          }
+        });
+
+        if (addedLines.length > 0 || removedLines.length > 0) {
+          return {
+            type: "simple",
+            added: addedLines,
+            removed: removedLines,
+            context: contextLines,
+            raw: diffContent,
+          };
+        }
       }
 
-      function handleSend() {
-        const text = userInput.value.trim();
-        if (text) {
-          addMessage(text, "user");
-          vscode.postMessage({ type: "ask", value: text });
-          userInput.value = "";
+      return files.length > 0
+        ? { type: "unified", files, raw: diffContent }
+        : null;
+    }
+
+    function scrollToBottom() {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function handleSend() {
+      const text = userInput.value.trim();
+      if (text) {
+        addMessage(text, "user");
+        vscode.postMessage({ type: "ask", value: text });
+        userInput.value = "";
+        userInput.style.height = "auto";
+        currentAiMessageElement = null;
+        currentAiRawText = "";
+        userInput.disabled = true;
+        sendBtn.style.display = "none";
+        stopBtn.classList.add("visible");
+
+        // 添加加载指示器
+        const loader = document.createElement("div");
+        loader.id = "ai-loader";
+        loader.className = "message ai-message system-message";
+        loader.innerHTML =
+          '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+        chatContainer.appendChild(loader);
+        scrollToBottom();
+      }
+    }
+
+    function handleStop() {
+      vscode.postMessage({ type: "stop" });
+      addMessage("🛑 Generation stopped by user", "system");
+    }
+
+    sendBtn.addEventListener("click", handleSend);
+    stopBtn.addEventListener("click", handleStop);
+
+    userInput.addEventListener("keydown", (e) => {
+      if (suggestionsList.style.display === "block") {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          selectedSuggestionIndex =
+            (selectedSuggestionIndex + 1) % currentSuggestions.length;
+          updateSuggestionSelection();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          selectedSuggestionIndex =
+            (selectedSuggestionIndex - 1 + currentSuggestions.length) %
+            currentSuggestions.length;
+          updateSuggestionSelection();
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          if (selectedSuggestionIndex !== -1) {
+            selectSuggestion(currentSuggestions[selectedSuggestionIndex]);
+          }
+        } else if (e.key === "Escape") {
+          hideSuggestions();
+        }
+        return;
+      }
+
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+
+    exportBtn.addEventListener("click", () => {
+      vscode.postMessage({ type: "exportChat" });
+    });
+
+    clearBtn.addEventListener("click", () => {
+      vscode.postMessage({ type: "clear" }); // 已经在 Provider 中实现清理逻辑
+    });
+
+    function updateSuggestionSelection() {
+      const items = suggestionsList.querySelectorAll(".suggestion-item");
+      items.forEach((item, index) => {
+        item.className =
+          "suggestion-item" +
+          (index === selectedSuggestionIndex ? " selected" : "");
+        if (index === selectedSuggestionIndex) {
+          item.scrollIntoView({ block: "nearest" });
+        }
+      });
+    }
+
+    // 监听文本选择事件，自动填入输入框
+    document.addEventListener("mouseup", () => {
+      const selection = window.getSelection();
+      const selectedText = selection.toString().trim();
+
+      if (selectedText) {
+        // 检查选中的文本是否在聊天容器内
+        const range = selection.getRangeAt(0);
+        const container = range.commonAncestorContainer;
+        const parentElement =
+          container.nodeType === Node.TEXT_NODE
+            ? container.parentElement
+            : container;
+
+        // 确保选中的内容在聊天容器内，且不在输入框内
+        if (
+          chatContainer.contains(parentElement) &&
+          !userInput.contains(parentElement)
+        ) {
+          userInput.value = selectedText;
+          userInput.focus();
+
+          // 重新计算输入框高度
           userInput.style.height = "auto";
+          userInput.style.height = userInput.scrollHeight + "px";
+
+          // 清除选择，避免视觉干扰
+          selection.removeAllRanges();
+        }
+      }
+    });
+
+    // 添加一个标志来标识当前是否正在流式接收AI消息
+    let isStreaming = false;
+
+    // 标记是否已经加载过历史记录
+    let historyLoaded = false;
+
+    window.addEventListener("message", (event) => {
+      const message = event.data;
+      const loader = document.getElementById("ai-loader");
+
+      switch (message.type) {
+        case "closeFilesPanel":
+          // 关闭文件面板
+          filesPanel.classList.remove("open");
+          break;
+        case "suggestions":
+          showSuggestions(message.value, message.trigger);
+          break;
+        case "history":
+          // 只加载一次历史记录，避免重复渲染
+          if (!historyLoaded) {
+            historyLoaded = true;
+            chatContainer.innerHTML = ""; // 清空初始化状态
+
+            if (message.value && message.value.length > 0) {
+              message.value.forEach((msg) => {
+                addMessage(msg.content, msg.role === "user" ? "user" : "ai");
+              });
+              // 滚动到底部
+              requestAnimationFrame(() => {
+                scrollToBottom();
+              });
+            } else {
+              chatContainer.innerHTML = '<div class="message system-message">✨ Yuangs AI Agent initialized and ready.</div>';
+            }
+          }
+          break;
+        case "appendMessage":
+          addMessage(message.value.content, message.value.role === "user" ? "user" : "ai");
+          requestAnimationFrame(() => {
+            scrollToBottom();
+          });
+          break;
+        case "aiChunk":
+          if (loader) {
+            loader.remove();
+            stopBtn.classList.add("visible");
+          }
+
+          // 开始流式接收
+          isStreaming = true;
+
+          if (!currentAiMessageElement) {
+            // 创建AI消息容器
+            const aiMessageDiv = document.createElement("div");
+            aiMessageDiv.className = "message ai-message"; // 直接使用最终样式
+            // aiMessageDiv.style.minHeight = '24px'; // 防止高度塌陷
+            chatContainer.appendChild(aiMessageDiv);
+            currentAiMessageElement = aiMessageDiv;
+          }
+
+          currentAiRawText += message.value;
+
+          // 实时 Markdown 渲染
+          // 技巧：如果代码块未闭合，手动临时闭合它以保证渲染正确
+          let textToRender = currentAiRawText;
+          const codeBlockCount = (textToRender.match(/```/g) || []).length;
+          if (codeBlockCount % 2 !== 0) {
+            textToRender += "\n```";
+          }
+
+          // 渲染内容并添加光标
+          currentAiMessageElement.innerHTML =
+            marked.parse(textToRender) + '<span class="cursor"></span>';
+
+          // 平滑滚动到底部
+          // 使用 requestAnimationFrame 优化滚动性能
+          requestAnimationFrame(() => {
+            scrollToBottom();
+          });
+          break;
+        case "done":
+          // 流式传输结束
+          if (isStreaming && currentAiMessageElement) {
+            isStreaming = false;
+
+            // 移除光标，进行最终渲染
+            currentAiMessageElement.innerHTML =
+              marked.parse(currentAiRawText);
+
+            // 处理diff块和其他后处理
+            processDiffBlocks(currentAiMessageElement);
+
+            // 添加淡入效果或其他完成动效
+            currentAiMessageElement.classList.add("final-render");
+          }
+
           currentAiMessageElement = null;
           currentAiRawText = "";
-          userInput.disabled = true;
-          sendBtn.style.display = "none";
-          stopBtn.classList.add("visible");
+          userInput.disabled = false;
+          userInput.focus();
+          sendBtn.style.display = "flex";
+          stopBtn.classList.remove("visible");
 
-          // 添加加载指示器
-          const loader = document.createElement("div");
-          loader.id = "ai-loader";
-          loader.className = "message ai-message system-message";
-          loader.innerHTML =
-            '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
-          chatContainer.appendChild(loader);
-          scrollToBottom();
-        }
-      }
-
-      function handleStop() {
-        vscode.postMessage({ type: "stop" });
-        addMessage("🛑 Generation stopped by user", "system");
-      }
-
-      sendBtn.addEventListener("click", handleSend);
-      stopBtn.addEventListener("click", handleStop);
-
-      userInput.addEventListener("keydown", (e) => {
-        if (suggestionsList.style.display === "block") {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            selectedSuggestionIndex =
-              (selectedSuggestionIndex + 1) % currentSuggestions.length;
-            updateSuggestionSelection();
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            selectedSuggestionIndex =
-              (selectedSuggestionIndex - 1 + currentSuggestions.length) %
-              currentSuggestions.length;
-            updateSuggestionSelection();
-          } else if (e.key === "Enter" || e.key === "Tab") {
-            e.preventDefault();
-            if (selectedSuggestionIndex !== -1) {
-              selectSuggestion(currentSuggestions[selectedSuggestionIndex]);
-            }
-          } else if (e.key === "Escape") {
-            hideSuggestions();
-          }
-          return;
-        }
-
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          handleSend();
-        }
-      });
-
-      exportBtn.addEventListener("click", () => {
-        vscode.postMessage({ type: "exportChat" });
-      });
-
-      clearBtn.addEventListener("click", () => {
-        vscode.postMessage({ type: "clear" }); // 已经在 Provider 中实现清理逻辑
-      });
-
-      function updateSuggestionSelection() {
-        const items = suggestionsList.querySelectorAll(".suggestion-item");
-        items.forEach((item, index) => {
-          item.className =
-            "suggestion-item" +
-            (index === selectedSuggestionIndex ? " selected" : "");
-          if (index === selectedSuggestionIndex) {
-            item.scrollIntoView({ block: "nearest" });
-          }
-        });
-      }
-
-      // 监听文本选择事件，自动填入输入框
-      document.addEventListener("mouseup", () => {
-        const selection = window.getSelection();
-        const selectedText = selection.toString().trim();
-
-        if (selectedText) {
-          // 检查选中的文本是否在聊天容器内
-          const range = selection.getRangeAt(0);
-          const container = range.commonAncestorContainer;
-          const parentElement =
-            container.nodeType === Node.TEXT_NODE
-              ? container.parentElement
-              : container;
-
-          // 确保选中的内容在聊天容器内，且不在输入框内
-          if (
-            chatContainer.contains(parentElement) &&
-            !userInput.contains(parentElement)
-          ) {
-            userInput.value = selectedText;
-            userInput.focus();
-
-            // 重新计算输入框高度
-            userInput.style.height = "auto";
-            userInput.style.height = userInput.scrollHeight + "px";
-
-            // 清除选择，避免视觉干扰
-            selection.removeAllRanges();
-          }
-        }
-      });
-
-      // 添加一个标志来标识当前是否正在流式接收AI消息
-      let isStreaming = false;
-
-      // 标记是否已经加载过历史记录
-      let historyLoaded = false;
-
-      window.addEventListener("message", (event) => {
-        const message = event.data;
-        const loader = document.getElementById("ai-loader");
-
-        switch (message.type) {
-          case "closeFilesPanel":
-            // 关闭文件面板
-            filesPanel.classList.remove("open");
-            break;
-          case "suggestions":
-            showSuggestions(message.value, message.trigger);
-            break;
-          case "history":
-            // 只加载一次历史记录，避免重复渲染
-            if (!historyLoaded) {
-              historyLoaded = true;
-              chatContainer.innerHTML = ""; // 清空初始化状态
-              
-              if (message.value && message.value.length > 0) {
-                message.value.forEach((msg) => {
-                  addMessage(msg.content, msg.role === "user" ? "user" : "ai");
-                });
-                // 滚动到底部
-                requestAnimationFrame(() => {
-                  scrollToBottom();
-                });
-              } else {
-                chatContainer.innerHTML = '<div class="message system-message">✨ Yuangs AI Agent initialized and ready.</div>';
-              }
-            }
-            break;
-          case "aiChunk":
-            if (loader) {
-              loader.remove();
-              stopBtn.classList.add("visible");
-            }
-
-            // 开始流式接收
-            isStreaming = true;
-
-            if (!currentAiMessageElement) {
-              // 创建AI消息容器
-              const aiMessageDiv = document.createElement("div");
-              aiMessageDiv.className = "message ai-message"; // 直接使用最终样式
-              // aiMessageDiv.style.minHeight = '24px'; // 防止高度塌陷
-              chatContainer.appendChild(aiMessageDiv);
-              currentAiMessageElement = aiMessageDiv;
-            }
-
-            currentAiRawText += message.value;
-
-            // 实时 Markdown 渲染
-            // 技巧：如果代码块未闭合，手动临时闭合它以保证渲染正确
-            let textToRender = currentAiRawText;
-            const codeBlockCount = (textToRender.match(/```/g) || []).length;
-            if (codeBlockCount % 2 !== 0) {
-              textToRender += "\n```";
-            }
-
-            // 渲染内容并添加光标
-            currentAiMessageElement.innerHTML =
-              marked.parse(textToRender) + '<span class="cursor"></span>';
-
-            // 平滑滚动到底部
-            // 使用 requestAnimationFrame 优化滚动性能
-            requestAnimationFrame(() => {
-              scrollToBottom();
-            });
-            break;
-          case "done":
-            // 流式传输结束
-            if (isStreaming && currentAiMessageElement) {
-              isStreaming = false;
-
-              // 移除光标，进行最终渲染
-              currentAiMessageElement.innerHTML =
-                marked.parse(currentAiRawText);
-
-              // 处理diff块和其他后处理
-              processDiffBlocks(currentAiMessageElement);
-
-              // 添加淡入效果或其他完成动效
-              currentAiMessageElement.classList.add("final-render");
-            }
-
-            currentAiMessageElement = null;
-            currentAiRawText = "";
-            userInput.disabled = false;
-            userInput.focus();
-            sendBtn.style.display = "flex";
-            stopBtn.classList.remove("visible");
-            
-            // 自动滚动到底部，确保新消息可见
-            requestAnimationFrame(() => {
-              scrollToBottom();
-            });
-            break;
-          case "clear":
-            chatContainer.innerHTML =
-              '<div class="message system-message">✨ Chat cleared.</div>';
-            userInput.disabled = false;
-            userInput.focus();
-            sendBtn.style.display = "flex";
-            stopBtn.classList.remove("visible");
-            break;
-          case "error":
-            if (loader) loader.remove();
-            addMessage("❌ Error: " + message.value, "system");
-            userInput.disabled = false;
-            userInput.focus();
-            sendBtn.style.display = "flex";
-            stopBtn.classList.remove("visible");
-            break;
-          case "success":
-            // 成功消息，显示为系统消息
-            showFlashNotification(message.value);
-            break;
-          case "diffApplied":
-            // Diff 应用成功
-            const successButtons = document.querySelectorAll(
-              '.apply-diff-btn[data-pending="true"]',
-            );
-            successButtons.forEach((btn) => {
-              btn.innerHTML = "✓ Applied";
-              btn.classList.add("applied");
-              btn.disabled = true;
-              btn.dataset.pending = "false";
-            });
-            break;
-          case "diffError":
-            // Diff 应用失败
-            const errorButtons = document.querySelectorAll(
-              '.apply-diff-btn[data-pending="true"]',
-            );
-            errorButtons.forEach((btn) => {
-              btn.innerHTML = "✗ Failed";
-              btn.classList.add("error");
-              btn.dataset.pending = "false";
-              setTimeout(() => {
-                btn.disabled = false;
-                btn.innerHTML = "✓ Apply";
-                btn.classList.remove("error");
-              }, 3000);
-            });
-            if (message.value) {
-              addMessage(
-                "❌ Diff application error: " + message.value,
-                "system",
-              );
-            }
-            break;
-          case "contextUpdate":
-            // 更新上下文数据
-            if (typeof updateContextItems === "function") {
-              updateContextItems(message.value);
-            }
-            break;
-          case "showContextPanel":
-            // 显示上下文面板
-            if (typeof showContextPanel === "function") {
-              showContextPanel();
-            }
-            break;
-          case "fileTreeData":
-            // 接收文件树数据
-            handleFileTreeData(message.value);
-            break;
-          case "modelsConfig":
-            // 接收模型配置
-            availableModels = message.value.availableModels || [];
-            currentModel = message.value.defaultModel || currentModel;
-            renderModelOptions();
-            updateCurrentModel(currentModel);
-            console.log("Models config received:", availableModels);
-            break;
-        }
-      });
-
-      // 初始化文件面板
-      if (typeof setupFilesPanel === "function") {
-        setupFilesPanel();
-      }
-
-      // 初始化上下文面板
-      if (typeof setupContextPanel === "function") {
-        setupContextPanel();
-      }
-
-      // === 文件面板功能函数 ===
-
-      function setupFilesPanel() {
-        // 文件面板开关
-        filesToggle.addEventListener("click", () => {
-          filesPanel.classList.toggle("open");
-          if (filesPanel.classList.contains("open") && !fileTreeData) {
-            loadFileTree();
-          }
-        });
-
-        filesClose.addEventListener("click", () => {
-          filesPanel.classList.remove("open");
-        });
-
-        // 搜索功能
-        filesSearch.addEventListener("input", (e) => {
-          currentFileSearchQuery = e.target.value.toLowerCase();
-          renderFileTree();
-        });
-      }
-
-      // 加载文件树
-      function loadFileTree() {
-        filesPanelContent.innerHTML =
-          '<div class="file-loading">Loading files...</div>';
-        vscode.postMessage({ type: "loadFileTree" });
-      }
-
-      // 处理文件树数据
-      function handleFileTreeData(files) {
-        allFiles = files;
-        fileTreeData = buildFileTree(files);
-        renderFileTree();
-      }
-
-      // 构建文件树结构
-      function buildFileTree(files) {
-        const root = {};
-
-        files.forEach((filePath) => {
-          const parts = filePath.split("/");
-          let current = root;
-          let fullPath = "";
-
-          parts.forEach((part, index) => {
-            fullPath = fullPath ? fullPath + "/" + part : part;
-
-            if (!current[part]) {
-              current[part] = {
-                name: part,
-                path: fullPath, // 保存完整路径
-                isFile: index === parts.length - 1,
-                children: {},
-              };
-            }
-            current = current[part];
+          // 自动滚动到底部，确保新消息可见
+          requestAnimationFrame(() => {
+            scrollToBottom();
           });
-        });
-
-        return root;
-      }
-
-      // 渲染文件树
-      function renderFileTree() {
-        if (!fileTreeData) {
-          filesPanelContent.innerHTML =
-            '<div class="file-empty">No files loaded</div>';
-          return;
-        }
-
-        // 过滤文件
-        let filteredFiles = allFiles;
-        if (currentFileSearchQuery) {
-          filteredFiles = allFiles.filter((f) =>
-            f.toLowerCase().includes(currentFileSearchQuery),
+          break;
+        case "clear":
+          chatContainer.innerHTML =
+            '<div class="message system-message">✨ Chat cleared.</div>';
+          userInput.disabled = false;
+          userInput.focus();
+          sendBtn.style.display = "flex";
+          stopBtn.classList.remove("visible");
+          break;
+        case "error":
+          if (loader) loader.remove();
+          addMessage("❌ Error: " + message.value, "system");
+          userInput.disabled = false;
+          userInput.focus();
+          sendBtn.style.display = "flex";
+          stopBtn.classList.remove("visible");
+          break;
+        case "success":
+          // 成功消息，显示为系统消息
+          showFlashNotification(message.value);
+          break;
+        case "diffApplied":
+          // Diff 应用成功
+          const successButtons = document.querySelectorAll(
+            '.apply-diff-btn[data-pending="true"]',
           );
-          filesStats.textContent = `${filteredFiles.length} files`;
-        } else {
-          filesStats.textContent = `${allFiles.length} files`;
-        }
+          successButtons.forEach((btn) => {
+            btn.innerHTML = "✓ Applied";
+            btn.classList.add("applied");
+            btn.disabled = true;
+            btn.dataset.pending = "false";
+          });
+          break;
+        case "diffError":
+          // Diff 应用失败
+          const errorButtons = document.querySelectorAll(
+            '.apply-diff-btn[data-pending="true"]',
+          );
+          errorButtons.forEach((btn) => {
+            btn.innerHTML = "✗ Failed";
+            btn.classList.add("error");
+            btn.dataset.pending = "false";
+            setTimeout(() => {
+              btn.disabled = false;
+              btn.innerHTML = "✓ Apply";
+              btn.classList.remove("error");
+            }, 3000);
+          });
+          if (message.value) {
+            addMessage(
+              "❌ Diff application error: " + message.value,
+              "system",
+            );
+          }
+          break;
+        case "contextUpdate":
+          // 更新上下文数据
+          if (typeof updateContextItems === "function") {
+            updateContextItems(message.value);
+          }
+          break;
+        case "showContextPanel":
+          // 显示上下文面板
+          if (typeof showContextPanel === "function") {
+            showContextPanel();
+          }
+          break;
+        case "fileTreeData":
+          // 接收文件树数据
+          handleFileTreeData(message.value);
+          break;
+        case "modelsConfig":
+          // 接收模型配置
+          availableModels = message.value.availableModels || [];
+          currentModel = message.value.defaultModel || currentModel;
+          renderModelOptions();
+          updateCurrentModel(currentModel);
+          console.log("Models config received:", availableModels);
+          break;
+      }
+    });
 
-        // 清空并重新渲染
-        filesPanelContent.innerHTML = "";
+    // 初始化文件面板
+    if (typeof setupFilesPanel === "function") {
+      setupFilesPanel();
+    }
 
-        if (filteredFiles.length === 0) {
-          filesPanelContent.innerHTML =
-            '<div class="file-empty">No matching files</div>';
-          return;
-        }
+    // 初始化上下文面板
+    if (typeof setupContextPanel === "function") {
+      setupContextPanel();
+    }
 
-        if (currentFileSearchQuery) {
-          // 搜索模式：显示扁平列表
-          renderFileList(filteredFiles);
-        } else {
-          // 树形模式：显示层级结构
-          renderTreeNode(fileTreeData, filesPanelContent, 0);
+    // === 文件面板功能函数 ===
+
+    function setupFilesPanel() {
+      // 文件面板开关
+      filesToggle.addEventListener("click", () => {
+        filesPanel.classList.toggle("open");
+        if (filesPanel.classList.contains("open") && !fileTreeData) {
+          loadFileTree();
         }
+      });
+
+      filesClose.addEventListener("click", () => {
+        filesPanel.classList.remove("open");
+      });
+
+      // 搜索功能
+      filesSearch.addEventListener("input", (e) => {
+        currentFileSearchQuery = e.target.value.toLowerCase();
+        renderFileTree();
+      });
+    }
+
+    // 加载文件树
+    function loadFileTree() {
+      filesPanelContent.innerHTML =
+        '<div class="file-loading">Loading files...</div>';
+      vscode.postMessage({ type: "loadFileTree" });
+    }
+
+    // 处理文件树数据
+    function handleFileTreeData(files) {
+      allFiles = files;
+      fileTreeData = buildFileTree(files);
+      renderFileTree();
+    }
+
+    // 构建文件树结构
+    function buildFileTree(files) {
+      const root = {};
+
+      files.forEach((filePath) => {
+        const parts = filePath.split("/");
+        let current = root;
+        let fullPath = "";
+
+        parts.forEach((part, index) => {
+          fullPath = fullPath ? fullPath + "/" + part : part;
+
+          if (!current[part]) {
+            current[part] = {
+              name: part,
+              path: fullPath, // 保存完整路径
+              isFile: index === parts.length - 1,
+              children: {},
+            };
+          }
+          current = current[part];
+        });
+      });
+
+      return root;
+    }
+
+    // 渲染文件树
+    function renderFileTree() {
+      if (!fileTreeData) {
+        filesPanelContent.innerHTML =
+          '<div class="file-empty">No files loaded</div>';
+        return;
       }
 
-      // 渲染文件列表（搜索模式）
-      function renderFileList(files) {
-        files.forEach((filePath) => {
-          const item = document.createElement("div");
-          item.className = "file-tree-item file";
+      // 过滤文件
+      let filteredFiles = allFiles;
+      if (currentFileSearchQuery) {
+        filteredFiles = allFiles.filter((f) =>
+          f.toLowerCase().includes(currentFileSearchQuery),
+        );
+        filesStats.textContent = `${filteredFiles.length} files`;
+      } else {
+        filesStats.textContent = `${allFiles.length} files`;
+      }
 
-          const icon = getFileIcon(filePath);
-          const fileName = filePath.split("/").pop();
+      // 清空并重新渲染
+      filesPanelContent.innerHTML = "";
 
-          item.innerHTML = `
+      if (filteredFiles.length === 0) {
+        filesPanelContent.innerHTML =
+          '<div class="file-empty">No matching files</div>';
+        return;
+      }
+
+      if (currentFileSearchQuery) {
+        // 搜索模式：显示扁平列表
+        renderFileList(filteredFiles);
+      } else {
+        // 树形模式：显示层级结构
+        renderTreeNode(fileTreeData, filesPanelContent, 0);
+      }
+    }
+
+    // 渲染文件列表（搜索模式）
+    function renderFileList(files) {
+      files.forEach((filePath) => {
+        const item = document.createElement("div");
+        item.className = "file-tree-item file";
+
+        const icon = getFileIcon(filePath);
+        const fileName = filePath.split("/").pop();
+
+        item.innerHTML = `
                     <span class="file-tree-icon">${icon}</span>
                     <span class="file-tree-name">${fileName}</span>
                 `;
 
-          item.addEventListener("click", () => {
-            handleFileClick(filePath);
-          });
-
-          filesPanelContent.appendChild(item);
-        });
-      }
-
-      // 渲染树节点
-      function renderTreeNode(node, container, level) {
-        const entries = Object.entries(node).sort((a, b) => {
-          // 文件夹排在前面
-          if (a[1].isFile && !b[1].isFile) return 1;
-          if (!a[1].isFile && b[1].isFile) return -1;
-          return a[0].localeCompare(b[0]);
+        item.addEventListener("click", () => {
+          handleFileClick(filePath);
         });
 
-        entries.forEach(([name, data]) => {
-          const item = document.createElement("div");
+        filesPanelContent.appendChild(item);
+      });
+    }
 
-          if (!data.isFile) {
-            // 文件夹
-            item.className = "file-tree-item folder";
-            item.style.paddingLeft = `${16 + level * 16}px`;
+    // 渲染树节点
+    function renderTreeNode(node, container, level) {
+      const entries = Object.entries(node).sort((a, b) => {
+        // 文件夹排在前面
+        if (a[1].isFile && !b[1].isFile) return 1;
+        if (!a[1].isFile && b[1].isFile) return -1;
+        return a[0].localeCompare(b[0]);
+      });
 
-            item.innerHTML = `
+      entries.forEach(([name, data]) => {
+        const item = document.createElement("div");
+
+        if (!data.isFile) {
+          // 文件夹
+          item.className = "file-tree-item folder";
+          item.style.paddingLeft = `${16 + level * 16}px`;
+
+          item.innerHTML = `
                         <span class="file-tree-icon collapsed" data-path="${name}"></span>
                         <span class="file-tree-name">${name}</span>
                     `;
 
-            const childrenContainer = document.createElement("div");
-            childrenContainer.className = "file-tree-children";
+          const childrenContainer = document.createElement("div");
+          childrenContainer.className = "file-tree-children";
 
-            item
-              .querySelector(".file-tree-icon")
-              .addEventListener("click", (e) => {
-                e.stopPropagation();
-                const icon = e.target;
-                if (icon.classList.contains("collapsed")) {
-                  icon.classList.remove("collapsed");
-                  icon.classList.add("expanded");
-                  childrenContainer.classList.add("expanded");
-                } else {
-                  icon.classList.remove("expanded");
-                  icon.classList.add("collapsed");
-                  childrenContainer.classList.remove("expanded");
-                }
-              });
-
-            item.addEventListener("click", () => {
-              // 默认展开/折叠
-              const icon = item.querySelector(".file-tree-icon");
-              icon.click();
+          item
+            .querySelector(".file-tree-icon")
+            .addEventListener("click", (e) => {
+              e.stopPropagation();
+              const icon = e.target;
+              if (icon.classList.contains("collapsed")) {
+                icon.classList.remove("collapsed");
+                icon.classList.add("expanded");
+                childrenContainer.classList.add("expanded");
+              } else {
+                icon.classList.remove("expanded");
+                icon.classList.add("collapsed");
+                childrenContainer.classList.remove("expanded");
+              }
             });
 
-            container.appendChild(item);
-            container.appendChild(childrenContainer);
+          item.addEventListener("click", () => {
+            // 默认展开/折叠
+            const icon = item.querySelector(".file-tree-icon");
+            icon.click();
+          });
 
-            // 递归渲染子节点
-            renderTreeNode(data.children, childrenContainer, level + 1);
-          } else {
-            // 文件
-            item.className = "file-tree-item file";
-            item.style.paddingLeft = `${16 + level * 16}px`;
+          container.appendChild(item);
+          container.appendChild(childrenContainer);
 
-            const icon = getFileIcon(name);
-            item.innerHTML = `
+          // 递归渲染子节点
+          renderTreeNode(data.children, childrenContainer, level + 1);
+        } else {
+          // 文件
+          item.className = "file-tree-item file";
+          item.style.paddingLeft = `${16 + level * 16}px`;
+
+          const icon = getFileIcon(name);
+          item.innerHTML = `
                         <span class="file-tree-icon">${icon}</span>
                         <span class="file-tree-name">${name}</span>
                     `;
 
-            item.addEventListener("click", () => {
-              handleFileClick(data.path);
-            });
-
-            container.appendChild(item);
-          }
-        });
-      }
-
-      // 获取文件图标
-      function getFileIcon(filename) {
-        const ext = filename.split(".").pop().toLowerCase();
-        const iconMap = {
-          js: "📜",
-          ts: "📘",
-          tsx: "⚛️",
-          jsx: "⚛️",
-          html: "🌐",
-          css: "🎨",
-          scss: "🎨",
-          json: "📋",
-          md: "📝",
-          py: "🐍",
-          java: "☕",
-          go: "🐹",
-          rs: "🦀",
-          cpp: "⚙️",
-          c: "⚙️",
-          h: "📄",
-          vue: "💚",
-          angular: "🅰️",
-          react: "⚛️",
-          yaml: "📋",
-          yml: "📋",
-          xml: "📋",
-          sh: "💻",
-          bash: "💻",
-          zsh: "💻",
-          git: "🔀",
-          lock: "🔒",
-          env: "🔐",
-          test: "🧪",
-          spec: "🧪",
-        };
-
-        return iconMap[ext] || "📄";
-      }
-
-      // 处理文件点击
-      function handleFileClick(filePath) {
-        // 移除系统消息，直接读取文件
-        vscode.postMessage({
-          type: "readFile",
-          filePath: filePath,
-        });
-      }
-
-      // 获取文件语言（辅助函数）
-      function getFileLanguage(filename) {
-        const ext = filename.split(".").pop()?.toLowerCase() || "";
-        const langMap = {
-          js: "javascript",
-          ts: "typescript",
-          tsx: "typescript",
-          jsx: "javascript",
-          py: "python",
-          java: "java",
-          go: "go",
-          rs: "rust",
-          cpp: "cpp",
-          c: "c",
-          h: "c",
-          vue: "vue",
-          yaml: "yaml",
-          yml: "yaml",
-          json: "json",
-          md: "markdown",
-          html: "html",
-          css: "css",
-          sh: "bash",
-          bash: "bash",
-        };
-        return langMap[ext] || "text";
-      }
-
-      // === 上下文面板功能函数 ===
-
-      // 上下文面板开关
-      function setupContextPanel() {
-        // 上下文面板开关
-        contextToggle.addEventListener("click", () => {
-          contextPanel.classList.toggle("open");
-          contextToggle.classList.toggle("visible");
-        });
-
-        contextClose.addEventListener("click", () => {
-          contextPanel.classList.remove("open");
-          contextToggle.classList.remove("visible");
-        });
-
-        // 过滤按钮事件
-        contextFilterBtns.forEach((btn) => {
-          btn.addEventListener("click", () => {
-            // 移除所有active类
-            contextFilterBtns.forEach((b) => b.classList.remove("active"));
-            // 添加active类到当前按钮
-            btn.classList.add("active");
-            // 更新过滤器
-            currentFilter = btn.dataset.filter;
-            // 重新渲染
-            renderContextItems();
+          item.addEventListener("click", () => {
+            handleFileClick(data.path);
           });
-        });
 
-        // 搜索功能
-        contextSearch.addEventListener("input", (e) => {
-          currentSearchQuery = e.target.value.toLowerCase();
+          container.appendChild(item);
+        }
+      });
+    }
+
+    // 获取文件图标
+    function getFileIcon(filename) {
+      const ext = filename.split(".").pop().toLowerCase();
+      const iconMap = {
+        js: "📜",
+        ts: "📘",
+        tsx: "⚛️",
+        jsx: "⚛️",
+        html: "🌐",
+        css: "🎨",
+        scss: "🎨",
+        json: "📋",
+        md: "📝",
+        py: "🐍",
+        java: "☕",
+        go: "🐹",
+        rs: "🦀",
+        cpp: "⚙️",
+        c: "⚙️",
+        h: "📄",
+        vue: "💚",
+        angular: "🅰️",
+        react: "⚛️",
+        yaml: "📋",
+        yml: "📋",
+        xml: "📋",
+        sh: "💻",
+        bash: "💻",
+        zsh: "💻",
+        git: "🔀",
+        lock: "🔒",
+        env: "🔐",
+        test: "🧪",
+        spec: "🧪",
+      };
+
+      return iconMap[ext] || "📄";
+    }
+
+    // 处理文件点击
+    function handleFileClick(filePath) {
+      // 移除系统消息，直接读取文件
+      vscode.postMessage({
+        type: "readFile",
+        path: filePath,
+      });
+    }
+
+    // 获取文件语言（辅助函数）
+    function getFileLanguage(filename) {
+      const ext = filename.split(".").pop()?.toLowerCase() || "";
+      const langMap = {
+        js: "javascript",
+        ts: "typescript",
+        tsx: "typescript",
+        jsx: "javascript",
+        py: "python",
+        java: "java",
+        go: "go",
+        rs: "rust",
+        cpp: "cpp",
+        c: "c",
+        h: "c",
+        vue: "vue",
+        yaml: "yaml",
+        yml: "yaml",
+        json: "json",
+        md: "markdown",
+        html: "html",
+        css: "css",
+        sh: "bash",
+        bash: "bash",
+      };
+      return langMap[ext] || "text";
+    }
+
+    // === 上下文面板功能函数 ===
+
+    // 上下文面板开关
+    function setupContextPanel() {
+      // 上下文面板开关
+      contextToggle.addEventListener("click", () => {
+        contextPanel.classList.toggle("open");
+        contextToggle.classList.toggle("visible");
+      });
+
+      contextClose.addEventListener("click", () => {
+        contextPanel.classList.remove("open");
+        contextToggle.classList.remove("visible");
+      });
+
+      // 过滤按钮事件
+      contextFilterBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          // 移除所有active类
+          contextFilterBtns.forEach((b) => b.classList.remove("active"));
+          // 添加active类到当前按钮
+          btn.classList.add("active");
+          // 更新过滤器
+          currentFilter = btn.dataset.filter;
+          // 重新渲染
           renderContextItems();
         });
-      }
+      });
 
-      // 更新上下文数据
-      function updateContextItems(items) {
-        const oldCount = currentContextItems.length;
-        currentContextItems = items || [];
-        const newCount = currentContextItems.length;
-        
+      // 搜索功能
+      contextSearch.addEventListener("input", (e) => {
+        currentSearchQuery = e.target.value.toLowerCase();
         renderContextItems();
-        
-        // 如果有更新，显示 flash 通知
-        if (newCount > oldCount) {
-          showFlashNotification(`📋 Context updated: ${newCount - oldCount} new item${newCount - oldCount > 1 ? 's' : ''} added`);
-        }
-      }
+      });
+    }
 
-      // 渲染上下文项目
-      function renderContextItems() {
-        // 过滤上下文项目
-        let filteredItems = currentContextItems.filter((item) => {
-          // 类型过滤
-          if (currentFilter !== "all" && item.semantic !== currentFilter) {
+    // 更新上下文数据
+    function updateContextItems(items) {
+      const oldCount = currentContextItems.length;
+      currentContextItems = items || [];
+      const newCount = currentContextItems.length;
+
+      renderContextItems();
+
+      // 如果有更新，显示 flash 通知
+      if (newCount > oldCount) {
+        showFlashNotification(`📋 Context updated: ${newCount - oldCount} new item${newCount - oldCount > 1 ? 's' : ''} added`);
+      }
+    }
+
+    // 渲染上下文项目
+    function renderContextItems() {
+      // 过滤上下文项目
+      let filteredItems = currentContextItems.filter((item) => {
+        // 类型过滤
+        if (currentFilter !== "all" && item.semantic !== currentFilter) {
+          return false;
+        }
+
+        // 搜索过滤
+        if (currentSearchQuery) {
+          const searchText = (
+            item.path +
+            item.summary +
+            item.content
+          ).toLowerCase();
+          if (!searchText.includes(currentSearchQuery)) {
             return false;
           }
-
-          // 搜索过滤
-          if (currentSearchQuery) {
-            const searchText = (
-              item.path +
-              item.summary +
-              item.content
-            ).toLowerCase();
-            if (!searchText.includes(currentSearchQuery)) {
-              return false;
-            }
-          }
-
-          return true;
-        });
-
-        // 更新统计信息
-        contextStats.textContent = `${filteredItems.length} items`;
-
-        // 清空并重新渲染
-        contextPanelContent.innerHTML = "";
-
-        if (filteredItems.length === 0) {
-          contextPanelContent.innerHTML =
-            '<div class="context-empty">No context available</div>';
-          return;
         }
 
-        // 渲染每个上下文项目
-        filteredItems.forEach((item) => {
-          const itemElement = createContextItemElement(item);
-          contextPanelContent.appendChild(itemElement);
-        });
+        return true;
+      });
+
+      // 更新统计信息
+      contextStats.textContent = `${filteredItems.length} items`;
+
+      // 清空并重新渲染
+      contextPanelContent.innerHTML = "";
+
+      if (filteredItems.length === 0) {
+        contextPanelContent.innerHTML =
+          '<div class="context-empty">No context available</div>';
+        return;
       }
 
-      // 创建单个上下文项目元素
-      function createContextItemElement(item) {
-        const div = document.createElement("div");
-        div.className = "context-item collapsed"; // 默认折叠
+      // 渲染每个上下文项目
+      filteredItems.forEach((item) => {
+        const itemElement = createContextItemElement(item);
+        contextPanelContent.appendChild(itemElement);
+      });
+    }
 
-        // 获取图标
-        const icon = getContextIcon(item.semantic);
+    // 创建单个上下文项目元素
+    function createContextItemElement(item) {
+      const div = document.createElement("div");
+      div.className = "context-item collapsed"; // 默认折叠
 
-        // 获取重要性百分比
-        const importancePercent = item.importance
-          ? (item.importance.confidence * 100).toFixed(0)
-          : "50";
+      // 获取图标
+      const icon = getContextIcon(item.semantic);
 
-        // 获取标签HTML
-        const badgesHtml = createContextBadges(item);
+      // 获取重要性百分比
+      const importancePercent = item.importance
+        ? (item.importance.confidence * 100).toFixed(0)
+        : "50";
 
-        // 获取统计信息
-        const statsHtml = createContextStats(item);
+      // 获取标签HTML
+      const badgesHtml = createContextBadges(item);
 
-        // 获取内容预览
-        const previewText = item.summary || item.content.substring(0, 200);
+      // 获取统计信息
+      const statsHtml = createContextStats(item);
 
-        div.innerHTML = `
+      // 获取内容预览
+      const previewText = item.summary || item.content.substring(0, 200);
+
+      div.innerHTML = `
                 <div class="context-item-header">
                     <span class="context-item-toggle">▶</span>
                     <span class="context-item-icon">${icon}</span>
@@ -2305,182 +2283,182 @@
                 </div>
             `;
 
-        // 添加点击事件 - 切换展开/折叠
-        div.addEventListener("click", (e) => {
-          // 阻止事件冒泡，避免触发其他点击事件
-          e.stopPropagation();
-          
-          // 切换展开/折叠状态
-          div.classList.toggle("collapsed");
-          div.classList.toggle("expanded");
-          
-          // 如果展开，打开文件
-          if (!div.classList.contains("collapsed") && item.path) {
-            vscode.postMessage({
-              type: "open",
-              path: item.path,
-            });
-          }
-          
-          console.log("Context item toggled:", item, "expanded:", !div.classList.contains("collapsed"));
-        });
+      // 添加点击事件 - 切换展开/折叠
+      div.addEventListener("click", (e) => {
+        // 阻止事件冒泡，避免触发其他点击事件
+        e.stopPropagation();
 
-        return div;
-      }
+        // 切换展开/折叠状态
+        div.classList.toggle("collapsed");
+        div.classList.toggle("expanded");
 
-      // 获取上下文图标
-      function getContextIcon(semantic) {
-        const iconMap = {
-          source_code: "📄",
-          log: "📋",
-          config: "⚙️",
-          documentation: "📚",
-          test: "🧪",
-          git: "🔀",
-          evidence: "🔍",
-          diagnostics: "⚠️",
-        };
-
-        return iconMap[semantic] || "📄";
-      }
-
-      // 创建标签
-      function createContextBadges(item) {
-        const badges = [];
-
-        // 类型标签
-        if (item.semantic) {
-          badges.push(
-            `<span class="context-badge ${item.semantic}">${item.semantic}</span>`,
-          );
-        }
-
-        // 标签
-        if (item.tags && item.tags.length > 0) {
-          item.tags.slice(0, 2).forEach((tag) => {
-            badges.push(`<span class="context-badge">${tag}</span>`);
+        // 如果展开，打开文件
+        if (!div.classList.contains("collapsed") && item.path) {
+          vscode.postMessage({
+            type: "open",
+            path: item.path,
           });
         }
 
-        return badges.join("");
+        console.log("Context item toggled:", item, "expanded:", !div.classList.contains("collapsed"));
+      });
+
+      return div;
+    }
+
+    // 获取上下文图标
+    function getContextIcon(semantic) {
+      const iconMap = {
+        source_code: "📄",
+        log: "📋",
+        config: "⚙️",
+        documentation: "📚",
+        test: "🧪",
+        git: "🔀",
+        evidence: "🔍",
+        diagnostics: "⚠️",
+      };
+
+      return iconMap[semantic] || "📄";
+    }
+
+    // 创建标签
+    function createContextBadges(item) {
+      const badges = [];
+
+      // 类型标签
+      if (item.semantic) {
+        badges.push(
+          `<span class="context-badge ${item.semantic}">${item.semantic}</span>`,
+        );
       }
 
-      // 创建统计信息
-      function createContextStats(item) {
-        const stats = [];
+      // 标签
+      if (item.tags && item.tags.length > 0) {
+        item.tags.slice(0, 2).forEach((tag) => {
+          badges.push(`<span class="context-badge">${tag}</span>`);
+        });
+      }
 
-        // Token数量
-        if (item.tokens) {
+      return badges.join("");
+    }
+
+    // 创建统计信息
+    function createContextStats(item) {
+      const stats = [];
+
+      // Token数量
+      if (item.tokens) {
+        stats.push(
+          `<span class="context-stat">📊 ${item.tokens} tokens</span>`,
+        );
+      }
+
+      // 使用次数
+      if (item.importance && item.importance.useCount > 0) {
+        stats.push(
+          `<span class="context-stat">🔄 ${item.importance.useCount} uses</span>`,
+        );
+      }
+
+      // 最后使用时间
+      if (item.importance && item.importance.lastUsed) {
+        const lastUsed = new Date(item.importance.lastUsed);
+        const now = new Date();
+        const diffMinutes = Math.floor((now - lastUsed) / 60000);
+
+        if (diffMinutes < 1) {
+          stats.push(`<span class="context-stat">⏰ just now</span>`);
+        } else if (diffMinutes < 60) {
           stats.push(
-            `<span class="context-stat">📊 ${item.tokens} tokens</span>`,
+            `<span class="context-stat">⏰ ${diffMinutes}m ago</span>`,
+          );
+        } else if (diffMinutes < 1440) {
+          stats.push(
+            `<span class="context-stat">⏰ ${Math.floor(diffMinutes / 60)}h ago</span>`,
+          );
+        } else {
+          stats.push(
+            `<span class="context-stat">⏰ ${Math.floor(diffMinutes / 1440)}d ago</span>`,
           );
         }
+      }
 
-        // 使用次数
-        if (item.importance && item.importance.useCount > 0) {
-          stats.push(
-            `<span class="context-stat">🔄 ${item.importance.useCount} uses</span>`,
-          );
+      return stats.join("");
+    }
+
+    // 显示上下文面板
+    function showContextPanel() {
+      contextPanel.classList.add("open");
+      contextToggle.classList.add("visible");
+    }
+
+    // 隐藏上下文面板
+    function hideContextPanel() {
+      contextPanel.classList.remove("open");
+      contextToggle.classList.remove("visible");
+    }
+
+    // 显示 flash 通知
+    function showFlashNotification(message) {
+      const notification = document.createElement("div");
+      notification.className = "flash-notification";
+      notification.textContent = message;
+
+      document.body.appendChild(notification);
+
+      // 3秒后自动移除
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // === 模型选择器功能 ===
+
+    const modelSelector = document.getElementById("model-selector");
+    const modelDropdown = document.getElementById("model-dropdown");
+    const currentModelLabel = document.getElementById("current-model");
+
+    // 可用的 AI 模型列表（从后端加载）
+    let availableModels = [];
+
+    // 当前选中的模型
+    let currentModel = "gpt-4o-mini";
+
+    // 初始化模型选择器
+    function initModelSelector() {
+      // 从扩展获取模型配置
+      vscode.postMessage({ type: "getModelsConfig" });
+      // 同时获取当前选中的模型
+      vscode.postMessage({ type: "getCurrentModel" });
+
+      // 点击切换下拉菜单
+      modelSelector.addEventListener("click", (e) => {
+        e.stopPropagation();
+        modelDropdown.classList.toggle("visible");
+      });
+
+      // 点击外部关闭下拉菜单
+      document.addEventListener("click", (e) => {
+        if (!modelSelector.contains(e.target) && !modelDropdown.contains(e.target)) {
+          modelDropdown.classList.remove("visible");
         }
+      });
 
-        // 最后使用时间
-        if (item.importance && item.importance.lastUsed) {
-          const lastUsed = new Date(item.importance.lastUsed);
-          const now = new Date();
-          const diffMinutes = Math.floor((now - lastUsed) / 60000);
+      // 阻止下拉菜单内部点击事件冒泡
+      modelDropdown.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+    }
 
-          if (diffMinutes < 1) {
-            stats.push(`<span class="context-stat">⏰ just now</span>`);
-          } else if (diffMinutes < 60) {
-            stats.push(
-              `<span class="context-stat">⏰ ${diffMinutes}m ago</span>`,
-            );
-          } else if (diffMinutes < 1440) {
-            stats.push(
-              `<span class="context-stat">⏰ ${Math.floor(diffMinutes / 60)}h ago</span>`,
-            );
-          } else {
-            stats.push(
-              `<span class="context-stat">⏰ ${Math.floor(diffMinutes / 1440)}d ago</span>`,
-            );
-          }
-        }
+    // 渲染模型选项
+    function renderModelOptions() {
+      modelDropdown.innerHTML = "";
 
-        return stats.join("");
-      }
-
-      // 显示上下文面板
-      function showContextPanel() {
-        contextPanel.classList.add("open");
-        contextToggle.classList.add("visible");
-      }
-
-      // 隐藏上下文面板
-      function hideContextPanel() {
-        contextPanel.classList.remove("open");
-        contextToggle.classList.remove("visible");
-      }
-
-      // 显示 flash 通知
-      function showFlashNotification(message) {
-        const notification = document.createElement("div");
-        notification.className = "flash-notification";
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // 3秒后自动移除
-        setTimeout(() => {
-          notification.remove();
-        }, 3000);
-      }
-
-      // === 模型选择器功能 ===
-
-      const modelSelector = document.getElementById("model-selector");
-      const modelDropdown = document.getElementById("model-dropdown");
-      const currentModelLabel = document.getElementById("current-model");
-
-      // 可用的 AI 模型列表（从后端加载）
-      let availableModels = [];
-
-      // 当前选中的模型
-      let currentModel = "gpt-4o-mini";
-
-      // 初始化模型选择器
-      function initModelSelector() {
-        // 从扩展获取模型配置
-        vscode.postMessage({ type: "getModelsConfig" });
-        // 同时获取当前选中的模型
-        vscode.postMessage({ type: "getCurrentModel" });
-
-        // 点击切换下拉菜单
-        modelSelector.addEventListener("click", (e) => {
-          e.stopPropagation();
-          modelDropdown.classList.toggle("visible");
-        });
-
-        // 点击外部关闭下拉菜单
-        document.addEventListener("click", (e) => {
-          if (!modelSelector.contains(e.target) && !modelDropdown.contains(e.target)) {
-            modelDropdown.classList.remove("visible");
-          }
-        });
-
-        // 阻止下拉菜单内部点击事件冒泡
-        modelDropdown.addEventListener("click", (e) => {
-          e.stopPropagation();
-        });
-      }
-
-      // 渲染模型选项
-      function renderModelOptions() {
-        modelDropdown.innerHTML = "";
-
-        availableModels.forEach((model) => {
-          const option = document.createElement("div");
-          option.className = `model-option ${model.id === currentModel ? "active" : ""}`;
-          option.innerHTML = `
+      availableModels.forEach((model) => {
+        const option = document.createElement("div");
+        option.className = `model-option ${model.id === currentModel ? "active" : ""}`;
+        option.innerHTML = `
             <span class="model-option-name">
               <strong>${model.name}</strong>
               <br>
@@ -2489,57 +2467,58 @@
             <span class="model-option-icon">${model.id === currentModel ? "✓" : ""}</span>
           `;
 
-          option.addEventListener("click", () => {
-            selectModel(model.id);
-          });
-
-          modelDropdown.appendChild(option);
+        option.addEventListener("click", () => {
+          selectModel(model.id);
         });
-      }
 
-      // 选择模型
-      function selectModel(modelId) {
-        if (currentModel === modelId) {
-          modelDropdown.classList.remove("visible");
-          return;
-        }
-
-        currentModel = modelId;
-        currentModelLabel.textContent = availableModels.find(m => m.id === modelId)?.name || modelId;
-
-        // 重新渲染选项以更新选中状态
-        renderModelOptions();
-
-        // 关闭下拉菜单
-        modelDropdown.classList.remove("visible");
-
-        // 发送到扩展
-        vscode.postMessage({ type: "changeModel", value: modelId });
-
-        // 显示切换成功消息
-        addMessage(`🔄 已切换到模型: ${availableModels.find(m => m.id === modelId)?.name}`, "system");
-      }
-
-      // 更新当前模型显示
-      function updateCurrentModel(modelId) {
-        currentModel = modelId;
-        const model = availableModels.find(m => m.id === modelId);
-        currentModelLabel.textContent = model ? model.name : modelId;
-        renderModelOptions();
-      }
-
-      // 在消息监听器中添加模型相关处理
-      window.addEventListener("message", (event) => {
-        const message = event.data;
-
-        // 在现有的 switch 语句中添加新 case
-        if (message.type === "currentModel") {
-          updateCurrentModel(message.value);
-        }
+        modelDropdown.appendChild(option);
       });
+    }
 
-      // 初始化模型选择器
-      initModelSelector();
-    </script>
-  </body>
+    // 选择模型
+    function selectModel(modelId) {
+      if (currentModel === modelId) {
+        modelDropdown.classList.remove("visible");
+        return;
+      }
+
+      currentModel = modelId;
+      currentModelLabel.textContent = availableModels.find(m => m.id === modelId)?.name || modelId;
+
+      // 重新渲染选项以更新选中状态
+      renderModelOptions();
+
+      // 关闭下拉菜单
+      modelDropdown.classList.remove("visible");
+
+      // 发送到扩展
+      vscode.postMessage({ type: "changeModel", value: modelId });
+
+      // 显示切换成功消息
+      addMessage(`🔄 已切换到模型: ${availableModels.find(m => m.id === modelId)?.name}`, "system");
+    }
+
+    // 更新当前模型显示
+    function updateCurrentModel(modelId) {
+      currentModel = modelId;
+      const model = availableModels.find(m => m.id === modelId);
+      currentModelLabel.textContent = model ? model.name : modelId;
+      renderModelOptions();
+    }
+
+    // 在消息监听器中添加模型相关处理
+    window.addEventListener("message", (event) => {
+      const message = event.data;
+
+      // 在现有的 switch 语句中添加新 case
+      if (message.type === "currentModel") {
+        updateCurrentModel(message.value);
+      }
+    });
+
+    // 初始化模型选择器
+    initModelSelector();
+  </script>
+</body>
+
 </html>
