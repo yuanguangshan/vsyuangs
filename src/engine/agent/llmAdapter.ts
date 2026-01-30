@@ -89,7 +89,7 @@ JSON SCHEMA:
   "acknowledged_observation": "string | 'NONE'",
   "action_type": "tool_call" | "shell_cmd" | "code_diff" | "answer" | "halt",
   "reasoning": "thought process",
-  "tool_name": "read_file" | "write_file" | "list_files" | "skill_create",
+  "tool_name": "read_file" | "write_file" | "list_files",
   "diff": "unified diff string",
   "parameters": {},
   "command": "shell string",
@@ -101,7 +101,6 @@ AVAILABLE TOOLS:
 - read_file: Read file contents (parameter: path)
 - write_file: Write or overwrite a file (parameters: path, content)
 - list_files: List files and directories (parameter: path, optional, defaults to '.')
-- skill_create: Create a reusable skill from successful execution (parameters: name, whenToUse, planTemplate)
 
 EXECUTION RULES:
 1. If data is unknown (e.g. file list), use 'shell_cmd' or 'tool_call'.

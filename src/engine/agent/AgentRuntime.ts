@@ -163,8 +163,8 @@ export class AgentRuntime {
         },
         contextDiff:
           contextDiff.added.length ||
-          contextDiff.removed.length ||
-          contextDiff.changed.length
+            contextDiff.removed.length ||
+            contextDiff.changed.length
             ? contextDiff
             : undefined,
       };
@@ -205,51 +205,51 @@ export class AgentRuntime {
       // 这会自动排除 error 类型的 Observation
       const lastObs = this.context.getLastAckableObservation();
       const ack = (thought.parsedPlan as any)?.acknowledged_observation;
-      
-      if (lastObs) {
-          // 如果有 Observation，检查是否被正确确认
-          // 检查 ack 是否存在且不为 NONE
-          if (!ack || ack === 'NONE') {
-              console.log(chalk.red('\n❌ OBSERVATION NOT ACKNOWLEDGED'));
-              console.log(chalk.red('Expected observation to be restated:'));
-              console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
 
-              // ✅ 关键修复：使用 error 类型，这样它不会被再次确认
-              this.context.addObservation(
-                `ERROR: You failed to acknowledge the latest Observation.
+      if (lastObs) {
+        // 如果有 Observation，检查是否被正确确认
+        // 检查 ack 是否存在且不为 NONE
+        if (!ack || ack === 'NONE') {
+          console.log(chalk.red('\n❌ OBSERVATION NOT ACKNOWLEDGED'));
+          console.log(chalk.red('Expected observation to be restated:'));
+          console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
+
+          // ✅ 关键修复：使用 error 类型，这样它不会被再次确认
+          this.context.addObservation(
+            `ERROR: You failed to acknowledge the latest Observation.
 You MUST restate it verbatim before continuing.
 Latest Observation: ${lastObs.content}`,
-                'error'  // ← 标记为 error 类型，防止死循环
-              );
+            'error'  // ← 标记为 error 类型，防止死循环
+          );
 
-              // ❗关键：不要执行 action，直接下一轮
-              continue;
-          }
-          
-          // 宽松检查：只要 ack 包含 Observation 的一部分内容即可
-          if (lastObs.content.length > 30 && 
-              !lastObs.content.includes(ack.substring(0, 10)) && 
-              !ack.includes(lastObs.content.substring(0, 10))) {
-              console.log(chalk.red('\n❌ OBSERVATION ACK MISMATCH'));
-              console.log(chalk.red('Observation:'));
-              console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
-              console.log(chalk.red('Your ACK:'));
-              console.log(chalk.red(ack.substring(0, 100) + '...'));
+          // ❗关键：不要执行 action，直接下一轮
+          continue;
+        }
 
-              // ✅ 使用 error 类型
-              this.context.addObservation(
-                `ERROR: Your acknowledgment does not match the latest Observation.
+        // 宽松检查：只要 ack 包含 Observation 的一部分内容即可
+        if (lastObs.content.length > 30 &&
+          !lastObs.content.includes(ack.substring(0, 10)) &&
+          !ack.includes(lastObs.content.substring(0, 10))) {
+          console.log(chalk.red('\n❌ OBSERVATION ACK MISMATCH'));
+          console.log(chalk.red('Observation:'));
+          console.log(chalk.red(lastObs.content.substring(0, 100) + '...'));
+          console.log(chalk.red('Your ACK:'));
+          console.log(chalk.red(ack.substring(0, 100) + '...'));
+
+          // ✅ 使用 error 类型
+          this.context.addObservation(
+            `ERROR: Your acknowledgment does not match the latest Observation.
 Please restate it VERBATIM.
 Latest Observation: ${lastObs.content}`,
-                'error'  // ← 标记为 error 类型
-              );
+            'error'  // ← 标记为 error 类型
+          );
 
-              continue;
-          }
+          continue;
+        }
       } else if (ack && ack !== 'NONE') {
-          // 没有需要确认的 Observation，但 AI 确认了某个内容
-          // 这可能是误判，但不是致命错误，直接继续
-          console.log(chalk.yellow('\n⚠️  ACK provided but no Observation to acknowledge'));
+        // 没有需要确认的 Observation，但 AI 确认了某个内容
+        // 这可能是误判，但不是致命错误，直接继续
+        console.log(chalk.yellow('\n⚠️  ACK provided but no Observation to acknowledge'));
       }
 
       const action: ProposedAction = {
@@ -273,7 +273,7 @@ Latest Observation: ${lastObs.content}`,
         if (!onChunk) {
           console.log(chalk.green(`\n\n\n🤖 AI Action: ${result.output}\n`));
         }
-        
+
         // ✅ 关键修复：不要将最终答案作为Observation添加，避免AI重复内容
         // 只有在流式传输时才不添加，非流式传输（CLI模式）添加以便后续分析
         if (!onChunk) {
@@ -327,64 +327,6 @@ Latest Observation: ${lastObs.content}`,
                 `  ${rec.recommendation.toUpperCase()}: ${rec.path} (quality: ${rec.qualityScore.toFixed(2)}, relevance: ${rec.relevanceScore.toFixed(2)})`,
               ),
             );
-          }
-        }
-
-        // 检查是否可以将某些ContextItem晋升为Skill
-        const contextItems = this.context.getContextBuffer().export();
-        for (const item of contextItems) {
-          const promotedSkill =
-            ContextToSkillPromotionRules.evaluatePromotion(item);
-          if (promotedSkill) {
-            console.log(
-              chalk.green(
-                `\n🚀 PROMOTION: Context "${item.path}" qualifies to be promoted to Skill "${promotedSkill.name}"`,
-              ),
-            );
-            console.log(
-              chalk.gray(`   Description: ${promotedSkill.description}`),
-            );
-
-            // 询问用户是否确认创建技能
-            const confirmed = await this.confirmSkillCreation(promotedSkill);
-            if (confirmed) {
-              try {
-                // 通过治理服务审批
-                const governanceDecision = await GovernanceService.adjudicate({
-                  id: randomUUID(),
-                  type: "tool_call",
-                  payload: {
-                    tool_name: "skill_create",
-                    parameters: promotedSkill,
-                  },
-                  riskLevel: "low",
-                  reasoning: "Auto promotion from context",
-                });
-
-                if (governanceDecision.status === "approved") {
-                  // 保存技能
-                  await this.saveSkill(promotedSkill);
-                  // 标记 ContextItem 已被晋升
-                  (item as any).metadata = {
-                    ...(item as any).metadata,
-                    promotedToSkill: true,
-                  };
-                  console.log(
-                    chalk.green(
-                      `✅ Skill "${promotedSkill.name}" created successfully`,
-                    ),
-                  );
-                } else {
-                  console.log(
-                    chalk.yellow(
-                      `⚠️  Skill creation rejected by governance: ${"reason" in governanceDecision ? governanceDecision.reason : "Unknown reason"}`,
-                    ),
-                  );
-                }
-              } catch (error) {
-                console.log(chalk.red(`❌ Failed to create skill: ${error}`));
-              }
-            }
           }
         }
 
@@ -616,28 +558,21 @@ Latest Observation: ${lastObs.content}`,
             if (governanceDecision.status === "approved") {
               // 保存技能
               await this.saveSkill(promotedSkill);
+              // 标记 ContextItem 已被晋升
+              (item as any).metadata = {
+                ...(item as any).metadata,
+                promotedToSkill: true,
+              };
               console.log(
                 chalk.green(
                   `✅ Skill "${promotedSkill.name}" created successfully`,
                 ),
-              );
-
-              // 反馈给 AI，让它知道技能创建成功
-              this.context.addMessage(
-                "system",
-                `System Notification: Skill "${promotedSkill.name}" has been successfully created and persisted from context "${item.path}".`,
               );
             } else {
               console.log(
                 chalk.yellow(
                   `⚠️  Skill creation rejected by governance: ${"reason" in governanceDecision ? governanceDecision.reason : "Unknown reason"}`,
                 ),
-              );
-
-              // 反馈给 AI，让它知道被拒绝
-              this.context.addMessage(
-                "system",
-                `System Notification: Skill creation for "${promotedSkill.name}" was rejected by governance. Reason: ${"reason" in governanceDecision ? governanceDecision.reason : "Unknown reason"}`,
               );
             }
           } catch (error) {
