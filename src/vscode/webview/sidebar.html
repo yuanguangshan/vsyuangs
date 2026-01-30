@@ -1714,6 +1714,10 @@
         const loader = document.getElementById("ai-loader");
 
         switch (message.type) {
+          case "closeFilesPanel":
+            // 关闭文件面板
+            filesPanel.classList.remove("open");
+            break;
           case "suggestions":
             showSuggestions(message.value, message.trigger);
             break;

@@ -36,6 +36,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private _abortController: AbortController | null = null;
     private _ignoreFilter: IgnoreFilter | null = null;
     private _currentModel: string = 'gpt-4o-mini';
+    private _runtime: VSCodeAgentRuntime | null = null;
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
@@ -204,7 +205,64 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                     webviewView.webview.postMessage({ type: 'fileTreeData', value: allFileNames });
                     break;
                 case 'readFile':
-                    // readFile不再使用，文件引用通过VSCodeContextAdapter.resolveUserReferences自动解析
+                    // 读取文件内容并添加到上下文
+                    if (data.path) {
+                        try {
+                            const uri = vscode.Uri.file(data.path);
+                            const doc = await vscode.workspace.openTextDocument(uri);
+                            const content = doc.getText();
+                            
+                            // 获取或创建 VSCodeAgentRuntime 实例
+                            if (!this._runtime) {
+                                this._runtime = new VSCodeAgentRuntime();
+                            }
+                            const contextManager = this._runtime.getContextManager();
+                            
+                            // 将文件内容添加到上下文
+                            await contextManager.addContextItemAsync({
+                                type: 'file',
+                                path: uri.fsPath,
+                                content: content,
+                                semantic: 'source_code',
+                                summary: `User selected file: ${path.basename(uri.fsPath)}`,
+                                summarized: true,
+                                summaryQuality: 1.0,
+                                alias: path.basename(uri.fsPath),
+                                tags: ['user-selected', 'explicit', 'file-panel'],
+                                importance: {
+                                    id: uri.fsPath,
+                                    path: uri.fsPath,
+                                    type: 'file',
+                                    useCount: 1,
+                                    successCount: 1,
+                                    failureCount: 0,
+                                    lastUsed: Date.now(),
+                                    createdAt: Date.now(),
+                                    confidence: 1.0
+                                }
+                            });
+                            
+                            console.log(`[ChatViewProvider] ✅ File added to context: ${data.path}`);
+                            
+                            // 发送成功消息到 UI
+                            webviewView.webview.postMessage({
+                                type: 'success',
+                                value: `📄 File loaded: ${path.basename(uri.fsPath)}`
+                            });
+                            
+                            // 同时打开文件供用户查看
+                            await vscode.window.showTextDocument(doc, { preview: true });
+                            
+                            // 关闭文件面板
+                            webviewView.webview.postMessage({ type: 'closeFilesPanel' });
+                        } catch (error: any) {
+                            console.error(`[ChatViewProvider] Failed to read file ${data.path}:`, error);
+                            webviewView.webview.postMessage({
+                                type: 'error',
+                                value: `Failed to read file: ${error.message}`
+                            });
+                        }
+                    }
                     break;
                 case 'exportChat':
                     this.exportChatHistory();
@@ -370,13 +428,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       };
 
       // 使用 VSCodeAgentRuntime 替代原始的 AgentRuntime
-      const runtime = new VSCodeAgentRuntime();
-      const contextManager = runtime.getContextManager();
+      // 复用已存在的 runtime 实例，确保上下文一致
+      if (!this._runtime) {
+          this._runtime = new VSCodeAgentRuntime();
+      }
+      const contextManager = this._runtime.getContextManager();
 
       let fullAiResponse = '';
-      await runtime.runChat(
+      await this._runtime.runChat(
         userInput,
-        (chunk) => {
+        (chunk: string) => {
           fullAiResponse += chunk;
           this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
         },
@@ -453,11 +514,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 value: [...high, ...medium, ...low], // 暂时保持扁平列表以兼容现有UI，后续可升级为分组显示
                 groups: { high, medium, low } // 同时发送分组数据供未来使用
             });
-
-            // 自动打开上下文面板
-            if (items.length > 0) {
-                this._view.webview.postMessage({ type: 'showContextPanel' });
-            }
 
             console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length})`);
         } catch (error) {
