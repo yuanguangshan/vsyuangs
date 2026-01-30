@@ -1,9 +1,11 @@
 /**
  * Diff 应用工具
- * 
+ *
  * 提供基础的 Diff 解析和应用功能
  * 支持代码审查场景
  */
+
+import * as vscode from 'vscode';
 
 /**
  * Diff 块类型
