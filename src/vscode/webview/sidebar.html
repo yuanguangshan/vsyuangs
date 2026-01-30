@@ -1182,13 +1182,18 @@
   </header>
 
   <div class="git-toolbar">
-    <button class="secondary-btn" onclick="triggerGit('commit')"
+    <button class="secondary-btn" id="commit-btn"
       title="Generate Conventional Commit Message based on staged changes">
       <span>📝</span> Commit
     </button>
-    <button class="secondary-btn" onclick="triggerGit('review')" title="Run Expert Code Review on staged changes">
+    <button class="secondary-btn" id="review-btn" title="Run Expert Code Review on staged changes">
       <span>🔍</span> Review
     </button>
+  </div>
+
+  <!-- 调试信息 -->
+  <div id="debug-info" style="font-size: 10px; color: #888; padding: 5px; border-top: 1px solid #333;">
+    Debug: <span id="debug-status">Ready</span>
   </div>
 
   <div id="chat-container">
@@ -2605,13 +2610,67 @@
     let lastGitAction = null; // Track the last action type for context
 
     function triggerGit(actionType) {
-      lastGitAction = actionType;
-      addMessage(`Running Git ${actionType === 'commit' ? 'Commit Generation' : 'Code Review'} on staged changes...`, 'system');
-      vscode.postMessage({
-        type: 'gitAction',
-        action: actionType
-      });
+      try {
+        console.log('[DEBUG] triggerGit called with action:', actionType);
+        const debugStatus = document.getElementById('debug-status');
+        if (debugStatus) {
+          debugStatus.textContent = 'triggerGit called: ' + actionType;
+          debugStatus.style.color = '#00ff00';
+        }
+        lastGitAction = actionType;
+        addMessage(`Running Git ${actionType === 'commit' ? 'Commit Generation' : 'Code Review'} on staged changes...`, 'system');
+        vscode.postMessage({
+          type: 'gitAction',
+          action: actionType
+        });
+        console.log('[DEBUG] Message posted to vscode');
+        if (debugStatus) {
+          debugStatus.textContent = 'Message posted: ' + actionType;
+        }
+      } catch (error) {
+        console.error('[ERROR] triggerGit failed:', error);
+        alert('Error: ' + error.message);
+        const debugStatus = document.getElementById('debug-status');
+        if (debugStatus) {
+          debugStatus.textContent = 'ERROR: ' + error.message;
+          debugStatus.style.color = '#ff0000';
+        }
+      }
     }
+
+    // 使用事件监听器绑定按钮，而不是 onclick
+    document.addEventListener('DOMContentLoaded', function() {
+      const commitBtn = document.getElementById('commit-btn');
+      const reviewBtn = document.getElementById('review-btn');
+
+      console.log('[DEBUG] DOM loaded, binding buttons...');
+
+      if (commitBtn) {
+        commitBtn.addEventListener('click', function(e) {
+          console.log('[DEBUG] Commit button clicked!');
+          e.preventDefault();
+          e.stopPropagation();
+          triggerGit('commit');
+        });
+        console.log('[DEBUG] Commit button bound');
+      } else {
+        console.error('[ERROR] Commit button not found!');
+      }
+
+      if (reviewBtn) {
+        reviewBtn.addEventListener('click', function(e) {
+          console.log('[DEBUG] Review button clicked!');
+          e.preventDefault();
+          e.stopPropagation();
+          triggerGit('review');
+        });
+        console.log('[DEBUG] Review button bound');
+      } else {
+        console.error('[ERROR] Review button not found!');
+      }
+
+      console.log('[DEBUG] All buttons bound successfully');
+    });
 
     function processCommitSuggestions(messageElement, rawText) {
       // If the user explicitly requested a commit message, be more lenient with detection

@@ -10,9 +10,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onView:yuangs.chatView"
-  ],
+
   "repository": {
     "type": "git",
     "url": "https://github.com/yuanguangshan/vsyuangs.git"
