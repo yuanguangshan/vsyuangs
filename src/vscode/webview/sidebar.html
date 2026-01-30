@@ -1346,15 +1346,18 @@
         }
       }
 
-      // 处理 @ 文件引用 - 读取文件并插入到输入框
+      // 处理 @ 文件引用 - 只添加文件路径引用，不插入内容
       async function handleFileReadForReference(filePath) {
-        console.log(`[handleFileReadForReference] Requesting file content: ${filePath}`);
-        // 发送读取文件请求，标记为引用模式
+        console.log(`[handleFileReadForReference] Requesting file content for context: ${filePath}`);
+        // 发送读取文件请求，标记为引用模式（用于加入上下文）
         vscode.postMessage({
           type: "readFile",
           filePath: filePath,
           isReference: true, // 标记这是引用，不是直接分析
         });
+        
+        // 不再将文件内容插入到输入框中
+        // 只保留 @filename 格式，让后端 resolveUserReferences 自动处理
       }
 
       function addMessage(text, role, isRaw = false) {
@@ -1832,6 +1835,10 @@
             sendBtn.style.display = "flex";
             stopBtn.classList.remove("visible");
             break;
+          case "success":
+            // 成功消息，显示为系统消息
+            showFlashNotification(message.value);
+            break;
           case "diffApplied":
             // Diff 应用成功
             const successButtons = document.querySelectorAll(
@@ -2158,23 +2165,11 @@
         console.log(`[handleFileContent] Received file: ${filePath}, isReference: ${isReference}, content length: ${content.length}`);
         
         if (isReference) {
-          // 如果是引用，在输入框中添加文件标记
-          const currentValue = userInput.value;
-          const fileMarker = `\`\`\`${getFileLanguage(filePath)}\n// File: ${filePath}\n${content}\n\`\`\`\n\n`;
-          userInput.value = currentValue + fileMarker;
-          userInput.focus();
-
-          // 重新计算高度，确保文件内容可见
-          userInput.style.height = "auto";
-          userInput.style.height = Math.max(userInput.scrollHeight, 120) + "px";
-          
-          // 确保输入框能滚动查看所有内容
-          userInput.style.overflowY = "auto";
-
-          console.log(`[handleFileContent] Inserted file content into input box, total length: ${userInput.value.length}, height: ${userInput.style.height}`);
+          // 如果是引用，不做任何操作（后端已经处理）
+          console.log(`[handleFileContent] File content added to context by backend`);
           
           // 显示成功提示
-          showFlashNotification(`✓ 已添加文件引用: ${filePath} (${content.length} 字符)`);
+          showFlashNotification(`✓ 已添加文件到上下文: ${filePath} (${content.length} 字符)`);
         } else {
           // 直接分析文件
           console.log(

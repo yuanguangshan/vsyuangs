@@ -36,6 +36,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private _abortController: AbortController | null = null;
     private _ignoreFilter: IgnoreFilter | null = null;
     private _currentModel: string = 'gpt-4o-mini';
+    private _pendingFileReferences: Map<string, { content: string; fullPath: string }> = new Map(); // 存储待处理的文件引用
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
@@ -371,6 +372,45 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
             // 使用 VSCodeAgentRuntime 替代原始的 AgentRuntime
             const runtime = new VSCodeAgentRuntime();
+            const contextManager = runtime.getContextManager();
+
+            // 处理待处理的文件引用，加入上下文
+            if (this._pendingFileReferences.size > 0) {
+                console.log(`[ChatViewProvider] Adding ${this._pendingFileReferences.size} pending file references to context`);
+                for (const [relPath, fileInfo] of this._pendingFileReferences.entries()) {
+                    const { content, fullPath } = fileInfo as { content: string; fullPath: string };
+                    
+                    try {
+                        await contextManager.addContextItemAsync({
+                            type: 'file',
+                            path: fullPath,
+                            content: content,
+                            semantic: 'source_code',
+                            summary: `User referenced file: ${path.basename(fullPath)}`,
+                            summarized: true,
+                            summaryQuality: 1.0,
+                            alias: `@${relPath}`,
+                            tags: ['user-referenced', 'explicit'],
+                            importance: {
+                                id: fullPath,
+                                path: fullPath,
+                                type: 'file',
+                                useCount: 1,
+                                successCount: 1,
+                                failureCount: 0,
+                                lastUsed: Date.now(),
+                                createdAt: Date.now(),
+                                confidence: 1.0
+                            }
+                        });
+                        console.log(`[ChatViewProvider] ✅ Added referenced file to context: ${fullPath}`);
+                    } catch (e) {
+                        console.warn(`[ChatViewProvider] ⚠️ Failed to add referenced file ${relPath} to context: ${e}`);
+                    }
+                }
+                // 清空待处理队列
+                this._pendingFileReferences.clear();
+            }
 
             let fullAiResponse = '';
             await runtime.runChat(
@@ -383,13 +423,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 () => {
                     // Context initialized callback
                     console.log('[ChatViewProvider] Context initialized, sending to UI...');
-                    this.sendContextToUI(runtime.getContextManager());
+                    this.sendContextToUI(contextManager);
                 },
                 signal // ✅ 传递取消信号
             );
 
             // 发送上下文信息到UI（但不自动弹出面板）
-            this.sendContextToUI(runtime.getContextManager());
+            this.sendContextToUI(contextManager);
 
             // 只保存有意义的 AI 回复，过滤空内容
             if (fullAiResponse && fullAiResponse.trim()) {
@@ -479,16 +519,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             const document = await vscode.workspace.openTextDocument(fileUri);
             const content = document.getText();
             
-            // 发送文件内容到 UI
-            webviewView.webview.postMessage({
-                type: 'fileContent',
-                filePath: filePath,
-                content: content,
-                isReference: isReference
-            });
-            
-            // 只有不是引用时才自动分析
-            if (!isReference) {
+            // 如果是引用模式，保存文件内容到待处理队列
+            if (isReference) {
+                console.log(`[ChatViewProvider] Saving referenced file to pending queue: ${filePath}`);
+                
+                // 保存文件内容，待后续执行时加入上下文
+                this._pendingFileReferences.set(filePath, {
+                    content,
+                    fullPath: fileUri.fsPath
+                });
+                
+                // 发送成功消息到前端
+                webviewView.webview.postMessage({
+                    type: 'fileContent',
+                    filePath: filePath,
+                    content: content,
+                    isReference: true
+                });
+                
+                // 通知用户文件已加入队列
+                webviewView.webview.postMessage({
+                    type: 'success',
+                    value: `✓ 文件已准备好加入上下文: ${filePath}`
+                });
+            } else {
+                // 发送文件内容到 UI（用于直接分析）
+                webviewView.webview.postMessage({
+                    type: 'fileContent',
+                    filePath: filePath,
+                    content: content,
+                    isReference: false
+                });
+                
+                // 自动分析文件
                 const message = `请分析以下文件：${filePath}\n\n\`\`\`\`${this.getFileLanguage(filePath)}\n${content}\n\`\`\``;
                 await this.handleAgentTask(message);
             }
