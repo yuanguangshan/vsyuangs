@@ -430,6 +430,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
                 const message = `${summary || `Agent wants to execute ${action.type}`}${details}\n\nReason: ${reasoning}`;
 
+                // Auto-approve skill creation requests
+                if (action.type === 'tool_call' && action.payload.tool_name === 'skill_create') {
+                    console.log('[Governance] Auto-approving skill creation:', action.payload.parameters?.name);
+                    return { status: 'approved', by: 'auto-policy', timestamp: Date.now() };
+                }
+
                 const choice = await vscode.window.showInformationMessage(
                     message,
                     { modal: true },
