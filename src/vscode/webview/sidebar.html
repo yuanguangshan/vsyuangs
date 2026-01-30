@@ -1339,25 +1339,8 @@
         userInput.style.height = "auto";
         userInput.style.height = userInput.scrollHeight + "px";
 
-        // 如果是 @ 文件引用，自动读取文件并插入内容
-        if (suggestionType === "@") {
-          console.log(`[selectSuggestion] Reading file for reference: ${value}`);
-          handleFileReadForReference(value);
-        }
-      }
-
-      // 处理 @ 文件引用 - 只添加文件路径引用，不插入内容
-      async function handleFileReadForReference(filePath) {
-        console.log(`[handleFileReadForReference] Requesting file content for context: ${filePath}`);
-        // 发送读取文件请求，标记为引用模式（用于加入上下文）
-        vscode.postMessage({
-          type: "readFile",
-          filePath: filePath,
-          isReference: true, // 标记这是引用，不是直接分析
-        });
-        
-        // 不再将文件内容插入到输入框中
-        // 只保留 @filename 格式，让后端 resolveUserReferences 自动处理
+        // 不再调用 handleFileReadForReference，
+        // 让后端通过 resolveUserReferences 自动处理 @filename 引用
       }
 
       function addMessage(text, role, isRaw = false) {
@@ -1889,14 +1872,6 @@
             // 接收文件树数据
             handleFileTreeData(message.value);
             break;
-          case "fileContent":
-            // 接收文件内容
-            handleFileContent(
-              message.filePath,
-              message.content,
-              message.isReference,
-            );
-            break;
           case "modelsConfig":
             // 接收模型配置
             availableModels = message.value.availableModels || [];
@@ -2158,27 +2133,6 @@
           type: "readFile",
           filePath: filePath,
         });
-      }
-
-      // 处理文件内容
-      function handleFileContent(filePath, content, isReference = false) {
-        console.log(`[handleFileContent] Received file: ${filePath}, isReference: ${isReference}, content length: ${content.length}`);
-        
-        if (isReference) {
-          // 如果是引用，不做任何操作（后端已经处理）
-          console.log(`[handleFileContent] File content added to context by backend`);
-          
-          // 显示成功提示
-          showFlashNotification(`✓ 已添加文件到上下文: ${filePath} (${content.length} 字符)`);
-        } else {
-          // 直接分析文件
-          console.log(
-            "File content received for analysis:",
-            filePath,
-            content.length,
-            "bytes",
-          );
-        }
       }
 
       // 获取文件语言（辅助函数）
