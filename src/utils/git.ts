@@ -19,9 +19,12 @@ import type {
 export class GitAdapter {
     /**
      * 提交更改
+     * 
+     * @param message 提交消息
+     * @returns Promise<GitCommitResult> 提交结果
+     * @throws Error 如果 Git 操作失败
      */
     async commit(message: string): Promise<GitCommitResult> {
-        // 实现提交逻辑
-        return { success: true };
+        throw new Error('Git commit not yet implemented. Please use Git extension API or command line to commit changes.');
     }
 }

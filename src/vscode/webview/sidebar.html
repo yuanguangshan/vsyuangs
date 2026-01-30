@@ -1134,7 +1134,28 @@
   </style>
 </head>
 
-<body>
+  <body>
+  <script>
+    // 检测是否启用调试模式
+    const urlParams = new URLSearchParams(window.location.search);
+    const DEBUG_MODE = urlParams.get('debug') === 'true';
+    
+    // 调试日志函数
+    function debugLog(...args) {
+      if (DEBUG_MODE) {
+        console.log('[DEBUG]', ...args);
+      }
+    }
+    
+    // 如果是调试模式，显示调试面板
+    window.addEventListener('DOMContentLoaded', () => {
+      const debugInfo = document.getElementById('debug-info');
+      if (debugInfo) {
+        debugInfo.style.display = DEBUG_MODE ? 'block' : 'none';
+      }
+      debugLog('Debug mode:', DEBUG_MODE ? 'enabled' : 'disabled');
+    });
+  </script>
   <header>
     <div class="header-title">YUANGS AI</div>
     <div class="header-actions">
