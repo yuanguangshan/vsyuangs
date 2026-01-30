@@ -289,7 +289,7 @@ export class DiffSecurityValidator {
     if (!headerValidation.valid) {
       errors.push({
         type: 'HUNK_HEADER_FORGERY',
-        message: headerValidation.error,
+        message: headerValidation.error!, // headerValidation.valid 为 false 时 error 必然存在
         filePath: hunk.filePath,
         hunkIndex
       });
