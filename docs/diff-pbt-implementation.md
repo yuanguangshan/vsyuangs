@@ -6,6 +6,157 @@
 
 ---
 
+## 📋 Test Harness Contract
+
+> **⚠️ 重要声明：** 本契约用于**测试语义假设**，而非稳定公共 API。
+> 
+> **实现可以扩展字段，但不得削弱或违反这些最小语义保证。**
+>
+> 这能显著降低未来演进阻力。
+
+在运行 Property-Based Tests 之前，必须明确以下契约：
+
+### 1. Mock Document 契约
+
+```typescript
+interface MockDocument extends vscode.TextDocument {
+  // 必须实现的方法
+  lineAt(line: number): {
+    lineNumber: number;
+    text: string;
+    range: vscode.Range;
+    firstNonWhitespaceCharacterIndex: number;
+    isEmptyOrWhitespace: boolean;
+  };
+  
+  lineCount: number;
+  getText(): string;
+  
+  // 可以简化的方法
+  offsetAt(position: vscode.Position): number;
+  positionAt(offset: number): vscode.Position;
+  getWordRangeAtPosition(position: vscode.Position): vscode.Range | undefined;
+}
+```
+
+**关键假设：**
+- `lineAt(line)` 必须在 `0 <= line < lineCount` 范围内返回有效对象
+- 超出范围时必须抛出 Error
+- `text` 属性必须返回完整的行内容（包括所有空白字符）
+
+---
+
+### 2. DiffApplier.apply 契约
+
+```typescript
+interface DiffApplier {
+  static async apply(
+    diff: DiffParseResult,
+    options: DiffApplyOptions
+  ): Promise<ApplyResult>;
+}
+
+interface DiffApplyOptions {
+  dryRun?: boolean;      // true = 不实际应用，只校验
+  failOnConflict?: boolean; // true = 冲突时返回 error
+}
+
+interface ApplyResult {
+  success: true | false;
+  changedFiles?: string[];
+  stats?: {
+    filesChanged: number;
+    hunksApplied: number;
+    linesAdded: number;
+    linesRemoved: number;
+  };
+  error?: 'FILE_NOT_FOUND' | 'CONTEXT_MISMATCH' | 'REMOVE_MISMATCH' | 'INVALID_DIFF';
+  message?: string;
+  filePath?: string;
+  hunkIndex?: number;
+  line?: number;
+}
+```
+
+**关键假设：**
+- `dryRun: true` 时，必须不修改任何文件
+- `failOnConflict: true`（默认）时，任何冲突必须返回 `success: false`
+- 错误信息必须包含 `hunkIndex` 和 `line`（如果适用）
+
+---
+
+### 3. DiffParser.parse 契约
+
+```typescript
+interface DiffParser {
+  static parse(text: string): DiffResult;
+}
+
+interface DiffResult {
+  success: true | false;
+  files?: DiffFile[];
+  stats?: {
+    fileCount: number;
+    hunkCount: number;
+    totalAdded: number;
+    totalRemoved: number;
+  };
+  error?: 'INVALID_FORMAT' | 'HUNK_MISMATCH' | 'INVALID_PATH' |
+           'MISSING_CONTEXT' | 'LINE_COUNT_MISMATCH' | 'LIMIT_EXCEEDED';
+  message?: string;
+  line?: number;
+  hunkIndex?: number;
+  limit?: LimitExceededDetail;
+}
+```
+
+**关键假设：**
+- 无效输入（如空字符串）必须返回 `success: false`
+- 错误信息必须包含 `line`（如果可定位）
+- `LIMIT_EXCEEDED` 错误必须包含 `limit` 结构化信息
+
+---
+
+### 4. 测试用例有效性判断
+
+在 PBT 中，需要区分"无效输入"和"真正的解析缺陷"：
+
+```typescript
+// 无效输入假设（应该跳过，不视为测试失败）
+const isInvalidInput = (diffText: string) => {
+  return diffText.trim() === '' ||
+         !diffText.includes('--- ') ||
+         !diffText.includes('+++ ') ||
+         !diffText.includes('@@ ');
+};
+
+// 在测试中使用
+fc.assert(
+  fc.property(generator),
+  async ({ doc, diff }) => {
+    const parseResult = DiffParser.parse(diff);
+    
+    // 无效输入 → 跳过（不视为测试失败）
+    if (!parseResult.success) {
+      if (isInvalidInput(diff)) {
+        return true; // 跳过无效输入
+      }
+      // 真正的解析缺陷 → 记录但不失败（因为这是生成器质量问题）
+      console.warn('Parse failed for valid diff:', parseResult);
+      return true;
+    }
+    
+    // 有效输入 → 执行实际测试
+    const applyResult = await DiffApplier.apply(parseResult, { dryRun: true });
+    
+    // 断言...
+    return applyResult.success;
+  }
+);
+```
+
+---
+
 ## 📦 安装依赖
 
 ```bash

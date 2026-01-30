@@ -1071,3 +1071,131 @@ isCommitMsg = content.length > 0 && content.length < 500;
 
 [↑ 返回顶部](#)
 
+
+---
+
+## 📋 Code Review - 2026/1/31 02:27:46
+
+**📊 评分:** 👍 88/100  
+**🔧 级别:** STANDARD  
+**💾 提交:** `72a4169`  
+**📂 范围:** 12 个文件  
+
+### 📝 总体评价
+
+这是一次高质量、偏规范级别的变更，清晰地定义了 Diff Apply Engine 的安全边界与形式化不变式，并通过 Property-Based Tests（PBT）进行验证。整体设计目标明确，安全意识极强，适合作为核心基础设施文档和测试基线。但在可维护性、实现一致性、测试健壮性和部分细节严谨性上仍有改进空间。
+
+### ⚠️ 发现的问题 (6)
+
+#### 1. [WARNING] docs/diff-apply-invariants.md:1
+
+文档体量和信息密度极高，但缺少整体结构导览或速读摘要。
+
+**💡 建议:** 建议在开头增加一页 Executive Summary 或 Invariant Map（例如表格或图），帮助新贡献者快速建立全局认知。
+
+<details>
+<summary>代码片段</summary>
+
+```
+# Diff Apply Engine - 不变式清单
+```
+
+</details>
+
+#### 2. [WARNING] docs/diff-apply-invariants.md:60
+
+多个不变式在语义上部分重叠（如 G1、A1、F3），边界区分主要依赖文字说明。
+
+**💡 建议:** 建议在每个不变式中明确其“适用阶段（Parse / Match / Apply）”与“失败责任层级”，减少实现时的解释歧义。
+
+<details>
+<summary>代码片段</summary>
+
+```
+### G1. Safety First（安全优先）
+```
+
+</details>
+
+#### 3. [WARNING] docs/diff-apply-invariants.md:210
+
+A4（单调状态变更）对实现方式限制较强，可能影响未来并行或事务式优化。
+
+**💡 建议:** 建议明确这是语义级约束而非具体实现限制，并允许在等价语义下的事务实现（例如可回滚的 sequential commit）。
+
+<details>
+<summary>代码片段</summary>
+
+```
+### A4. Monotonic State Mutation（单调状态变更）
+```
+
+</details>
+
+#### 4. [WARNING] docs/diff-pbt-implementation.md:45
+
+PBT 示例中 DiffParser.parse 失败时直接 return true，可能掩盖生成器质量问题。
+
+**💡 建议:** 建议区分“无效输入假设（fc.pre）”与真正的解析缺陷，并统计 parse failure 比例。
+
+<details>
+<summary>代码片段</summary>
+
+```
+if (!result.success) {
+  // 如果解析失败，这个测试用例无效（跳过）
+  return true;
+}
+```
+
+</details>
+
+#### 5. [WARNING] docs/diff-pbt-implementation.md:18
+
+测试代码中隐含依赖 createMockDocument、DiffApplier.apply 的行为，但未在文档中说明其契约。
+
+**💡 建议:** 建议在文档前部补充 Test Harness Contract，明确 mock document、dryRun、错误返回结构的假设。
+
+<details>
+<summary>代码片段</summary>
+
+```
+const mockDoc = createMockDocument(doc);
+```
+
+</details>
+
+#### 6. [INFO] docs/diff-pbt-implementation.md:120
+
+部分 PBT 中对索引、行号的计算较脆弱，容易因 diff header 变化而失效。
+
+**💡 建议:** 建议将 diff 构造逻辑抽象为 builder/helper，以减少测试与 diff 格式细节的耦合。
+
+<details>
+<summary>代码片段</summary>
+
+```
+let contextIdx = 3; // 跳过文件头和 hunk 头
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ 不变式定义非常清晰，语义级别明确，具有规范（spec）价值
+- ✅ 对安全性（误改防护）的重视程度极高，红线定义明确
+- ✅ 严格区分 MUST / SHOULD / 禁止行为，工程可执行性强
+- ✅ 将不变式直接映射为 Property-Based Tests，测试理念先进
+- ✅ PBT 使用固定 seed，兼顾随机性与可复现性
+- ✅ 大量反例和违反示例极大降低了误用风险
+
+### 💡 建议
+
+- 为不变式文档增加一份“实现者速查表”或决策流程图
+- 引入 invariant ID（如 INV-G1、INV-A2）以便代码和错误中引用
+- 在 PBT 中增加对错误类型（error code）的断言，而不仅是 success/fail
+- 补充针对极端规模（接近 S1 限制）的边界 PBT
+- 考虑增加一组“已知不可能通过的 diff corpus”，用于回归安全测试
+
+[↑ 返回顶部](#)
+
