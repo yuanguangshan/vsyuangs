@@ -1,57 +1,64 @@
 import * as vscode from 'vscode';
-import { ChatViewProvider } from './provider/ChatViewProvider';
-import { askAICommand } from './commands/askAI';
-import { ProactiveGuard } from './guard/ProactiveGuard';
-import { registerProactiveCommands, getProactiveCodeActionProvider } from './provider/ProactiveCodeActionProvider';
+import { YuangsCodeActionProvider } from './codeActions/YuangsCodeActionProvider';
+import { InlineDiffRenderer } from './decorations/inlineDiff';
+import { optimizeCode } from './commands/optimize';
+import { explainSelection } from './commands/explainSelection';
+import { optimizeSelection } from './commands/optimizeSelection';
+import { sendToYuangs } from './commands/sendToYuangs';
 
 export function activate(context: vscode.ExtensionContext) {
-    try {
-        console.log('Yuangs AI Agent extension is now active!');
+    console.log('Yuangs AI Assistant is now active!');
 
-        const provider = new ChatViewProvider(context);
+    // 1. 初始化 Diff 渲染器
+    InlineDiffRenderer.init(context);
 
-        context.subscriptions.push(
-            vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, provider)
-        );
+    // 2. 注册 Code Action Provider
+    const codeActionProvider = new YuangsCodeActionProvider();
+    const providerDisposable = vscode.languages.registerCodeActionsProvider(
+        { scheme: 'file', language: '*' },
+        codeActionProvider,
+        {
+            providedCodeActionKinds: YuangsCodeActionProvider.providedCodeActionKinds
+        }
+    );
+    context.subscriptions.push(providerDisposable);
 
-        // 注册现有命令
-        let applyEdit = vscode.commands.registerCommand('yuangs.applyEdit', () => {
-            vscode.window.showInformationMessage('Apply Edit triggered!');
-        });
+    // 3. 注册优化命令
+    const optimizeCommandHandler = (uri: vscode.Uri, range: vscode.Range) => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor');
+            return;
+        }
+        
+        if (!editor.document) {
+            vscode.window.showErrorMessage('No active document');
+            return;
+        }
 
-        let clearChat = vscode.commands.registerCommand('yuangs.clearChat', () => {
-            provider.clear();
-            vscode.window.showInformationMessage('Chat history cleared.');
-        });
+        // Create a WorkspaceEdit
+        const edit = new vscode.WorkspaceEdit();
+        if (range) {
+            optimizeCode(editor, edit, editor.document, new vscode.Selection(range.start, range.end));
+        } else {
+            // If no range (e.g., called from palette), use the current selection
+            optimizeCode(editor, edit, editor.document, editor.selection);
+        }
+    };
 
-        // 注册新的 askAI 命令
-        let askAI = vscode.commands.registerCommand('yuangs.askAI', askAICommand);
-
-        context.subscriptions.push(applyEdit, clearChat, askAI);
-
-        // 初始化 ProactiveGuard（v1.3 主动防御）
-        const proactiveGuard = ProactiveGuard.getInstance();
-        proactiveGuard.initialize(context);
-        console.log('[Extension] ProactiveGuard initialized');
-
-        // 初始化 ProactiveCodeActionProvider（v1.4 知识继承 UI）
-        const codeActionProvider = getProactiveCodeActionProvider(context);
-        vscode.languages.registerCodeActionsProvider('*', codeActionProvider, {
-            providedCodeActionKinds: [vscode.CodeActionKind.QuickFix]
-        });
-        console.log('[Extension] ProactiveCodeActionProvider initialized');
-
-        // 注册 Proactive 相关命令
-        registerProactiveCommands(context);
-        console.log('[Extension] Proactive commands registered');
-    } catch (error) {
-        console.error('Failed to activate Yuangs AI Agent extension:', error);
-    }
+    // 3. Register new commands for code actions
+    context.subscriptions.push(
+        vscode.commands.registerCommand('yuangs.optimizeCode', optimizeCommandHandler),
+        vscode.commands.registerCommand('yuangs.explainSelection', (code, document, range) => {
+            explainSelection(code, document, range);
+        }),
+        vscode.commands.registerCommand('yuangs.optimizeSelection', (code, document, range) => {
+            optimizeSelection(code, document, range);
+        }),
+        vscode.commands.registerCommand('yuangs.sendSelection', (code, document, range) => {
+            sendToYuangs(code, document, range);
+        })
+    );
 }
 
-export function deactivate() {
-    // 清理 ProactiveGuard 资源
-    const proactiveGuard = ProactiveGuard.getInstance();
-    proactiveGuard.dispose();
-    console.log('[Extension] Deactivated');
-}
+export function deactivate() {}
