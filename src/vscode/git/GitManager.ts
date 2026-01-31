@@ -1,6 +1,10 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 export class GitManager {
     private static getGitApi() {
@@ -146,9 +150,8 @@ export class GitManager {
     }
 
     /**
-     * 生成 Git Patch
-     * @param type patch 类型: 'staged' (暂存区), 'unstaged' (工作区), 'last' (最后一次提交)
-     * @returns Promise<string> patch 内容
+     * 生成 Git Patch (修复版)
+     * 使用底层 git 命令行以确保生成的 diff 格式标准且完整
      */
     static async generatePatch(type: 'staged' | 'unstaged' | 'last'): Promise<string> {
         const repo = this.getRepository();
@@ -157,45 +160,56 @@ export class GitManager {
             throw new Error('未在当前工作区找到有效的 Git 仓库');
         }
 
-        let patch: string | undefined;
+        const cwd = repo.rootUri.fsPath;
+        let command = '';
+        let emptyErrorMsg = '';
 
         switch (type) {
             case 'staged':
-                // 等价: git diff --cached
-                // VS Code Git API 直接返回完整的 diff 字符串
-                patch = await repo.diffIndexWithHEAD();
+                // 获取暂存区的 diff
+                command = 'git diff --cached';
+                emptyErrorMsg = '暂存区为空，请先暂存更改 (git add)';
                 break;
 
             case 'unstaged':
-                // 等价: git diff
-                // VS Code Git API 直接返回完整的 diff 字符串
-                patch = await repo.diffWorkingTree();
+                // 获取工作区的 diff
+                command = 'git diff';
+                emptyErrorMsg = '工作区没有未暂存的更改';
                 break;
 
-            case 'last': {
-                // 等价: git show HEAD
-                const commits = await repo.log({ maxEntries: 1 });
-                if (!commits || commits.length === 0) {
-                    throw new Error('仓库没有任何提交记录');
-                }
-                patch = await repo.show(commits[0].hash);
+            case 'last':
+                // 获取最后一次提交的完整 patch
+                command = 'git show HEAD';
+                emptyErrorMsg = '仓库没有任何提交记录';
                 break;
-            }
 
             default:
                 throw new Error(`不支持的 patch 类型: ${type}`);
         }
 
-        // 类型安全检查：确保 patch 是有效的字符串
-        if (typeof patch !== 'string' || !patch.trim()) {
-            const typeNames: Record<string, string> = {
-                'staged': '暂存区',
-                'unstaged': '工作区',
-                'last': '最后一次提交'
-            };
-            throw new Error(`${typeNames[type] || type} 为空，无法生成 patch`);
-        }
+        try {
+            // 执行 git 命令
+            const { stdout } = await execAsync(command, { cwd });
+            const patch = stdout.trim();
 
-        return patch;
+            if (!patch) {
+                // 对于 last 类型，如果没有输出可能是空提交，但也视为无 patch
+                throw new Error(emptyErrorMsg);
+            }
+
+            return patch;
+
+        } catch (error: any) {
+            // 处理 exec 抛出的错误 (比如 git 报错)
+            const errorMessage = error.message || String(error);
+            
+            // 如果是暂存区为空导致的 "没有任何输出" 不是错误，但在业务逻辑上我们需要抛出提示
+            if (!errorMessage.includes('Command failed')) {
+                throw new Error(errorMessage);
+            }
+            
+            console.error('[GitManager] Generate patch error:', error);
+            throw new Error(`生成 Patch 失败: ${errorMessage}`);
+        }
     }
 }
