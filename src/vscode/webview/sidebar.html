@@ -1453,7 +1453,7 @@
 
       // 复制按钮
       const copyBtn = document.createElement("button");
-      copyBtn.className = "message-action-btn";
+      copyBtn.className = "message-action-btn copy-action-btn";
       copyBtn.innerHTML = "📋";
       copyBtn.title = "复制消息";
       copyBtn.onclick = (e) => {
@@ -1463,11 +1463,15 @@
 
       // 删除按钮
       const deleteBtn = document.createElement("button");
-      deleteBtn.className = "message-action-btn";
+      deleteBtn.className = "message-action-btn delete-action-btn";
       deleteBtn.innerHTML = "🗑️";
       deleteBtn.title = "删除消息";
+      deleteBtn.style.pointerEvents = "auto";
+      deleteBtn.style.zIndex = "100";
       deleteBtn.onclick = (e) => {
-        e.stopPropagation();
+        console.log('[Delete button clicked], target:', e.target);
+        e.preventDefault();
+        e.stopImmediatePropagation();
         deleteMessage(div);
       };
 
@@ -1505,14 +1509,40 @@
 
     // 删除消息
     function deleteMessage(messageElement) {
-      if (confirm("确定要删除这条消息吗？")) {
-        // 从 DOM 中移除
-        messageElement.remove();
-        showFlashNotification("✓ 消息已删除");
+      console.log('[deleteMessage] Deleting message element:', messageElement);
+      if (!messageElement) {
+        console.error('[deleteMessage] messageElement is null/undefined');
+        return;
+      }
+      
+      // ❌ 移除 confirm 弹窗，在 VS Code webview 环境中可能被拦截
+      // 改为直接删除并显示 Toast 提示
+      
+      try {
+        // 添加淡出动画效果
+        messageElement.style.transition = "opacity 0.3s, transform 0.3s";
+        messageElement.style.opacity = "0";
+        messageElement.style.transform = "scale(0.9)";
 
-        // 通知后端更新历史记录（如果需要的话）
-        // 这里可以添加一个消息到后端，让后端从历史记录中删除这条消息
-        // vscode.postMessage({ type: "deleteMessage", index: messageIndex });
+        // 等待动画结束后移除 DOM
+        setTimeout(() => {
+          if (messageElement.remove) {
+            messageElement.remove();
+          } else if (messageElement.parentNode) {
+            messageElement.parentNode.removeChild(messageElement);
+          }
+          console.log('[deleteMessage] Element removed successfully');
+          
+          // 显示通知
+          showFlashNotification("🗑️ 消息已删除");
+          
+          // 可选：通知后端从历史记录中删除
+          // vscode.postMessage({ type: "deleteMessage", index: ... });
+        }, 300);
+
+      } catch (error) {
+        console.error('[deleteMessage] Error removing element:', error);
+        showFlashNotification("✗ 删除失败");
       }
     }
 
@@ -1808,6 +1838,9 @@
     // 标记是否已经加载过历史记录
     let historyLoaded = false;
 
+    // 当前思考块（用于流式传输）
+    let currentThinkingBlock = null;
+
     window.addEventListener("message", (event) => {
       const message = event.data;
       const loader = document.getElementById("ai-loader");
@@ -1888,6 +1921,10 @@
           if (isStreaming && currentAiMessageElement) {
             isStreaming = false;
 
+            // ✅ 修复：先用局部变量保存当前消息元素的引用，避免闭包引用即将被置空的全局变量
+            const messageElementToDelete = currentAiMessageElement;
+            const aiRawTextToCopy = currentAiRawText;
+
             // 移除光标，进行最终渲染
             currentAiMessageElement.innerHTML =
               marked.parse(currentAiRawText);
@@ -1895,6 +1932,39 @@
             // 处理diff块和其他后处理
             processDiffBlocks(currentAiMessageElement);
             processCommitSuggestions(currentAiMessageElement, currentAiRawText);
+
+            // 重新添加消息操作按钮（因为 innerHTML 替换会移除它们）
+            if (!currentAiMessageElement.querySelector('.message-actions')) {
+              const actionsDiv = document.createElement("div");
+              actionsDiv.className = "message-actions";
+
+              const copyBtn = document.createElement("button");
+              copyBtn.className = "message-action-btn copy-action-btn";
+              copyBtn.innerHTML = "📋";
+              copyBtn.title = "复制消息";
+              copyBtn.onclick = (e) => {
+                e.stopPropagation();
+                copyMessageText(aiRawTextToCopy);
+              };
+
+              const deleteBtn = document.createElement("button");
+              deleteBtn.className = "message-action-btn delete-action-btn";
+              deleteBtn.innerHTML = "🗑️";
+              deleteBtn.title = "删除消息";
+              deleteBtn.style.pointerEvents = "auto";
+              deleteBtn.style.zIndex = "100";
+              deleteBtn.onclick = (e) => {
+                console.log('[Delete button clicked from done case], target:', e.target);
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                // ✅ 修复：使用保存的局部变量，而不是全局变量
+                deleteMessage(messageElementToDelete);
+              };
+
+              actionsDiv.appendChild(copyBtn);
+              actionsDiv.appendChild(deleteBtn);
+              currentAiMessageElement.appendChild(actionsDiv);
+            }
 
             // 添加淡入效果或其他完成动效
             currentAiMessageElement.classList.add("final-render");
