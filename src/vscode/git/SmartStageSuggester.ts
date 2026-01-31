@@ -133,7 +133,9 @@ export class SmartStageSuggester {
 
     // 使用新的投票分类器对每个文件进行分类
     for (const file of files) {
-      const explanation = this.classifier.classify(file.normalizedPath, file.diff || '');
+      // Extract diff content from hunks to pass to classifier
+      const diffContent = this.extractDiffContent(file);
+      const explanation = this.classifier.classify(file.normalizedPath, diffContent);
 
       // 根据置信度决定处理方式
       let groupId: string;
@@ -176,6 +178,21 @@ export class SmartStageSuggester {
 
     // 如果有多个非空分组，尝试进一步合并小分组
     return this.mergeSmallGroups(nonEmptyGroups);
+  }
+
+  /**
+   * 从 DiffFile 中提取 diff 内容
+   */
+  private static extractDiffContent(file: import('../../core/diff').DiffFile): string {
+    const contentParts: string[] = [];
+
+    for (const hunk of file.hunks) {
+      for (const line of hunk.lines) {
+        contentParts.push(line.raw); // 使用原始行内容
+      }
+    }
+
+    return contentParts.join('\n');
   }
 
   /**

@@ -10,18 +10,17 @@
   "categories": [
     "Other"
   ],
-
   "repository": {
     "type": "git",
     "url": "https://github.com/yuanguangshan/vsyuangs.git"
   },
   "license": "MIT",
   "main": "./dist/vscode/extension.js",
-    "activationEvents": [
-      "onView:yuangs.chatView",
-      "onCommand:yuangs.askAI"
-    ],
-    "contributes": {
+  "activationEvents": [
+    "onView:yuangs.chatView",
+    "onCommand:yuangs.askAI"
+  ],
+  "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
@@ -104,7 +103,16 @@
         },
         "vsyuangs.proactiveScan.languageWhitelist": {
           "type": "array",
-          "default": ["typescript", "javascript", "python", "java", "go", "rust", "cpp", "c"],
+          "default": [
+            "typescript",
+            "javascript",
+            "python",
+            "java",
+            "go",
+            "rust",
+            "cpp",
+            "c"
+          ],
           "items": {
             "type": "string"
           },
@@ -130,7 +138,7 @@
       }
     }
   },
-    "scripts": {
+  "scripts": {
     "asbuild:debug": "asc src/engine/agent/governance/sandbox/core.as.ts --target debug",
     "asbuild:release": "asc src/engine/agent/governance/sandbox/core.as.ts --target release",
     "asbuild": "npm run asbuild:debug && npm run asbuild:release",
@@ -146,22 +154,27 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.3",
     "@types/glob": "^8.1.0",
     "@types/js-yaml": "^4.0.5",
     "@types/marked": "^4.0.8",
     "@types/marked-terminal": "^3.1.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "20.x",
-    "@types/vscode": "^1.75.0",
+    "@types/sinon": "^21.0.0",
+    "@types/vscode": "^1.108.1",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
     "@typescript-eslint/parser": "^5.56.0",
     "@vscode/test-electron": "^2.3.0",
     "assemblyscript": "^0.27.29",
+    "chai": "^6.2.2",
     "eslint": "^8.36.0",
     "glob": "^8.1.0",
     "mocha": "^10.2.0",
+    "sinon": "^21.0.1",
     "terser-webpack-plugin": "^5.3.16",
     "ts-loader": "^9.5.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.0",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1"

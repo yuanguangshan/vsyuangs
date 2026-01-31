@@ -9,22 +9,25 @@ describe('SmartStageSuggester Integration', () => {
     it('should properly classify files using voting classifier', () => {
       const mockFiles: DiffFile[] = [
         {
+          oldPath: 'src/ui/button.tsx',
+          newPath: 'src/ui/button.tsx',
           normalizedPath: 'src/ui/button.tsx',
-          status: 'M',
-          diff: '<button className="btn">Click</button>',
-          stats: { added: 5, removed: 2, context: 3 }
+          hunks: [],
+          stats: { added: 5, removed: 2, context: 3, hunkCount: 0 }
         },
         {
+          oldPath: 'src/test/button.test.tsx',
+          newPath: 'src/test/button.test.tsx',
           normalizedPath: 'src/test/button.test.tsx',
-          status: 'M',
-          diff: 'describe("Button", () => { it("works", () => {})',
-          stats: { added: 10, removed: 0, context: 5 }
+          hunks: [],
+          stats: { added: 10, removed: 0, context: 5, hunkCount: 0 }
         },
         {
+          oldPath: 'docs/readme.md',
+          newPath: 'docs/readme.md',
           normalizedPath: 'docs/readme.md',
-          status: 'M',
-          diff: '# Updated documentation',
-          stats: { added: 3, removed: 1, context: 2 }
+          hunks: [],
+          stats: { added: 3, removed: 1, context: 2, hunkCount: 0 }
         }
       ];
 
@@ -47,10 +50,11 @@ describe('SmartStageSuggester Integration', () => {
     it('should put low confidence files in needs-confirmation group', () => {
       const mockFiles: DiffFile[] = [
         {
+          oldPath: 'unclear-file.xyz',
+          newPath: 'unclear-file.xyz',
           normalizedPath: 'unclear-file.xyz',
-          status: 'M',
-          diff: 'some unclear content that does not match any patterns',
-          stats: { added: 1, removed: 1, context: 1 }
+          hunks: [],
+          stats: { added: 1, removed: 1, context: 1, hunkCount: 0 }
         }
       ];
 
