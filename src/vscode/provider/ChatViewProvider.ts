@@ -6,7 +6,7 @@ import { GovernanceService } from '../../engine/agent/governance';
 import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
 import { createIgnoreFilter, IgnoreFilter } from '../utils/ignoreFilter';
 import { GitManager } from '../git/GitManager';
-import { DiffParser, DiffApplier } from '../core/diff';
+import { DiffParser, DiffApplier } from '../../core/diff';
 
 // 模型配置接口
 interface ModelConfig {
