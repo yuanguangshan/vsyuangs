@@ -365,6 +365,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 case 'performCommit':
                     await this.handlePerformCommit(data.value);
                     break;
+                case 'generatePatch':
+                    await this.handleGeneratePatch(data.value);
+                    break;
             }
         });
     }
@@ -1054,6 +1057,46 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             } else {
                 vscode.window.showErrorMessage(`提交中断: ${errorMessage}`);
             }
+        }
+    }
+
+    /**
+     * 处理生成 Patch 请求
+     */
+    private async handleGeneratePatch(type: 'staged' | 'unstaged' | 'last') {
+        try {
+            const patch = await GitManager.generatePatch(type);
+            
+            // 发送 patch 内容到前端，显示为 AI 消息
+            const typeNames = {
+                'staged': '暂存区 Patch',
+                'unstaged': '工作区 Patch',
+                'last': '最后一次提交 Patch'
+            };
+            
+            const message = `# ${typeNames[type]}\n\n\`\`\`diff\n${patch}\n\`\`\``;
+            
+            this._view?.webview.postMessage({ 
+                type: 'appendMessage', 
+                value: { 
+                    role: 'assistant', 
+                    content: message 
+                } 
+            });
+            
+            vscode.window.showInformationMessage(`✅ ${typeNames[type]} 生成成功`);
+            
+        } catch (error: any) {
+            console.error('[ChatViewProvider] Generate patch failed:', error);
+            
+            const errorMessage = error instanceof Error ? error.message : '未知错误';
+            
+            this._view?.webview.postMessage({ 
+                type: 'error', 
+                value: errorMessage 
+            });
+            
+            vscode.window.showErrorMessage(`生成 patch 失败: ${errorMessage}`);
         }
     }
 

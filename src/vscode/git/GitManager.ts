@@ -144,4 +144,64 @@ export class GitManager {
             throw new Error(`Commit 失败: ${cleanError}`);
         }
     }
+
+    /**
+     * 生成 Git Patch
+     * @param type patch 类型: 'staged' (暂存区), 'unstaged' (工作区), 'last' (最后一次提交)
+     * @returns Promise<string> patch 内容
+     */
+    static async generatePatch(type: 'staged' | 'unstaged' | 'last'): Promise<string> {
+        const repo = this.getRepository();
+        
+        if (!repo) {
+            throw new Error('未在当前工作区找到有效的 Git 仓库');
+        }
+
+        try {
+            switch (type) {
+                case 'staged': {
+                    // 等价: git diff --cached
+                    const patch = await repo.diffIndexWithHEAD();
+                    if (!patch || !patch.trim()) {
+                        throw new Error('暂存区为空，无法生成 patch');
+                    }
+                    return patch;
+                }
+
+                case 'unstaged': {
+                    // 等价: git diff
+                    const patch = await repo.diffWithHEAD();
+                    if (!patch || !patch.trim()) {
+                        throw new Error('工作区没有未暂存的更改');
+                    }
+                    return patch;
+                }
+
+                case 'last': {
+                    // 等价: git show HEAD
+                    const commits = await repo.log({ maxEntries: 1 });
+                    if (!commits || commits.length === 0) {
+                        throw new Error('仓库没有任何提交记录');
+                    }
+
+                    const patch = await repo.show(commits[0].hash);
+                    
+                    if (!patch || !patch.trim()) {
+                        throw new Error('无法获取最后一次提交的 patch');
+                    }
+                    return patch;
+                }
+
+                default:
+                    throw new Error(`不支持的 patch 类型: ${type}`);
+            }
+        } catch (error: any) {
+            if (error.message.includes('暂存区为空') || 
+                error.message.includes('工作区没有') ||
+                error.message.includes('仓库没有任何')) {
+                throw error;
+            }
+            throw new Error(`生成 patch 失败: ${error.message || error}`);
+        }
+    }
 }
