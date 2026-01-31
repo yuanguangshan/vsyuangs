@@ -113,9 +113,13 @@ export class YuangsPanel {
   }
 
   private static escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    // Escape HTML entities manually to avoid using 'document' in webview context
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   private static async handleApplyOptimization(args: any) {

@@ -30,19 +30,17 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage('No active editor');
             return;
         }
-        
+
         if (!editor.document) {
             vscode.window.showErrorMessage('No active document');
             return;
         }
 
-        // Create a WorkspaceEdit
-        const edit = new vscode.WorkspaceEdit();
         if (range) {
-            optimizeCode(editor, edit, editor.document, new vscode.Selection(range.start, range.end));
+            optimizeCode(editor.document, range);
         } else {
             // If no range (e.g., called from palette), use the current selection
-            optimizeCode(editor, edit, editor.document, editor.selection);
+            optimizeCode(editor.document, editor.selection);
         }
     };
 

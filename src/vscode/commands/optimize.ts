@@ -6,7 +6,7 @@ import { InlineDiffRenderer } from '../decorations/inlineDiff';
  */
 export async function optimizeCode(
   document: vscode.TextDocument,
-  range: vscode.Range
+  range: vscode.Range | vscode.Selection
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document !== document) {
@@ -25,7 +25,9 @@ export async function optimizeCode(
   const optimizedCode = await callAiOptimization(originalCode);
 
   // 3. 显示 Inline Diff (不修改原代码)
-  InlineDiffRenderer.show(editor, range, originalCode, optimizedCode);
+  // Convert Range to Selection if necessary
+  const selection = range instanceof vscode.Selection ? range : new vscode.Selection(range.start, range.end);
+  InlineDiffRenderer.show(editor, selection, originalCode, optimizedCode);
 
   // 4. 询问用户是否应用
   const choice = await vscode.window.showQuickPick(
