@@ -15,6 +15,9 @@ import * as vscode from 'vscode';
 import { GitManager } from './GitManager';
 import { DiffParser } from '../../core/diff';
 import { CommitSuggestion, FileGroup } from '../../core/reviewSchema';
+import { VotingFileClassifier } from '../guard/VotingFileClassifier';
+import { GroupExplanation, CommitGroup } from '../guard/types';
+import { PreferenceMemory, DisagreementRecord } from '../guard/preferences';
 
 /**
  * 文件类型
@@ -81,6 +84,10 @@ export interface GroupingSuggestion {
  * Smart Stage Suggester
  */
 export class SmartStageSuggester {
+  private static readonly CONFIDENCE_THRESHOLD_HIGH = 0.6;
+  private static readonly CONFIDENCE_THRESHOLD_MEDIUM = 0.3;
+  private static classifier = new VotingFileClassifier();
+  private static preferenceMemory = new PreferenceMemory();
   /**
    * 分析暂存区并生成分组建议
    */
@@ -122,24 +129,42 @@ export class SmartStageSuggester {
    * 将文件分组
    */
   private static groupFiles(files: import('../../core/diff').DiffFile[]): FileGroup[] {
-    const groups = new Map<FileType, FileGroup>();
+    const groups = new Map<string, FileGroup>();
 
-    // 初始化分组
-    for (const type of Object.keys(FILE_TYPE_RULES) as FileType[]) {
-      groups.set(type, {
-        id: `group-${type}`,
-        name: this.getGroupDisplayName(type),
-        type,
-        files: [],
-        stats: { added: 0, removed: 0, context: 0 }
-      });
-    }
-
-    // 分类每个文件
+    // 使用新的投票分类器对每个文件进行分类
     for (const file of files) {
-      const fileType = this.classifyFile(file.normalizedPath);
-      const group = groups.get(fileType)!;
+      const explanation = this.classifier.classify(file.normalizedPath, file.diff || '');
 
+      // 根据置信度决定处理方式
+      let groupId: string;
+      let groupName: string;
+      let fileType: FileType;
+
+      if (explanation.confidence < this.CONFIDENCE_THRESHOLD_MEDIUM) {
+        // 低置信度，放入需要确认的分组
+        groupId = 'group-needs-confirmation';
+        groupName = 'Needs Confirmation';
+        fileType = 'other';
+      } else {
+        // 高置信度，使用预测的类别
+        groupId = `group-${explanation.category}`;
+        groupName = this.getGroupDisplayName(explanation.category as FileType);
+        fileType = explanation.category as FileType;
+      }
+
+      // 获取或创建分组
+      if (!groups.has(groupId)) {
+        groups.set(groupId, {
+          id: groupId,
+          name: groupName,
+          type: fileType,
+          files: [],
+          stats: { added: 0, removed: 0, context: 0 },
+          explanation: explanation // 添加解释信息
+        });
+      }
+
+      const group = groups.get(groupId)!;
       group.files.push(file.normalizedPath);
       group.stats.added += file.stats.added;
       group.stats.removed += file.stats.removed;
@@ -170,13 +195,14 @@ export class SmartStageSuggester {
   /**
    * 获取分组显示名称
    */
-  private static getGroupDisplayName(type: FileType): string {
-    const names: Record<FileType, string> = {
+  private static getGroupDisplayName(type: FileType | CommitGroup): string {
+    const names: Record<FileType | CommitGroup, string> = {
       ui: 'UI Changes',
       logic: 'Logic Updates',
       docs: 'Documentation',
       test: 'Tests',
       config: 'Configuration',
+      chore: 'Chore',
       other: 'Other Changes'
     };
     return names[type];
@@ -387,25 +413,76 @@ ${suggestion.commitMessages.map(cm => `• ${cm.message.type}: ${cm.message.titl
     );
 
     panel.webview.html = this.getWebviewContent(suggestion);
+
+    // Handle messages from the webview
+    panel.webview.onDidReceiveMessage(async (message) => {
+      switch (message.command) {
+        case 'correction-request':
+          // Get the group that was corrected
+          const group = suggestion.groups.find(g => g.id === message.groupId);
+          if (group && group.explanation) {
+            // Validate the new category
+            const validCategories = ['ui', 'logic', 'docs', 'test', 'chore', 'other'];
+            if (validCategories.includes(message.newCategory)) {
+              // Record the correction
+              for (const file of group.files) {
+                this.recordUserCorrection(
+                  message.groupId,
+                  file,
+                  group.explanation!.category as CommitGroup,
+                  message.newCategory as CommitGroup,
+                  group.explanation!.confidence
+                );
+              }
+
+              // Show confirmation
+              vscode.window.showInformationMessage(
+                `Correction recorded: ${group.name} -> ${message.newCategory}. This will improve future suggestions.`
+              );
+            } else {
+              vscode.window.showErrorMessage(
+                `Invalid category: ${message.newCategory}. Valid categories are: ${validCategories.join(', ')}`
+              );
+            }
+          }
+          break;
+      }
+    }, undefined);
   }
 
   /**
    * 生成 Webview 内容
    */
   private static getWebviewContent(suggestion: GroupingSuggestion): string {
-    const groupsHtml = suggestion.groups.map(group => `
-      <div class="group" style="margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-        <h3 style="margin: 0 0 10px 0; color: #333;">${group.name} (${group.files.length} files)</h3>
-        <p style="margin: 0 0 10px 0; color: #666;">${this.getChangeSummary(group.stats)}</p>
-        <ul style="margin: 0; padding-left: 20px;">
-          ${group.files.map(file => `<li style="margin: 2px 0;">${file}</li>`).join('')}
-        </ul>
-        <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 3px;">
-          <strong>Suggested commit:</strong><br/>
-          <code>${suggestion.commitMessages.find(cm => cm.groupId === group.id)?.message.title}</code>
+    const groupsHtml = suggestion.groups.map(group => {
+      // Add explanation if available
+      let explanationHtml = '';
+      if (group.explanation) {
+        const confidencePercentage = Math.round(group.explanation.confidence * 100);
+        explanationHtml = `
+          <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 3px; border-left: 3px solid #007acc;">
+            <strong>Classification:</strong> ${group.explanation.category} (${confidencePercentage}% confidence)<br/>
+            <strong>Reasons:</strong> ${group.explanation.reasons.join(', ')}<br/>
+            <button onclick="requestCorrection('${group.id}', '${group.name}')" style="margin-top: 5px; padding: 5px 10px; background: #ff6b6b; color: white; border: none; border-radius: 3px; cursor: pointer;">Wrong? Correct it</button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="group" style="margin: 10px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px;" id="group-${group.id}">
+          <h3 style="margin: 0 0 10px 0; color: #333;">${group.name} (${group.files.length} files)</h3>
+          <p style="margin: 0 0 10px 0; color: #666;">${this.getChangeSummary(group.stats)}</p>
+          <ul style="margin: 0; padding-left: 20px;">
+            ${group.files.map(file => `<li style="margin: 2px 0;">${file}</li>`).join('')}
+          </ul>
+          <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 3px;">
+            <strong>Suggested commit:</strong><br/>
+            <code>${suggestion.commitMessages.find(cm => cm.groupId === group.id)?.message.title}</code>
+          </div>
+          ${explanationHtml}
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     return `
       <!DOCTYPE html>
@@ -417,7 +494,7 @@ ${suggestion.commitMessages.map(cm => `• ${cm.message.type}: ${cm.message.titl
       </head>
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px;">
         <h1 style="color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px;">Smart Stage Suggestion</h1>
-        
+
         <div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0;">
           <h2 style="margin: 0 0 10px 0; color: #333;">Rationale</h2>
           <p style="margin: 0; color: #666; white-space: pre-wrap;">${suggestion.rationale}</p>
@@ -429,8 +506,48 @@ ${suggestion.commitMessages.map(cm => `• ${cm.message.type}: ${cm.message.titl
         <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 4px; border-left: 4px solid #007acc;">
           <strong>Tip:</strong> You can apply these commits one by one using the Git Source Control panel.
         </div>
+
+        <script>
+          function requestCorrection(groupId, currentGroupName) {
+            const newCategory = prompt('What category should this group belong to? (ui, logic, docs, test, chore, other)');
+            if (newCategory) {
+              // Send message back to extension
+              const message = {
+                command: 'correction-request',
+                groupId: groupId,
+                newCategory: newCategory
+              };
+              vscode.postMessage(message);
+            }
+          }
+
+          // Handle messages from the extension
+          window.addEventListener('message', event => {
+            const message = event.data;
+            switch (message.command) {
+              case 'update-group':
+                document.getElementById('group-' + message.groupId).innerHTML = message.updatedHtml;
+                break;
+            }
+          });
+        </script>
       </body>
       </html>
     `;
+  }
+
+  /**
+   * 记录用户对分类的纠正
+   */
+  static recordUserCorrection(groupId: string, file: string, predictedCategory: CommitGroup, userSelectedCategory: CommitGroup, confidence: number): void {
+    const record: DisagreementRecord = {
+      file,
+      predicted: predictedCategory,
+      confidence,
+      userChoice: userSelectedCategory as CommitGroup,
+      timestamp: Date.now()
+    };
+
+    this.preferenceMemory.recordDisagreement(record);
   }
 }

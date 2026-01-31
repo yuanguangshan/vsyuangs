@@ -177,6 +177,19 @@ export interface FileGroup {
     /** 上下文行数 */
     context: number;
   };
+
+  /** 分类解释（可选，用于智能分类） */
+  explanation?: {
+    category: "ui" | "logic" | "docs" | "test" | "chore" | "other";
+    confidence: number;
+    reasons: string[];
+    votes: Array<{
+      category: "ui" | "logic" | "docs" | "test" | "chore" | "other";
+      weight: number;
+      reason: string;
+      source: 'path' | 'diff' | 'keyword' | 'ast' | 'history';
+    }>;
+  };
 }
 
 /**
