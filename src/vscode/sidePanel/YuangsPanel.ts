@@ -59,81 +59,130 @@ export class YuangsPanel {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yuangs AI</title>
   <style>
+    /* Solarized Dark Color Palette */
+    :root {
+      --sol-base03: #002b36;
+      --sol-base02: #073642;
+      --sol-base01: #586e75;
+      --sol-base00: #657b83;
+      --sol-base0: #839496;
+      --sol-base1: #93a1a1;
+      --sol-base2: #eee8d5;
+      --sol-base3: #fdf6e3;
+      --sol-yellow: #b58900;
+      --sol-orange: #cb4b16;
+      --sol-red: #dc322f;
+      --sol-magenta: #d33682;
+      --sol-violet: #6c71c4;
+      --sol-blue: #268bd2;
+      --sol-cyan: #2aa198;
+      --sol-green: #859900;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
       padding: 20px;
       line-height: 1.6;
-      color: #333;
+      color: var(--sol-base0);
+      background: var(--sol-base03);
     }
     
     /* Markdown styles */
+    #content {
+      color: var(--sol-base0);
+    }
     #content h1, #content h2, #content h3, #content h4, #content h5, #content h6 {
       margin-top: 24px;
       margin-bottom: 16px;
       font-weight: 600;
       line-height: 1.25;
+      color: var(--sol-base1);
     }
     #content h1 {
       font-size: 2em;
       padding-bottom: 0.3em;
-      border-bottom: 1px solid #eaecef;
+      border-bottom: 1px solid var(--sol-base02);
+      color: var(--sol-cyan);
     }
     #content h2 {
       font-size: 1.5em;
       padding-bottom: 0.3em;
-      border-bottom: 1px solid #eaecef;
+      border-bottom: 1px solid var(--sol-base02);
+      color: var(--sol-blue);
     }
     #content h3 {
       font-size: 1.25em;
+      color: var(--sol-green);
+    }
+    #content h4 {
+      color: var(--sol-yellow);
+    }
+    #content h5 {
+      color: var(--sol-orange);
+    }
+    #content h6 {
+      color: var(--sol-red);
     }
     #content p {
       margin-top: 0;
       margin-bottom: 16px;
+      color: var(--sol-base0);
     }
     #content ul, #content ol {
       padding-left: 2em;
       margin-bottom: 16px;
+      color: var(--sol-base0);
     }
     #content li {
       margin-bottom: 4px;
+      color: var(--sol-base0);
     }
     #content blockquote {
       padding: 0 1em;
-      color: #6a737d;
-      border-left: 0.25em solid #dfe2e5;
+      color: var(--sol-base01);
+      border-left: 0.25em solid var(--sol-violet);
       margin-bottom: 16px;
+      background: var(--sol-base02);
+      padding: 12px 16px;
+      border-radius: 4px;
     }
     #content pre {
-      background: #f6f8fa;
+      background: var(--sol-base02);
       padding: 16px;
       border-radius: 6px;
       overflow: auto;
       font-size: 13px;
       margin-bottom: 16px;
+      color: var(--sol-base1);
+      border: 1px solid var(--sol-base01);
     }
     #content code {
       font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      background: #f6f8fa;
+      background: var(--sol-base02);
       padding: 0.2em 0.4em;
       border-radius: 3px;
       font-size: 85%;
+      color: var(--sol-cyan);
     }
     #content pre code {
       background: transparent;
       padding: 0;
       font-size: inherit;
+      color: var(--sol-base0);
     }
     #content strong {
       font-weight: 600;
+      color: var(--sol-orange);
     }
     #content em {
       font-style: italic;
+      color: var(--sol-base1);
     }
     #content hr {
       height: 0.25em;
       padding: 0;
       margin: 24px 0;
-      background-color: #e1e4e8;
+      background-color: var(--sol-base02);
       border: 0;
     }
     #content table {
@@ -144,31 +193,39 @@ export class YuangsPanel {
     }
     #content table th, #content table td {
       padding: 6px 13px;
-      border: 1px solid #dfe2e5;
+      border: 1px solid var(--sol-base01);
+      color: var(--sol-base0);
     }
     #content table th {
       font-weight: 600;
-      background: #f6f8fa;
+      background: var(--sol-base02);
+      color: var(--sol-blue);
+    }
+    #content table tr:hover {
+      background: var(--sol-base02);
     }
     #content a {
-      color: #0366d6;
+      color: var(--sol-blue);
       text-decoration: none;
     }
     #content a:hover {
       text-decoration: underline;
+      color: var(--sol-cyan);
     }
     
     .button {
-      background: #007acc;
-      color: white;
+      background: var(--sol-blue);
+      color: var(--sol-base3);
       border: none;
       padding: 8px 16px;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       margin-top: 10px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
     }
     .button:hover {
-      background: #005a9e;
+      background: var(--sol-cyan);
     }
   </style>
 </head>
