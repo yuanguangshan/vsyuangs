@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -239,6 +239,60 @@
       background: var(--vscode-button-secondaryHoverBackground);
       transform: translateY(-1px);
       box-shadow: var(--shadow-sm);
+    }
+
+    /* Patch 下拉菜单 */
+    .patch-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      min-width: 200px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 3000;
+      padding: 4px;
+    }
+
+    .patch-dropdown.visible {
+      display: block;
+    }
+
+    .patch-option {
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85em;
+      border-radius: var(--radius-sm);
+      margin-bottom: 2px;
+    }
+
+    .patch-option:hover {
+      background: var(--vscode-list-hoverBackground);
+    }
+
+    .patch-option span:first-child {
+      font-size: 1.4em;
+      opacity: 0.8;
+    }
+
+    .patch-option strong {
+      display: block;
+      font-size: 1em;
+    }
+
+    .patch-option span:last-child {
+      display: block;
+      opacity: 0.6;
+      font-size: 0.9em;
+      margin-top: 2px;
     }
 
     /* =========================================
@@ -1236,6 +1290,38 @@
     <button class="secondary-btn" id="review-btn" title="Run Expert Code Review on staged changes">
       <span>🔍</span> Review
     </button>
+    <div style="position: relative;">
+      <button class="secondary-btn" id="patch-btn" title="Generate Git Patch">
+        <span>📋</span> Patch
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style="opacity: 0.5; margin-left: 4px;">
+          <path d="M8 11L3 6h2.5L8 8.5L10.5 6H13L8 11z" />
+        </svg>
+      </button>
+      <!-- Patch 下拉菜单 -->
+      <div class="patch-dropdown" id="patch-dropdown">
+        <div class="patch-option" data-type="staged">
+          <span>📦</span>
+          <div>
+            <strong>暂存区 Patch</strong>
+            <span style="opacity: 0.6; font-size: 0.9em;">Staged changes</span>
+          </div>
+        </div>
+        <div class="patch-option" data-type="unstaged">
+          <span>📄</span>
+          <div>
+            <strong>工作区 Patch</strong>
+            <span style="opacity: 0.6; font-size: 0.9em;">Unstaged changes</span>
+          </div>
+        </div>
+        <div class="patch-option" data-type="last">
+          <span>📜</span>
+          <div>
+            <strong>最后一次提交 Patch</strong>
+            <span style="opacity: 0.6; font-size: 0.9em;">Last commit</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 调试信息 -->
@@ -2999,7 +3085,7 @@
     });
 
     function processCommitSuggestions(messageElement, rawText) {
-      // If the user explicitly requested a commit message, be more lenient with detection
+      // If user explicitly requested a commit message, be more lenient with detection
       // Otherwise, stick to stricter regex to avoid false positives in general chat
       const content = rawText.trim();
       let isCommitMsg = false;
@@ -3033,6 +3119,39 @@
         }
       }
     }
+
+    // === Patch 功能 ===
+    const patchBtn = document.getElementById('patch-btn');
+    const patchDropdown = document.getElementById('patch-dropdown');
+    const patchOptions = document.querySelectorAll('.patch-option');
+
+    if (patchBtn) {
+      patchBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        patchDropdown.classList.toggle('visible');
+      });
+
+      // 点击选项生成 patch
+      patchOptions.forEach(option => {
+        option.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const type = option.dataset.type;
+          patchDropdown.classList.remove('visible');
+          
+          vscode.postMessage({
+            type: 'generatePatch',
+            value: type
+          });
+        });
+      });
+    }
+
+    // 点击外部关闭下拉菜单
+    document.addEventListener('click', (e) => {
+      if (patchBtn && patchDropdown && !patchBtn.contains(e.target) && !patchDropdown.contains(e.target)) {
+        patchDropdown.classList.remove('visible');
+      }
+    });
     function updateCurrentModel(modelId) {
       currentModel = modelId;
       const model = availableModels.find(m => m.id === modelId);

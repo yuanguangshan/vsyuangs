@@ -144,4 +144,58 @@ export class GitManager {
             throw new Error(`Commit 失败: ${cleanError}`);
         }
     }
+
+    /**
+     * 生成 Git Patch
+     * @param type patch 类型: 'staged' (暂存区), 'unstaged' (工作区), 'last' (最后一次提交)
+     * @returns Promise<string> patch 内容
+     */
+    static async generatePatch(type: 'staged' | 'unstaged' | 'last'): Promise<string> {
+        const repo = this.getRepository();
+        
+        if (!repo) {
+            throw new Error('未在当前工作区找到有效的 Git 仓库');
+        }
+
+        let patch: string | undefined;
+
+        switch (type) {
+            case 'staged':
+                // 等价: git diff --cached
+                // VS Code Git API 直接返回完整的 diff 字符串
+                patch = await repo.diffIndexWithHEAD();
+                break;
+
+            case 'unstaged':
+                // 等价: git diff
+                // VS Code Git API 直接返回完整的 diff 字符串
+                patch = await repo.diffWorkingTree();
+                break;
+
+            case 'last': {
+                // 等价: git show HEAD
+                const commits = await repo.log({ maxEntries: 1 });
+                if (!commits || commits.length === 0) {
+                    throw new Error('仓库没有任何提交记录');
+                }
+                patch = await repo.show(commits[0].hash);
+                break;
+            }
+
+            default:
+                throw new Error(`不支持的 patch 类型: ${type}`);
+        }
+
+        // 类型安全检查：确保 patch 是有效的字符串
+        if (typeof patch !== 'string' || !patch.trim()) {
+            const typeNames: Record<string, string> = {
+                'staged': '暂存区',
+                'unstaged': '工作区',
+                'last': '最后一次提交'
+            };
+            throw new Error(`${typeNames[type] || type} 为空，无法生成 patch`);
+        }
+
+        return patch;
+    }
 }
