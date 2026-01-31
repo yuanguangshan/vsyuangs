@@ -1499,12 +1499,48 @@
 
     // 复制消息文本
     function copyMessageText(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        showFlashNotification("✓ 已复制到剪贴板");
-      }).catch((err) => {
-        console.error("复制失败:", err);
-        showFlashNotification("✗ 复制失败");
-      });
+      // 在 VS Code webview 环境中，navigator.clipboard API 可能受到限制
+      // 使用多种方法尝试复制
+      
+      // 方法 1: 尝试使用现代 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showFlashNotification("✓ 已复制到剪贴板");
+          return;
+        }).catch((err) => {
+          console.warn("Clipboard API 失败，尝试 fallback 方法:", err);
+          // 继续尝试其他方法
+        });
+      }
+
+      // 方法 2: 使用传统的 execCommand 方法（兼容性更好）
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; // 避免页面滚动
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        textArea.style.opacity = "0"; // 不可见
+        document.body.appendChild(textArea);
+        textArea.select();
+        textArea.setSelectionRange(0, 99999); // 选中全部文本
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          showFlashNotification("✓ 已复制到剪贴板");
+          return;
+        } else {
+          throw new Error("execCommand('copy') 失败");
+        }
+      } catch (err) {
+        console.error("execCommand 复制失败:", err);
+        
+        // 方法 3: 作为最后的 fallback，让用户手动复制
+        alert(`复制失败，请手动复制以下内容：\n\n${text}`);
+        return;
+      }
     }
 
     // 删除消息
