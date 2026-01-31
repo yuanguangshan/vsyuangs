@@ -7,6 +7,8 @@ import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
 import { createIgnoreFilter, IgnoreFilter } from '../utils/ignoreFilter';
 import { GitManager } from '../git/GitManager';
 import { DiffParser, DiffApplier } from '../../core/diff';
+import { getDiffGradedApplier } from '../../core/DiffGradedApplier';
+import { getSecurityScanCoordinator } from '../../core/SecurityScanCoordinator';
 
 // 模型配置接口
 interface ModelConfig {
@@ -600,83 +602,105 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         try {
             if (diffData.type === 'unified') {
-                // 尝试使用新的DiffApplier
-                try {
-                    // 将diffData转换为DiffParser可以处理的格式
-                    const diffText = this.convertToUnifiedDiffFormat(diffData);
-                    const parseResult = DiffParser.parse(diffText);
+                console.log('[ChatViewProvider] Applying unified diff with graded applier...');
+                
+                // 转换为标准 unified diff 格式
+                const diffText = this.convertToUnifiedDiffFormat(diffData);
+                console.log(`[ChatViewProvider] Diff text (${diffText.length} chars):`, diffText.substring(0, 200) + '...');
+                
+                // 获取原始代码（用于 Phase 1 安全扫描）
+                const originalCode = await this.getOriginalCodeForDiff(diffData);
+                
+                // 解析 diff
+                const parseResult = DiffParser.parse(diffText);
+                
+                if (!parseResult.success) {
+                    console.warn('[ChatViewProvider] Diff parsing failed:', parseResult.message);
+                    throw new Error(`Diff 解析失败: ${parseResult.message}`);
+                }
 
-                    if (!parseResult.success) {
-                        console.warn('[ChatViewProvider] Diff parsing failed, falling back to legacy parser:', parseResult.message);
-                        // 如果解析失败，回退到原来的实现
-                        for (const file of diffData.files) {
-                            await this.applyUnifiedDiff(file);
-                        }
-                        this._view.webview.postMessage({ type: 'diffApplied' });
-                        vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy parser)');
+                console.log('[ChatViewProvider] Diff parsed successfully:', {
+                    fileCount: parseResult.stats.fileCount,
+                    hunkCount: parseResult.stats.hunkCount,
+                    totalAdded: parseResult.stats.totalAdded,
+                    totalRemoved: parseResult.stats.totalRemoved
+                });
+
+                // 使用新的 DiffGradedApplier 应用 diff
+                const applier = getDiffGradedApplier();
+                const startTime = Date.now();
+                const applyResult = await applier.applyWithGrades(diffText, {
+                    enableLevel1: true,
+                    enableLevel2: true,
+                    enableLevel3: true,
+                    confirmBeforeFullOverride: true
+                });
+                const duration = Date.now() - startTime;
+
+                if (!applyResult.success) {
+                    console.error('[ChatViewProvider] All grades failed:', applyResult.error);
+                    throw new Error(`补丁应用失败（所有级别都失败了）: ${applyResult.message}`);
+                }
+
+                console.log('[ChatViewProvider] Diff applied successfully:', {
+                    usedLevel: applyResult.usedLevel,
+                    changedFiles: applyResult.changedFiles,
+                    duration
+                });
+
+                // 使用 SecurityScanCoordinator 运行三层安全扫描
+                const coordinator = getSecurityScanCoordinator();
+                const report = await coordinator.runFullScanPipeline(
+                    originalCode,
+                    parseResult,
+                    applyResult.changedFiles
+                );
+
+                console.log('[ChatViewProvider] Security scan completed:', {
+                    overallStatus: report.overallStatus,
+                    criticalIssues: report.criticalIssueCount,
+                    errorIssues: report.errorIssueCount,
+                    warningIssues: report.warningIssueCount,
+                    totalDuration: report.totalDuration
+                });
+
+                // 根据安全扫描结果采取行动
+                if (report.overallStatus === 'failed') {
+                    const choice = await vscode.window.showWarningMessage(
+                        `安全扫描发现 ${report.criticalIssueCount + report.errorIssueCount} 个严重问题！\n建议查看 Problems 面板。是否继续？`,
+                        '继续（不推荐）', '取消'
+                    );
+
+                    if (choice !== '继续（不推荐）') {
+                        // 回滚更改
+                        vscode.window.showWarningMessage('已取消应用，更改已回滚');
                         return;
                     }
-
-                    const applyResult = await DiffApplier.apply(parseResult);
-
-                    if (!applyResult.success) {
-                        console.warn('[ChatViewProvider] Diff application failed, offering full rewrite option:', applyResult.message);
-                        // 如果标准应用失败，询问用户是否尝试全量替换
-                        const result = await vscode.window.showErrorMessage(
-                            `补丁应用失败（${applyResult.message}）。是否尝试全量覆盖？`,
-                            "是的，覆盖全文件", "取消"
-                        );
-
-                        if (result === "是的，覆盖全文件") {
-                            // 这里可以触发一个特定的 Prompt 让 AI 重新发送完整代码，
-                            // 或者如果当前对话中已有完整代码，直接调用 applyFullContent
-                            await this.requestFullCodeFromAI();
-                            return;
-                        } else {
-                            throw new Error(applyResult.message);
-                        }
-                    }
-
-                    this._view.webview.postMessage({ type: 'diffApplied' });
-                    vscode.window.showInformationMessage('✓ Diff applied successfully!');
-                } catch (error) {
-                    // 区分不同类型的错误
-                    if (error instanceof Error) {
-                        if (error.message.includes('parsing failed') || error.message.includes('Invalid diff')) {
-                            console.warn('[ChatViewProvider] Diff parsing error, falling back to legacy parser:', error.message);
-                            // 解析错误：回退到旧解析器
-                            for (const file of diffData.files) {
-                                await this.applyUnifiedDiff(file);
-                            }
-                            this._view.webview.postMessage({ type: 'diffApplied' });
-                            vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy parser)');
-                        } else if (error.message.includes('apply failed')) {
-                            console.warn('[ChatViewProvider] Diff application error, falling back to legacy implementation:', error.message);
-                            // 应用错误：回退到旧实现
-                            for (const file of diffData.files) {
-                                await this.applyUnifiedDiff(file);
-                            }
-                            this._view.webview.postMessage({ type: 'diffApplied' });
-                            vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy implementation)');
-                        } else {
-                            console.error('[ChatViewProvider] Unexpected error during diff application:', error);
-                            // 其他错误：回退到旧实现
-                            for (const file of diffData.files) {
-                                await this.applyUnifiedDiff(file);
-                            }
-                            this._view.webview.postMessage({ type: 'diffApplied' });
-                            vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy implementation)');
-                        }
-                    } else {
-                        console.error('[ChatViewProvider] Unknown error during diff application:', error);
-                        // 未知错误：回退到旧实现
-                        for (const file of diffData.files) {
-                            await this.applyUnifiedDiff(file);
-                        }
-                        this._view.webview.postMessage({ type: 'diffApplied' });
-                        vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy implementation)');
-                    }
+                } else if (report.overallStatus === 'warning') {
+                    vscode.window.showInformationMessage(
+                        `✓ Diff 已应用（${applyResult.usedLevel}）\n⚠️ 发现 ${report.warningIssueCount} 个警告，请查看 Problems 面板`
+                    );
+                } else {
+                    vscode.window.showInformationMessage(
+                        `✓ Diff 已应用（${applyResult.usedLevel}）\n✅ 安全扫描通过`
+                    );
                 }
+
+                // 发送成功消息到 UI
+                this._view.webview.postMessage({ type: 'diffApplied' });
+                
+                // 记录降级信息到 UI
+                if (applyResult.usedLevel && applyResult.usedLevel !== 'intelligent_fix') {
+                    const levelNames: Record<string, string> = {
+                        'fuzzy_location': 'Level 2',
+                        'full_override': 'Level 3'
+                    };
+                    this._view.webview.postMessage({
+                        type: 'info',
+                        value: `使用了 ${levelNames[applyResult.usedLevel] || applyResult.usedLevel}（降级）`
+                    });
+                }
+
             } else if (diffData.type === 'simple') {
                 await this.applySimpleDiff(diffData);
                 this._view.webview.postMessage({ type: 'diffApplied' });
@@ -685,8 +709,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 throw new Error('Unknown diff format');
             }
         } catch (error: any) {
+            console.error('[ChatViewProvider] Diff application failed:', error);
             this._view.webview.postMessage({ type: 'diffError', value: error.message });
             vscode.window.showErrorMessage(`Failed to apply diff: ${error.message}`);
+        }
+    }
+
+    /**
+     * 获取 diff 涉及的原始代码
+     */
+    private async getOriginalCodeForDiff(diffData: any): Promise<string> {
+        try {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) {
+                return '';
+            }
+
+            // 获取第一个文件的原始内容
+            const firstFile = diffData.files[0];
+            if (!firstFile) {
+                return '';
+            }
+
+            const filePath = path.join(
+                workspaceFolder.uri.fsPath,
+                firstFile.oldFile || firstFile.newFile
+            );
+
+            const uri = vscode.Uri.file(filePath);
+            const document = await vscode.workspace.openTextDocument(uri);
+            return document.getText();
+        } catch (error) {
+            console.warn('[ChatViewProvider] Failed to get original code:', error);
+            return '';
         }
     }
 
