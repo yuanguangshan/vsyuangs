@@ -362,6 +362,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                         this._view?.webview.postMessage({ type: 'error', value: "无法访问 Git 仓库" });
                     }
                     break;
+                case 'performCommit':
+                    await this.handlePerformCommit(data.value);
+                    break;
             }
         });
     }
@@ -1014,6 +1017,43 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         if (uri) {
             fs.writeFileSync(uri.fsPath, mdContent);
             vscode.window.showInformationMessage('Chat history exported successfully!');
+        }
+    }
+
+    /**
+     * 处理提交请求 (Service Layer 逻辑下沉)
+     */
+    private async handlePerformCommit(message: string) {
+        try {
+            await GitManager.commit(message);
+            
+            // 1. 通知前端成功
+            this._view?.webview.postMessage({ type: 'success', value: 'Git Commit 成功' });
+            
+            // 2. VS Code 原生提示
+            vscode.window.showInformationMessage(`✅ 代码已提交: ${message.trim().split('\n')[0]}`);
+            
+            // 3. 清理状态 (清空输入框)
+            await GitManager.setCommitMessage('');
+            
+        } catch (error: any) {
+            console.error('[ChatViewProvider] Commit failed:', error);
+            
+            // 4. 错误分级处理 (安全 & UX)
+            const errorMessage = error instanceof Error ? error.message : '未知错误';
+            
+            // 发送给前端的错误消息 (用于 Toast 或 状态栏)
+            this._view?.webview.postMessage({ 
+                type: 'error', 
+                value: errorMessage 
+            });
+
+            // VS Code 弹窗提示 (对于严重错误)
+            if (errorMessage.includes('暂存区为空') || errorMessage.includes('Git 仓库')) {
+                vscode.window.showWarningMessage(errorMessage);
+            } else {
+                vscode.window.showErrorMessage(`提交中断: ${errorMessage}`);
+            }
         }
     }
 

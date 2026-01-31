@@ -6,6 +6,7 @@
  */
 
 import * as vscode from 'vscode';
+import { GitManager } from '../vscode/git/GitManager';
 import type {
     GitCommitResult,
     GitReviewResult,
@@ -22,9 +23,21 @@ export class GitAdapter {
      * 
      * @param message 提交消息
      * @returns Promise<GitCommitResult> 提交结果
-     * @throws Error 如果 Git 操作失败
      */
     async commit(message: string): Promise<GitCommitResult> {
-        throw new Error('Git commit not yet implemented. Please use Git extension API or command line to commit changes.');
+        try {
+            await GitManager.commit(message);
+            
+            return {
+                success: true,
+                message: 'Commit successful'
+            };
+        } catch (error: any) {
+            console.error('[GitAdapter] Commit failed:', error);
+            return {
+                success: false,
+                error: error.message || 'Unknown git error'
+            };
+        }
     }
 }

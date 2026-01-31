@@ -104,4 +104,44 @@ export class GitManager {
             await vscode.commands.executeCommand('workbench.view.scm');
         }
     }
+
+    /**
+     * [增强版] 执行 Git Commit
+     * @throws Error 包含具体的业务错误信息
+     */
+    static async commit(message: string): Promise<void> {
+        const repo = this.getRepository();
+        
+        if (!repo) {
+            throw new Error('未在当前工作区找到有效的 Git 仓库');
+        }
+
+        // 1. 输入校验
+        if (!message || !message.trim()) {
+            throw new Error('提交信息不能为空');
+        }
+
+        // 2. 健壮的暂存区检查 (使用 state.indexChanges 而非 diffIndexWithHEAD)
+        // 注意：indexChanges 包含所有暂存的变更 (Added, Modified, Deleted, Renamed)
+        const stagedChanges = repo.state.indexChanges;
+        if (!stagedChanges || stagedChanges.length === 0) {
+            // 尝试聚焦 Git 视图引导用户
+            await vscode.commands.executeCommand('workbench.view.scm');
+            throw new Error('暂存区为空，请先暂存更改 (git add)');
+        }
+
+        // 3. 执行提交
+        try {
+            await repo.commit(message);
+        } catch (error: any) {
+            // 4. 错误信息清洗 (避免直接暴露底层 Git 错误码)
+            let cleanError = error.message || error;
+            if (cleanError.includes('lock file')) {
+                cleanError = 'Git 锁定文件已存在，可能有另一个 Git 进程正在运行';
+            } else if (cleanError.includes('hooks')) {
+                cleanError = 'Git Pre-commit 钩子执行失败';
+            }
+            throw new Error(`Commit 失败: ${cleanError}`);
+        }
+    }
 }
