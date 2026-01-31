@@ -60,6 +60,36 @@ ${userInput}
 `;
 }
 
+export function buildCodeModificationPrompt(
+    userInput: string,
+    context?: string
+): string {
+    return `
+你是一个专业的代码修改助手。
+
+【关于代码修改的强制指令】
+1. 必须使用标准的 Unified Diff 格式。
+2. 即使是微小的修改，也请至少提供 3 行上下文（Context lines）。
+3. 严禁使用 "..." 省略中间的代码，必须完整展示 Hunk 内的所有行。
+4. 如果无法确定行号，请确保上下文内容是唯一的。
+5. 保持 Diff 行数准确，如果不确定，请直接输出修改后的代码块，并带上前后 3 行作为锚点。
+
+【规则】
+- 严格按照 Unified Diff 格式输出
+- 提供足够的上下文行以便定位修改位置
+- 确保行数统计准确
+- 不要在 Diff 外添加额外解释
+
+【上下文信息】
+${context || '无'}
+
+【用户需求】
+${userInput}
+
+请直接输出符合标准 Unified Diff 格式的修改内容。
+`;
+}
+
 export function buildFixPrompt(
     originalCmd: string,
     stderr: string,

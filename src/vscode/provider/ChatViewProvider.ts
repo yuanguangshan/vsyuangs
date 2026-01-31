@@ -6,6 +6,7 @@ import { GovernanceService } from '../../engine/agent/governance';
 import * as chatHistoryStorage from '../../engine/agent/chatHistoryStorage';
 import { createIgnoreFilter, IgnoreFilter } from '../utils/ignoreFilter';
 import { GitManager } from '../git/GitManager';
+import { DiffParser, DiffApplier } from '../core/diff';
 
 // 模型配置接口
 interface ModelConfig {
@@ -303,6 +304,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 case 'applyDiff':
                     await this.handleApplyDiff(data.value);
                     break;
+                case 'applyFullRewrite':
+                    await this.handleApplyFullRewrite(data.path, data.content);
+                    break;
                 case 'open':
                     if (data.path) {
                         try {
@@ -596,11 +600,83 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
         try {
             if (diffData.type === 'unified') {
-                for (const file of diffData.files) {
-                    await this.applyUnifiedDiff(file);
+                // 尝试使用新的DiffApplier
+                try {
+                    // 将diffData转换为DiffParser可以处理的格式
+                    const diffText = this.convertToUnifiedDiffFormat(diffData);
+                    const parseResult = DiffParser.parse(diffText);
+
+                    if (!parseResult.success) {
+                        console.warn('[ChatViewProvider] Diff parsing failed, falling back to legacy parser:', parseResult.message);
+                        // 如果解析失败，回退到原来的实现
+                        for (const file of diffData.files) {
+                            await this.applyUnifiedDiff(file);
+                        }
+                        this._view.webview.postMessage({ type: 'diffApplied' });
+                        vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy parser)');
+                        return;
+                    }
+
+                    const applyResult = await DiffApplier.apply(parseResult);
+
+                    if (!applyResult.success) {
+                        console.warn('[ChatViewProvider] Diff application failed, offering full rewrite option:', applyResult.message);
+                        // 如果标准应用失败，询问用户是否尝试全量替换
+                        const result = await vscode.window.showErrorMessage(
+                            `补丁应用失败（${applyResult.message}）。是否尝试全量覆盖？`,
+                            "是的，覆盖全文件", "取消"
+                        );
+
+                        if (result === "是的，覆盖全文件") {
+                            // 这里可以触发一个特定的 Prompt 让 AI 重新发送完整代码，
+                            // 或者如果当前对话中已有完整代码，直接调用 applyFullContent
+                            await this.requestFullCodeFromAI();
+                            return;
+                        } else {
+                            throw new Error(applyResult.message);
+                        }
+                    }
+
+                    this._view.webview.postMessage({ type: 'diffApplied' });
+                    vscode.window.showInformationMessage('✓ Diff applied successfully!');
+                } catch (error) {
+                    // 区分不同类型的错误
+                    if (error instanceof Error) {
+                        if (error.message.includes('parsing failed') || error.message.includes('Invalid diff')) {
+                            console.warn('[ChatViewProvider] Diff parsing error, falling back to legacy parser:', error.message);
+                            // 解析错误：回退到旧解析器
+                            for (const file of diffData.files) {
+                                await this.applyUnifiedDiff(file);
+                            }
+                            this._view.webview.postMessage({ type: 'diffApplied' });
+                            vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy parser)');
+                        } else if (error.message.includes('apply failed')) {
+                            console.warn('[ChatViewProvider] Diff application error, falling back to legacy implementation:', error.message);
+                            // 应用错误：回退到旧实现
+                            for (const file of diffData.files) {
+                                await this.applyUnifiedDiff(file);
+                            }
+                            this._view.webview.postMessage({ type: 'diffApplied' });
+                            vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy implementation)');
+                        } else {
+                            console.error('[ChatViewProvider] Unexpected error during diff application:', error);
+                            // 其他错误：回退到旧实现
+                            for (const file of diffData.files) {
+                                await this.applyUnifiedDiff(file);
+                            }
+                            this._view.webview.postMessage({ type: 'diffApplied' });
+                            vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy implementation)');
+                        }
+                    } else {
+                        console.error('[ChatViewProvider] Unknown error during diff application:', error);
+                        // 未知错误：回退到旧实现
+                        for (const file of diffData.files) {
+                            await this.applyUnifiedDiff(file);
+                        }
+                        this._view.webview.postMessage({ type: 'diffApplied' });
+                        vscode.window.showInformationMessage('✓ Diff applied successfully (using legacy implementation)');
+                    }
                 }
-                this._view.webview.postMessage({ type: 'diffApplied' });
-                vscode.window.showInformationMessage('✓ Diff applied successfully!');
             } else if (diffData.type === 'simple') {
                 await this.applySimpleDiff(diffData);
                 this._view.webview.postMessage({ type: 'diffApplied' });
@@ -611,6 +687,93 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         } catch (error: any) {
             this._view.webview.postMessage({ type: 'diffError', value: error.message });
             vscode.window.showErrorMessage(`Failed to apply diff: ${error.message}`);
+        }
+    }
+
+    /**
+     * 将diffData转换为标准的unified diff格式
+     */
+    private convertToUnifiedDiffFormat(diffData: any): string {
+        let diffString = '';
+
+        for (const file of diffData.files) {
+            diffString += `--- a/${file.oldFile || 'original'}\n`;
+            diffString += `+++ b/${file.newFile || 'modified'}\n`;
+
+            for (const hunk of file.hunks) {
+                diffString += `@@ -${hunk.oldStart},${hunk.oldLines} +${hunk.newStart},${hunk.newLines} @@\n`;
+
+                for (const line of hunk.lines) {
+                    if (line.startsWith('+')) {
+                        diffString += line + '\n';
+                    } else if (line.startsWith('-')) {
+                        diffString += line + '\n';
+                    } else {
+                        diffString += ` ${line}\n`;
+                    }
+                }
+            }
+        }
+
+        return diffString;
+    }
+
+    /**
+     * 请求AI提供完整代码
+     */
+    private async requestFullCodeFromAI() {
+        // 这里可以实现向AI请求完整代码的逻辑
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('请先打开一个文件');
+            return;
+        }
+
+        const document = editor.document;
+        const fileName = path.basename(document.fileName);
+
+        // 向AI发送请求，要求提供完整的文件内容
+        const prompt = `由于补丁应用失败，我需要您提供完整的 ${fileName} 文件内容。请直接输出完整的代码，不要包含任何解释。`;
+
+        // 发送消息到UI，触发AI请求
+        this._view?.webview.postMessage({
+            type: 'appendMessage',
+            value: { role: 'user', content: prompt }
+        });
+
+        await this.handleAgentTask(prompt);
+    }
+
+    /**
+     * 处理全量内容替换
+     */
+    private async handleApplyFullRewrite(filePath: string, content: string) {
+        try {
+            let actualFilePath = filePath;
+
+            // 如果没有提供路径，使用当前活动文件
+            if (!actualFilePath) {
+                const editor = vscode.window.activeTextEditor;
+                if (!editor) {
+                    throw new Error('没有打开的文件可供替换，请先打开一个文件');
+                }
+                actualFilePath = path.relative(
+                    vscode.workspace.workspaceFolders?.[0].uri.fsPath || '',
+                    editor.document.uri.fsPath
+                );
+            }
+
+            // 使用新的DiffApplier的全量替换功能
+            const result = await DiffApplier.applyFullContent(actualFilePath, content);
+
+            if (result.success) {
+                vscode.window.showInformationMessage(`已成功替换文件: ${actualFilePath}`);
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            console.error('[ChatViewProvider] Full rewrite failed:', error);
+            vscode.window.showErrorMessage(`替换失败: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 

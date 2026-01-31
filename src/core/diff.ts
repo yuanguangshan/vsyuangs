@@ -194,21 +194,7 @@ export class DiffParser {
         if (currentFile) {
           // Finalize 前一个 hunk（如果存在）
           if (currentHunk) {
-            const validateResult = this.validateHunkLineCount(currentHunk);
-            if (!validateResult.ok) {
-              return this.error(
-                'LINE_COUNT_MISMATCH',
-                validateResult.error || 'Unknown validation error',
-                i,
-                currentFile.hunks.length - 1
-              );
-            }
-
-            currentFile.hunks.push(currentHunk);
-            currentFile.stats.hunkCount++;
-            currentFile.stats.added += currentHunk.stats.added;
-            currentFile.stats.removed += currentHunk.stats.removed;
-            currentFile.stats.context += currentHunk.stats.context;
+            this.finalizeHunk(currentFile, currentHunk);
             currentHunk = null;
           }
 
@@ -243,22 +229,7 @@ export class DiffParser {
 
         // 保存前一个 hunk（如果存在）
         if (currentHunk) {
-          // 校验行数统计
-          const validateResult = this.validateHunkLineCount(currentHunk);
-          if (!validateResult.ok) {
-            return this.error(
-              'LINE_COUNT_MISMATCH',
-              validateResult.error || 'Unknown validation error',
-              i,
-              currentFile.hunks.length - 1
-            );
-          }
-
-          currentFile.hunks.push(currentHunk);
-          currentFile.stats.hunkCount++;
-          currentFile.stats.added += currentHunk.stats.added;
-          currentFile.stats.removed += currentHunk.stats.removed;
-          currentFile.stats.context += currentHunk.stats.context;
+          this.finalizeHunk(currentFile, currentHunk);
         }
 
         // 解析 hunk 头
@@ -348,16 +319,7 @@ export class DiffParser {
 
     // 保存最后一个 hunk 和文件
     if (currentHunk && currentFile) {
-      const validateResult = this.validateHunkLineCount(currentHunk);
-      if (!validateResult.ok) {
-        return this.error('LINE_COUNT_MISMATCH', validateResult.error || 'Unknown validation error', lines.length - 1, currentFile.hunks.length);
-      }
-
-      currentFile.hunks.push(currentHunk);
-      currentFile.stats.hunkCount++;
-      currentFile.stats.added += currentHunk.stats.added;
-      currentFile.stats.removed += currentHunk.stats.removed;
-      currentFile.stats.context += currentHunk.stats.context;
+      this.finalizeHunk(currentFile, currentHunk);
     }
 
     if (currentFile) {
@@ -391,15 +353,33 @@ export class DiffParser {
 
   /**
    * 规范化文件路径
-   * 
+   *
    * @param path 原始路径
    * @returns 规范化后的路径（去除 a/ 或 b/ 前缀）
    */
   private static normalizePath(path: string): string {
-    if (path.startsWith('a/') || path.startsWith('b/')) {
-      return path.substring(2);
+    return this.flexibleNormalizePath(path);
+  }
+
+  /**
+   * 灵活的路径规范化函数，容忍各种格式错误
+   *
+   * @param pathStr 原始路径字符串
+   * @returns 规范化后的路径
+   */
+  private static flexibleNormalizePath(pathStr: string): string {
+    // 1. 去掉引号
+    let cleanPath = pathStr.replace(/^["']|["']$/g, '');
+
+    // 2. 移除常见的 git 前缀
+    if (cleanPath.startsWith('a/') || cleanPath.startsWith('b/')) {
+      cleanPath = cleanPath.substring(2);
     }
-    return path;
+
+    // 3. 移除开头的斜杠
+    cleanPath = cleanPath.replace(/^[/\\]+/, '');
+
+    return cleanPath.trim();
   }
 
   /**
@@ -437,31 +417,39 @@ export class DiffParser {
   }
 
   /**
-   * 校验 hunk 的行数统计（v2.1 修正：正确的 unified diff 语义）
-   * 
+   * 校验并修复 hunk 的行数统计（v2.1 修正：正确的 unified diff 语义）
+   *
    * unified diff 语义：
    * - oldCount = context + removed
    * - newCount = context + added
-   * 
+   *
    * @param hunk 要校验的 hunk
-   * @returns 校验结果
+   * @returns 校验结果 - 使用判别联合类型确保调用方正确处理返回值
    */
-  private static validateHunkLineCount(hunk: DiffHunk): { ok: boolean; error?: string } {
-    // 修正：正确的 unified diff 行数统计
-    const oldLines = hunk.stats.context + hunk.stats.removed;
-    const newLines = hunk.stats.context + hunk.stats.added;
+  private static validateAndFixHunkLineCount(hunk: DiffHunk):
+    | { status: 'ok'; finalHunk: DiffHunk }
+    | { status: 'fixed'; finalHunk: DiffHunk; error: string }
+    | { status: 'error'; error: string } {
+    // 计算实际解析到的旧代码行数 (context + remove)
+    const actualOldCount = hunk.stats.context + hunk.stats.removed;
+    // 计算实际解析到的新代码行数 (context + add)
+    const actualNewCount = hunk.stats.context + hunk.stats.added;
 
-    if (oldLines !== hunk.oldCount) {
-      return {
-        ok: false,
-        error: `Hunk line count mismatch: expected ${hunk.oldCount} old lines (context+removed), found ${oldLines}`
+    // 如果行数不一致，进行自动修复
+    if (actualOldCount !== hunk.oldCount || actualNewCount !== hunk.newCount) {
+      console.warn(`[Diff Fixer] 检测到行数不匹配: 声明(-${hunk.oldCount},+${hunk.newCount}) -> 实际(-${actualOldCount},+${actualNewCount})`);
+
+      // 创建新的 hunk 对象，避免修改原对象（副作用）
+      const fixedHunk = {
+        ...hunk,
+        oldCount: actualOldCount,
+        newCount: actualNewCount
       };
-    }
 
-    if (newLines !== hunk.newCount) {
       return {
-        ok: false,
-        error: `Hunk line count mismatch: expected ${hunk.newCount} new lines (context+added), found ${newLines}`
+        status: 'fixed', // 标记为已修复
+        finalHunk: fixedHunk,
+        error: "Auto-fixed line count mismatch"
       };
     }
 
@@ -472,12 +460,39 @@ export class DiffParser {
       console.warn(`[DiffParser] Hunk at ${hunk.filePath}:${hunk.oldStart} has no context lines`);
     }
 
-    return { ok: true };
+    return { status: 'ok', finalHunk: hunk };
+  }
+
+  /**
+   * 将 hunk 添加到文件并更新统计信息
+   *
+   * @param file 文件对象
+   * @param hunk 要添加的 hunk
+   */
+  private static finalizeHunk(file: DiffFile, hunk: DiffHunk) {
+    const validateResult = this.validateAndFixHunkLineCount(hunk);
+
+    if (validateResult.status === 'error') {
+      // 如果出现错误，可以选择跳过或抛出异常，这里我们使用原始hunk
+      console.error(`[DiffParser] Validation error: ${validateResult.error}`);
+      file.hunks.push(hunk);
+      file.stats.hunkCount++;
+      file.stats.added += hunk.stats.added;
+      file.stats.removed += hunk.stats.removed;
+      file.stats.context += hunk.stats.context;
+    } else {
+      // status 为 'ok' 或 'fixed'，两种情况下都有 finalHunk
+      file.hunks.push(validateResult.finalHunk);
+      file.stats.hunkCount++;
+      file.stats.added += validateResult.finalHunk.stats.added;
+      file.stats.removed += validateResult.finalHunk.stats.removed;
+      file.stats.context += validateResult.finalHunk.stats.context;
+    }
   }
 
   /**
    * 创建错误对象
-   * 
+   *
    * @param error 错误类型
    * @param message 错误消息
    * @param line 错误行号（可选）
@@ -785,6 +800,98 @@ export class DiffApplier {
   }
 
   /**
+   * 应用完整的文件内容（降级机制）
+   *
+   * @param filePath 文件路径
+   * @param newContent 新的文件内容
+   * @returns 应用结果
+   */
+  static async applyFullContent(filePath: string, newContent: string): Promise<ApplyResult> {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      return {
+        success: false,
+        error: 'INVALID_DIFF',
+        message: 'No workspace folder found'
+      };
+    }
+
+    // 基本内容校验，防止明显错误
+    if (!newContent || typeof newContent !== 'string') {
+      return {
+        success: false,
+        error: 'INVALID_DIFF',
+        message: 'Invalid content provided for replacement'
+      };
+    }
+
+    // 检查是否包含明显的异常内容（如过多的换行符或特殊字符）
+    if (newContent.length > 0 && newContent.length < 10 && !newContent.trim()) {
+      return {
+        success: false,
+        error: 'INVALID_DIFF',
+        message: 'Content appears to be empty or invalid'
+      };
+    }
+
+    const fullPath = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+
+    try {
+      // 获取当前文档
+      const document = await vscode.workspace.openTextDocument(fullPath);
+      const oldContent = document.getText();
+
+      // 检查新旧内容是否差异过大（可选的安全检查）
+      const oldLines = oldContent.split('\n').length;
+      const newLines = newContent.split('\n').length;
+      const lineDiffRatio = Math.abs(newLines - oldLines) / Math.max(oldLines, 1);
+
+      // 如果内容差异很大，可以考虑提示用户（这里暂时注释掉，可根据需要启用）
+      // if (lineDiffRatio > 2.0) { // 新内容是旧内容的2倍以上
+      //   console.warn(`[DiffApplier] Large content change detected: ${filePath}`);
+      // }
+
+      // 创建全文件范围
+      const fullRange = new vscode.Range(
+        document.lineAt(0).range.start,
+        document.lineAt(document.lineCount - 1).range.end
+      );
+
+      const edit = new vscode.WorkspaceEdit();
+      // 执行替换
+      edit.replace(fullPath, fullRange, newContent);
+
+      // 应用修改
+      const success = await vscode.workspace.applyEdit(edit);
+      if (success) {
+        await document.save();
+        return {
+          success: true,
+          changedFiles: [filePath],
+          stats: {
+            filesChanged: 1,
+            hunksApplied: 0,
+            linesAdded: newContent.split('\n').length,
+            linesRemoved: document.getText().split('\n').length
+          }
+        };
+      } else {
+        return {
+          success: false,
+          error: 'INVALID_DIFF',
+          message: 'VS Code rejected the file modification request'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: 'FILE_NOT_FOUND',
+        message: `Failed to open or modify file: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  /**
    * 应用单个 hunk（MVP 实现）
    * 
    * @param doc 文档对象
@@ -881,7 +988,7 @@ export class DiffApplier {
 
   /**
    * 定位 hunk 起始位置
-   * 
+   *
    * @param doc 文档对象
    * @param hunk 要定位的 hunk
    * @returns 起始行号（0-based），未找到返回 -1
@@ -889,13 +996,79 @@ export class DiffApplier {
   private static locateHunkStart(doc: vscode.TextDocument, hunk: DiffHunk): number {
     const targetLine = hunk.oldStart - 1; // 转换为 0-based
 
-    // 简单实现：直接使用 hunk.oldStart
-    // 未来可以添加模糊匹配、上下文搜索等
-
+    // 1. 首先尝试精确行号匹配
     if (targetLine >= 0 && targetLine < doc.lineCount) {
-      return targetLine;
+      // 检查上下文行是否匹配
+      const anchors = hunk.lines.filter(l => l.type === 'context' && l.content.trim().length > 0).map(l => l.content.trim());
+      if (anchors.length > 0 && this.isLinesMatch(doc.lineAt(targetLine).text, anchors[0])) {
+        // 如果第一个锚点匹配，检查后续锚点是否也匹配
+        let matchCount = 1;
+        for (let j = 1; j < Math.min(anchors.length, 3); j++) {
+          if (targetLine + j < doc.lineCount && this.isLinesMatch(doc.lineAt(targetLine + j).text, anchors[j])) {
+            matchCount++;
+          }
+        }
+        // 如果匹配超过 50% 的锚点，就认为找到了位置
+        if (matchCount / Math.min(anchors.length, 3) >= 0.5) {
+          return targetLine;
+        }
+      }
     }
 
+    // 2. 如果精确匹配失败，启动模糊搜索
+    console.log(`[Fuzzy] 行号 ${hunk.oldStart} 匹配失败，启动内容定位...`);
+    const bestMatchIndex = this.findBestMatchIndex(doc, hunk);
+
+    return bestMatchIndex;
+  }
+
+  /**
+   * 简单的模糊匹配工具函数
+   */
+  private static isLinesMatch(fileLine: string, diffLine: string): boolean {
+    if (!fileLine || !diffLine) return false;
+    // 忽略缩进和首尾空格进行对比
+    return fileLine.trim() === diffLine.trim();
+  }
+
+  /**
+   * 在文档中查找最佳匹配索引
+   */
+  private static findBestMatchIndex(doc: vscode.TextDocument, hunk: DiffHunk): number {
+    const fileLines = doc.getText().split('\n');
+
+    // 提取 context 类型且不为空的行作为搜索锚点
+    const anchors = hunk.lines
+      .filter(l => l.type === 'context' && l.content.trim().length > 5)
+      .map(l => l.content.trim());
+
+    if (anchors.length === 0) return -1;
+
+    // 限制搜索范围，避免全文件扫描导致性能问题
+    // 以期望位置为中心，前后各搜索50行，但不超过最大搜索范围
+    const searchRadius = 50;
+    const maxSearchAttempts = 200; // 限制最大尝试次数
+    let attempts = 0;
+
+    const expectedStart = Math.max(0, hunk.oldStart - 1 - searchRadius); // 转换为0-based并减去搜索半径
+    const expectedEnd = Math.min(fileLines.length, hunk.oldStart - 1 + searchRadius); // 加上搜索半径
+
+    // 搜索指定范围内的匹配
+    for (let i = expectedStart; i < expectedEnd && i < fileLines.length && attempts < maxSearchAttempts; i++, attempts++) {
+      if (this.isLinesMatch(fileLines[i], anchors[0])) {
+        // 如果第一个锚点匹配，检查后续锚点是否也匹配
+        let matchCount = 1;
+        for (let j = 1; j < Math.min(anchors.length, 3); j++) {
+          if (i + j < fileLines.length && this.isLinesMatch(fileLines[i + j], anchors[j])) {
+            matchCount++;
+          }
+        }
+        // 只要匹配超过 50% 的锚点，就认为找到了位置
+        if (matchCount / Math.min(anchors.length, 3) >= 0.5) {
+          return i;
+        }
+      }
+    }
     return -1;
   }
 }
