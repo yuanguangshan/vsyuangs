@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { InlineDiffRenderer } from '../decorations/inlineDiff';
+import { YuangsPanel } from '../sidePanel/YuangsPanel';
 
 /**
  * 优化代码命令处理
@@ -22,42 +22,62 @@ export async function optimizeCode(
 
   // 2. 调用 AI 引擎 (模拟)
   // TODO: 接入真实的 YuangsEngine
-  const optimizedCode = await callAiOptimization(originalCode);
+  const { optimizedCode, explanation } = await callAiOptimization(originalCode);
 
-  // 3. 显示 Inline Diff (不修改原代码)
-  // Convert Range to Selection if necessary
-  const selection = range instanceof vscode.Selection ? range : new vscode.Selection(range.start, range.end);
-  InlineDiffRenderer.show(editor, selection, originalCode, optimizedCode);
+  // 3. 生成 Markdown 格式的输出
+  const markdownContent = generateMarkdown(originalCode, optimizedCode, explanation);
 
-  // 4. 询问用户是否应用
-  const choice = await vscode.window.showQuickPick(
-    ['✅ Apply Changes', '❌ Cancel'],
-    { placeHolder: 'AI 已生成优化建议，是否应用？' }
-  );
+  // 4. 在侧边栏显示 Markdown 内容
+  YuangsPanel.show(markdownContent, 'Yuangs AI - 代码优化');
+}
 
-  if (choice === '✅ Apply Changes') {
-    // 5. 应用修改
-    await editor.edit(editBuilder => {
-      editBuilder.replace(range, optimizedCode);
-    });
+/**
+ * 生成 Markdown 格式的输出
+ */
+function generateMarkdown(originalCode: string, optimizedCode: string, explanation: string): string {
+  return `# 代码优化建议
 
-    // 6. 清除 Diff 装饰器
-    InlineDiffRenderer.clear(editor);
+${explanation}
 
-    vscode.window.showInformationMessage('✅ 代码优化已应用');
-  } else {
-    // 用户取消，清除装饰器
-    InlineDiffRenderer.clear(editor);
-  }
+## 原始代码
+
+\`\`\`
+${originalCode}
+\`\`\`
+
+## 优化后的代码
+
+\`\`\`
+${optimizedCode}
+\`\`\`
+
+---
+
+[应用优化](yuangs.applyOptimization?args=${encodeURIComponent(JSON.stringify({
+  documentUri: vscode.window.activeTextEditor?.document.uri.toString(),
+  range: vscode.window.activeTextEditor?.selection,
+  optimizedCode: optimizedCode
+}))})
+`;
 }
 
 /**
  * 模拟 AI 调用函数
  */
-async function callAiOptimization(code: string): Promise<string> {
+async function callAiOptimization(code: string): Promise<{ optimizedCode: string; explanation: string }> {
   // 这里是你调用 YuangsEngine 的地方
   // const result = await YuangsEngine.optimize(code);
   
-  // 模拟返回优化后的代码
-  return code.replace(/const/g, 'let'); 
+  // 模拟返回优化后的代码和解释
+  const optimizedCode = code.replace(/const/g, 'let');
+  const explanation = `### 优化说明
+
+本次优化对代码进行了以下改进：
+
+1. **变量声明优化**：将 \`const\` 改为 \`let\`，允许变量重新赋值
+2. **代码可读性**：保持原有逻辑不变，仅调整变量声明方式
+
+**建议**：如果变量在后续需要重新赋值，使用 \`let\；如果不需要，继续使用 \`const\` 更安全。`;
+  
+  return { optimizedCode, explanation };
 }

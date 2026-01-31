@@ -5,6 +5,7 @@ import { optimizeCode } from './commands/optimize';
 import { explainSelection } from './commands/explainSelection';
 import { optimizeSelection } from './commands/optimizeSelection';
 import { sendToYuangs } from './commands/sendToYuangs';
+import { ChatViewProvider } from './provider/ChatViewProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Yuangs AI Assistant is now active!');
@@ -23,7 +24,15 @@ export function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(providerDisposable);
 
-    // 3. 注册优化命令
+    // 3. 注册 ChatViewProvider（侧边栏聊天视图）
+    const chatViewProvider = new ChatViewProvider(context);
+    const chatViewDisposable = vscode.window.registerWebviewViewProvider(
+        ChatViewProvider.viewType,
+        chatViewProvider
+    );
+    context.subscriptions.push(chatViewDisposable);
+
+    // 4. 注册优化命令
     const optimizeCommandHandler = (uri: vscode.Uri, range: vscode.Range) => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -44,7 +53,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     };
 
-    // 3. Register new commands for code actions
+    // 5. 注册命令
     context.subscriptions.push(
         vscode.commands.registerCommand('yuangs.optimizeCode', optimizeCommandHandler),
         vscode.commands.registerCommand('yuangs.explainSelection', (code, document, range) => {
@@ -55,6 +64,10 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         vscode.commands.registerCommand('yuangs.sendSelection', (code, document, range) => {
             sendToYuangs(code, document, range);
+        }),
+        vscode.commands.registerCommand('yuangs.askAI', async () => {
+            // Ask AI 命令：打开侧边栏并聚焦到输入框
+            await vscode.commands.executeCommand('workbench.view.extension.yuangs-sidebar');
         })
     );
 }
