@@ -1014,6 +1014,45 @@
       max-width: 300px;
     }
 
+    /* 右键菜单样式 */
+    .context-menu {
+      position: fixed;
+      background: var(--vscode-menu-background);
+      border: 1px solid var(--vscode-menu-border);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      min-width: 180px;
+      z-index: 10000;
+      display: none;
+      overflow: hidden;
+    }
+
+    .context-menu.visible {
+      display: block;
+    }
+
+    .context-menu-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+      color: var(--vscode-foreground);
+      transition: background 0.2s;
+    }
+
+    .context-menu-item:hover {
+      background: var(--vscode-menu-selectionBackground);
+      color: var(--vscode-menu-selectionForeground);
+    }
+
+    .context-menu-separator {
+      height: 1px;
+      background: var(--vscode-menu-separatorBackground);
+      margin: 4px 0;
+    }
+
     @keyframes slideInRight {
       from {
         opacity: 0;
@@ -1261,6 +1300,19 @@
     </div>
   </div>
 
+  <!-- 右键菜单 -->
+  <div class="context-menu" id="context-menu">
+    <div class="context-menu-item" id="context-copy">
+      <span>📋</span>
+      <span>复制消息</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" id="context-delete">
+      <span>🗑️</span>
+      <span>删除消息</span>
+    </div>
+  </div>
+
   <!-- 上下文面板 -->
   <div id="context-panel">
     <div class="context-panel-header">
@@ -1446,6 +1498,13 @@
       const div = document.createElement("div");
       div.className = `message ${role}-message`;
       div.dataset.content = text; // 保存原始文本内容
+      
+      // ✅ 添加右键菜单事件监听
+      div.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showContextMenu(e.clientX, e.clientY, div, text);
+      });
 
       // 创建消息操作按钮容器
       const actionsDiv = document.createElement("div");
@@ -2647,6 +2706,57 @@
         notification.remove();
       }, 3000);
     }
+
+    // === 右键菜单功能 ===
+
+    const contextMenu = document.getElementById("context-menu");
+    const contextCopy = document.getElementById("context-copy");
+    const contextDelete = document.getElementById("context-delete");
+    
+    // 当前右键菜单关联的消息元素和文本
+    let currentContextMessageElement = null;
+    let currentContextMessageText = "";
+
+    // 显示右键菜单
+    function showContextMenu(x, y, messageElement, messageText) {
+      currentContextMessageElement = messageElement;
+      currentContextMessageText = messageText;
+      
+      // 设置菜单位置
+      contextMenu.style.left = x + "px";
+      contextMenu.style.top = y + "px";
+      contextMenu.classList.add("visible");
+    }
+
+    // 隐藏右键菜单
+    function hideContextMenu() {
+      contextMenu.classList.remove("visible");
+      currentContextMessageElement = null;
+      currentContextMessageText = "";
+    }
+
+    // 点击页面其他地方时隐藏右键菜单
+    document.addEventListener("click", (e) => {
+      if (!contextMenu.contains(e.target)) {
+        hideContextMenu();
+      }
+    });
+
+    // 右键菜单项：复制
+    contextCopy.addEventListener("click", () => {
+      if (currentContextMessageText) {
+        copyMessageText(currentContextMessageText);
+      }
+      hideContextMenu();
+    });
+
+    // 右键菜单项：删除
+    contextDelete.addEventListener("click", () => {
+      if (currentContextMessageElement) {
+        deleteMessage(currentContextMessageElement);
+      }
+      hideContextMenu();
+    });
 
     // === 模型选择器功能 ===
 
