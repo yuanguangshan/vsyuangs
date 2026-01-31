@@ -9,13 +9,15 @@
  * 
  * 三级降级体系：
  * - Level 1 (智能修复)：解析器自动修正行数统计
- * - Level 2 (模糊定位)：行号对不上就搜上下文特征
+ * - Level 2 (模糊定位)：行号对不上就搜上下文特征（使用 LCS + Jaccard）
  * - Level 3 (手动/全量兜底)：实在不行就一键全覆盖
  */
 
 import * as vscode from 'vscode';
 import { DiffParser, DiffParseResult, DiffApplier, ApplyResult } from './diff';
 import { DiffSecurityValidator } from './diffSecurityValidator';
+import { normalizeLine, tokenizeLine, calculateSimilarity } from './level2Similarity';
+import { selectAnchors, AnchorSelectionResult } from './anchorSelector';
 
 /**
  * 降级级别
@@ -303,8 +305,10 @@ export class DiffGradedApplier {
    * 
    * 当精确行号匹配失败时，使用模糊搜索定位 hunk 位置
    * 
-   * 注意：这需要修改 DiffParser/DiffApplier 的内部逻辑
-   * 这里我们通过扩展搜索窗口来实现
+   * 实现策略：
+   * 1. 从 hunk 的 context 行中选择信息量最高的锚点
+   * 2. 使用 LCS + Jaccard 相似度在文件中搜索最佳匹配位置
+   * 3. 应用 diff 到找到的位置
    */
   private async tryLevel2(
     diff: DiffParseResult,
@@ -312,15 +316,202 @@ export class DiffGradedApplier {
   ): Promise<ApplyResult> {
     console.log('[DiffGradedApplier] Trying Level 2: Fuzzy Location');
 
-    // TODO: 实现 Level 2 的模糊定位逻辑
-    // 这需要对 DiffApplier 进行扩展，支持更大的搜索窗口
-    // 暂时先返回失败，等待实现
+    try {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        return {
+          success: false,
+          error: 'INVALID_DIFF',
+          message: 'No workspace folder found'
+        };
+      }
 
-    return {
-      success: false,
-      error: 'INVALID_DIFF',
-      message: 'Level 2 (Fuzzy Location) is not yet implemented'
-    };
+      const changedFiles: string[] = [];
+      const edit = new vscode.WorkspaceEdit();
+
+      // 处理每个文件
+      for (const file of diff.files) {
+        const filePath = file.normalizedPath;
+        const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+
+        // 获取当前文档
+        const document = await vscode.workspace.openTextDocument(fileUri);
+        const oldContent = document.getText();
+        const lines = oldContent.split('\n');
+
+        // 处理每个 hunk
+        for (const hunk of file.hunks) {
+          // 1. 从 hunk 的 context 行中提取锚点
+          const contextLines = hunk.lines
+            .filter(l => l.type === 'context')
+            .map(l => l.content);
+
+          console.log(`[DiffGradedApplier Level2] Extracting anchors from ${contextLines.length} context lines`);
+
+          // 2. 使用锚点选择器选择最佳锚点
+          const anchorSelection: AnchorSelectionResult = selectAnchors(contextLines, {
+            minAnchors: options.minAnchorMatches || 2,
+            maxAnchors: 5,
+            infoWeight: 0.6,
+            stabilityWeight: 0.4
+          });
+
+          if (!anchorSelection.success) {
+            console.warn(`[DiffGradedApplier Level2] Anchor selection failed: ${anchorSelection.reason}`);
+            continue; // 跳过这个 hunk，尝试下一个
+          }
+
+          console.log(`[DiffGradedApplier Level2] Selected ${anchorSelection.anchors.length} anchors`);
+
+          // 3. 使用锚点在文件中模糊搜索
+          const locatedLine = this.fuzzyLocateHunk(lines, hunk, anchorSelection.anchors, options);
+
+          if (locatedLine === -1) {
+            console.warn(`[DiffGradedApplier Level2] Cannot locate hunk in file ${filePath}`);
+            continue; // 跳过这个 hunk
+          }
+
+          console.log(`[DiffGradedApplier Level2] Located hunk at line ${locatedLine + 1} (1-based)`);
+
+          // 4. 应用 hunk 到找到的位置
+          const hunkLines: string[] = [];
+          let currentLine = locatedLine;
+
+          for (const diffLine of hunk.lines) {
+            if (diffLine.type === 'context') {
+              currentLine++;
+            } else if (diffLine.type === 'remove') {
+              currentLine++;
+            } else if (diffLine.type === 'add') {
+              hunkLines.push(diffLine.content);
+            }
+          }
+
+          // 计算删除范围
+          const oldLines = hunk.stats.context + hunk.stats.removed;
+          const endLine = locatedLine + oldLines;
+
+          // 构造新内容
+          const before = lines.slice(0, locatedLine);
+          const after = lines.slice(endLine);
+          lines.splice(0, lines.length, ...before, ...hunkLines, ...after);
+
+          console.log(`[DiffGradedApplier Level2] Applied hunk: removed ${oldLines} lines, added ${hunkLines.length} lines`);
+        }
+
+        const newContent = lines.join('\n');
+
+        // 应用完整替换（因为行号已经调整）
+        const fullRange = new vscode.Range(
+          document.lineAt(0).range.start,
+          document.lineAt(document.lineCount - 1).range.end
+        );
+
+        edit.replace(fileUri, fullRange, newContent);
+        changedFiles.push(filePath);
+      }
+
+      // 应用编辑
+      const success = await vscode.workspace.applyEdit(edit);
+      if (success && changedFiles.length > 0) {
+        // 保存文件
+        for (const filePath of changedFiles) {
+          const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+          const document = await vscode.workspace.openTextDocument(fileUri);
+          await document.save();
+        }
+
+        return {
+          success: true,
+          changedFiles,
+          stats: {
+            filesChanged: changedFiles.length,
+            hunksApplied: diff.stats.hunkCount,
+            linesAdded: diff.stats.totalAdded,
+            linesRemoved: diff.stats.totalRemoved
+          }
+        };
+      } else {
+        return {
+          success: false,
+          error: 'INVALID_DIFF',
+          message: 'Failed to apply fuzzy location'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: 'INVALID_DIFF',
+        message: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  /**
+   * 使用锚点模糊定位 hunk 位置
+   * 
+   * @param lines 文件的所有行
+   * @param hunk 要定位的 hunk
+   * @param anchors 选中的锚点
+   * @param options 应用选项
+   * @returns 起始行号（0-based），未找到返回 -1
+   */
+  private fuzzyLocateHunk(
+    lines: string[],
+    hunk: any,
+    anchors: any[],
+    options: DiffGradedApplyOptions
+  ): number {
+    const targetLine = hunk.oldStart - 1; // 转换为 0-based
+
+    // 1. 提取锚点的 token 列表
+    const anchorTokens = anchors.map(a => a.tokens);
+
+    // 2. 计算搜索窗口
+    const searchRadius = options.fuzzySearchWindow || 50;
+    const expectedStart = Math.max(0, targetLine - searchRadius);
+    const expectedEnd = Math.min(lines.length, targetLine + searchRadius);
+
+    console.log(`[DiffGradedApplier Level2] Searching window: [${expectedStart}, ${expectedEnd}]`);
+
+    // 3. 在搜索窗口中查找最佳匹配
+    let bestMatch = -1;
+    let bestScore = 0;
+
+    for (let i = expectedStart; i < expectedEnd; i++) {
+      // 计算当前行的相似度
+      const line = lines[i];
+      if (!line) continue;
+
+      const lineTokens = tokenizeLine(normalizeLine(line));
+
+      // 计算与所有锚点的相似度
+      let totalSimilarity = 0;
+      let matchCount = 0;
+
+      for (const anchorTokenList of anchorTokens) {
+        const result = calculateSimilarity(lineTokens, anchorTokenList);
+        if (result.score > 0.5) { // 相似度阈值
+          totalSimilarity += result.score;
+          matchCount++;
+        }
+      }
+
+      // 计算平均相似度
+      const avgSimilarity = matchCount > 0 ? totalSimilarity / matchCount : 0;
+
+      // 如果匹配的锚点数量足够，并且相似度更高
+      if (matchCount >= (options.minAnchorMatches || 2) && avgSimilarity > bestScore) {
+        bestScore = avgSimilarity;
+        bestMatch = i;
+      }
+    }
+
+    if (bestMatch !== -1) {
+      console.log(`[DiffGradedApplier Level2] Found best match at line ${bestMatch + 1} (score: ${bestScore.toFixed(3)})`);
+    }
+
+    return bestMatch;
   }
 
   /**
