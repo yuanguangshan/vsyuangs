@@ -1,0 +1,274 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index cb61cd2..028d499 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
+ - **Confidence Scoring**: Every commit group now has a confidence score (0.0-1.0)
+ - **Explainable AI**: Each classification includes reasons for the decision
+ - **Human Feedback Loop**: Users can correct wrong classifications, improving future accuracy
+-- **Safety Thresholds**: 
++- **Safety Thresholds**:
+   - ≥ 60% confidence → auto-group
+   - 30-60% confidence → suggest
+   - < 30% confidence → needs-confirmation
+@@ -23,8 +23,9 @@ All notable changes to this project will be documented in this file.
+ 
+ ### 🧠 Learning Enhancements
+ - User corrections are recorded and used to adjust future grouping behavior
+-- Weight adjustment system based on human feedback
+-- Preference memory with time-based decay
++- Weight adjustment system based on human feedback (with upper/lower bounds)
++- Preference memory with time-based decay (7-day window)
++- **v1.5.1**: PreferenceMemory now actively adjusts signal weights in VotingFileClassifier
+ 
+ ### 💬 UX Improvements
+ - Commit preview and Sidebar Chat now display grouping confidence and rationale
+@@ -36,9 +37,11 @@ All notable changes to this project will be documented in this file.
+ - Added GroupExplanation type with detailed reasoning
+ - Created PreferenceMemory system for learning from corrections
+ - Extended FileGroup interface to include explanation data
++- **v1.5.1**: PreferenceMemory now actively influences decision-making through weight adjustments
+ 
+ ### 📚 Documentation
+ - Added SMART_STAGE_GOVERNANCE.md with detailed feature explanation
++- Added GOVERNED_AI_WHITEPAPER.md technical documentation
+ - Updated README with Smart Stage governance features
+ - Documented confidence threshold behavior
+ 
+diff --git a/GOVERNED_AI_WHITEPAPER.md b/GOVERNED_AI_WHITEPAPER.md
+new file mode 100644
+index 0000000..af3bdb2
+--- /dev/null
++++ b/GOVERNED_AI_WHITEPAPER.md
+@@ -0,0 +1,115 @@
++# Smart Stage：Governed AI 的工程实践
++
++## 摘要
++
++Smart Stage 是 Yuangs AI Agent 中的一个 **治理型智能决策系统**，
++用于在代码提交前对文件变更进行**自动分组与建议**。
++
++与传统 AI 不同，Smart Stage 从设计之初即遵循：
++
++> **AI 只能建议，不能越权；
++> 不确定时，必须停下。**
++
++## 核心问题
++
++在 Git 提交阶段，AI 常见风险包括：
++
++- 错误分组导致历史污染
++- 不可解释的决策
++- 模型"自作聪明"却无法纠正
++- 一次错误被无限放大
++
++Smart Stage 的目标不是"更聪明"，而是 **更可靠**。
++
++## 核心设计原则
++
++### 1️⃣ 投票而非单一判断
++Smart Stage 使用多信号投票系统（路径、内容、语义等），
++避免单点误判。
++
++### 2️⃣ 置信度优先
++每一次决策都会生成 **0.0–1.0 的置信度评分**：
++
++- ≥ 0.6 → 自动分组
++- 0.3–0.6 → 建议分组
++- < 0.3 → 需要人工确认
++
++AI 被明确要求：**低置信度时不得行动。**
++
++### 3️⃣ 可解释性是强制的
++每一个分组结果都附带：
++
++- 使用了哪些信号
++- 为什么这些信号重要
++- 为什么其他分类被否定
++
++解释不是日志，而是产品能力。
++
++### 4️⃣ Human-in-the-loop 学习
++当用户纠正错误时：
++
++- 系统不会"学会新规则"
++- 只会调整 **已有信号的权重**
++- 所有学习都有上下限与时间衰减
++
++这是一种 **可治理的学习**。
++
++## 架构设计
++
++### 核心组件
++
++1. **VotingFileClassifier**：多信号投票分类器
++2. **GroupExplanation**：决策解释数据结构
++3. **PreferenceMemory**：用户反馈记忆系统
++4. **SmartStageSuggester**：业务逻辑编排层
++
++### 投票机制
++
++系统从三个维度收集信号：
++
++- **路径信号**：基于文件路径模式（如 `/ui/`, `.test.ts`）
++- **内容信号**：基于diff内容特征（如JSX标记、测试框架语法）
++- **关键词信号**：基于特定关键词（如"fix:", "docs:"）
++
++每种信号都有预设权重，通过加权投票得出最终分类。
++
++### 治理机制
++
++1. **置信度阈值**：决定AI的行为模式
++2. **人类反馈循环**：用户纠正被记录并影响未来决策
++3. **权重调整**：基于反馈调整信号权重，但有上下界
++4. **时间衰减**：旧反馈的影响随时间减弱
++
++## 安全与治理
++
++- 无自进化
++- 无隐式状态
++- 所有学习可审计
++- 所有行为可回滚
++
++Smart Stage 不追求自治，而追求 **可信协作**。
++
++## 学习机制详解
++
++### 权重调整算法
++
++当用户纠正分类时，系统会：
++
++1. 记录具体的错误类型和置信度
++2. 根据置信度计算惩罚强度（高置信度错误惩罚更重）
++3. 调整相关信号的权重倍率
++4. 设置权重倍率的上下界（0.5-1.5）
++
++### 时间衰减机制
++
++所有用户反馈和权重调整都有7天的时间衰减，
++确保系统不会因临时模式而固化错误行为。
++
++## 结论
++
++Smart Stage 代表了一种新的 AI 工程范式：
++
++> **Governed AI ——
++> 一个被约束、被解释、被人类主导的智能系统。**
++
++它证明了AI系统可以在保持智能性的同时，严格遵守人类设定的边界和规则。
+\ No newline at end of file
+diff --git a/README.md b/README.md
+index fdeb395..b736c5a 100644
+--- a/README.md
++++ b/README.md
+@@ -65,17 +65,19 @@ rules:
+ 2. 点击按钮，变更将自动应用到对应文件。
+ 3. 支持新文件创建和现有文件修改。
+ 
+-#### 🔄 智能 Stage 建议 (v1.5+)
++#### 🔄 智能 Stage 建议 (v1.5+) - 治理型 AI
+ 自动分析暂存区文件并按逻辑分组：
+ 1. 点击 Git 面板中的 "Smart Stage" 按钮
+-2. 查看 AI 生成的分组建议
+-3. 每个分组都显示分类置信度和原因
++2. 查看 AI 生成的分组建议（含置信度和原因）
++3. 每个分组都显示分类置信度和决策依据
+ 4. 如有错误分类，可点击 "Wrong? Correct it" 按钮进行修正
+ 
+-**智能分类原理**：
++**治理型 AI 分类原理**：
+ - 多信号投票：路径、内容、关键词等多维度分析
+ - 置信度评估：≥60%自动分组，30-60%建议，<30%需确认
+ - 人类反馈循环：您的纠正会持续改进分类准确性
++- 安全边界：AI 在不确定时会拒绝自动操作
++- 可解释性：每个决策都有明确的原因说明
+ 
+ #### 文件与符号引用
+ 在输入框中输入：
+diff --git a/src/vscode/git/SmartStageSuggester.ts b/src/vscode/git/SmartStageSuggester.ts
+index f97d89a..d3f41f0 100644
+--- a/src/vscode/git/SmartStageSuggester.ts
++++ b/src/vscode/git/SmartStageSuggester.ts
+@@ -86,8 +86,8 @@ export interface GroupingSuggestion {
+ export class SmartStageSuggester {
+   private static readonly CONFIDENCE_THRESHOLD_HIGH = 0.6;
+   private static readonly CONFIDENCE_THRESHOLD_MEDIUM = 0.3;
+-  private static classifier = new VotingFileClassifier();
+   private static preferenceMemory = new PreferenceMemory();
++  private static classifier = new VotingFileClassifier(SmartStageSuggester.preferenceMemory);
+   /**
+    * 分析暂存区并生成分组建议
+    */
+@@ -188,7 +188,7 @@ export class SmartStageSuggester {
+ 
+     for (const hunk of file.hunks) {
+       for (const line of hunk.lines) {
+-        contentParts.push(line.raw); // 使用原始行内容
++        contentParts.push(line.content); // 使用内容而非原始行，避免重复符号
+       }
+     }
+ 
+diff --git a/src/vscode/guard/VotingFileClassifier.ts b/src/vscode/guard/VotingFileClassifier.ts
+index 217215a..0440eda 100644
+--- a/src/vscode/guard/VotingFileClassifier.ts
++++ b/src/vscode/guard/VotingFileClassifier.ts
+@@ -1,14 +1,34 @@
+ import { Vote, CommitGroup, GroupExplanation } from './types';
++import { PreferenceMemory } from './preferences';
+ 
+ export class VotingFileClassifier {
++  constructor(private preferenceMemory: PreferenceMemory) {}
++
+   classify(filePath: string, diff: string): GroupExplanation {
+-    const votes: Vote[] = [];
++    const rawVotes: Vote[] = [];
++
++    this.collectPathVotes(filePath, rawVotes);
++    this.collectDiffVotes(diff, rawVotes);
++    this.collectKeywordVotes(diff, rawVotes);
+ 
+-    this.collectPathVotes(filePath, votes);
+-    this.collectDiffVotes(diff, votes);
+-    this.collectKeywordVotes(diff, votes);
++    // Apply preference adjustments to votes
++    const adjustedVotes = rawVotes.map(vote =>
++      this.applyPreferenceWeight(vote, filePath)
++    );
++
++    return this.aggregate(adjustedVotes);
++  }
+ 
+-    return this.aggregate(votes);
++  private applyPreferenceWeight(vote: Vote, filePath: string): Vote {
++    const multiplier = this.preferenceMemory.getWeightMultiplier(
++      vote.source,
++      vote.category
++    );
++
++    return {
++      ...vote,
++      weight: vote.weight * multiplier
++    };
+   }
+ 
+   private aggregate(votes: Vote[]): GroupExplanation {
+diff --git a/test/VotingFileClassifier.test.ts b/test/VotingFileClassifier.test.ts
+index e44d123..17dd55d 100644
+--- a/test/VotingFileClassifier.test.ts
++++ b/test/VotingFileClassifier.test.ts
+@@ -2,12 +2,14 @@ import { describe, it, beforeEach } from 'mocha';
+ import { expect } from 'chai';
+ import { VotingFileClassifier } from '../src/vscode/guard/VotingFileClassifier';
+ import { GroupExplanation } from '../src/vscode/guard/types';
++import { PreferenceMemory } from '../src/vscode/guard/preferences';
+ 
+ describe('VotingFileClassifier', () => {
+   let classifier: VotingFileClassifier;
+ 
+   beforeEach(() => {
+-    classifier = new VotingFileClassifier();
++    const preferenceMemory = new PreferenceMemory();
++    classifier = new VotingFileClassifier(preferenceMemory);
+   });
+ 
+   describe('classify', () => {
