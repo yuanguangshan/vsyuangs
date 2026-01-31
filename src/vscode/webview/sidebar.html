@@ -1493,6 +1493,20 @@
         showContextMenu(e.clientX, e.clientY, div, text);
       });
 
+      // 创建消息内容容器（先添加内容）
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+
+      if (role === "ai") {
+        contentDiv.innerHTML = marked.parse(text);
+        // 处理 diff 代码块
+        processDiffBlocks(contentDiv);
+      } else {
+        contentDiv.textContent = text;
+      }
+
+      div.appendChild(contentDiv);
+
       // 创建消息操作按钮容器
       const actionsDiv = document.createElement("div");
       actionsDiv.className = "message-actions";
@@ -1525,19 +1539,6 @@
       actionsDiv.appendChild(deleteBtn);
       div.appendChild(actionsDiv);
 
-      // 创建消息内容容器
-      const contentDiv = document.createElement("div");
-      contentDiv.className = "message-content";
-
-      if (role === "ai") {
-        contentDiv.innerHTML = marked.parse(text);
-        // 处理 diff 代码块
-        processDiffBlocks(contentDiv);
-      } else {
-        contentDiv.textContent = text;
-      }
-
-      div.appendChild(contentDiv);
       chatContainer.appendChild(div);
       scrollToBottom();
       return div;
@@ -1832,6 +1833,23 @@
     sendBtn.addEventListener("click", handleSend);
     stopBtn.addEventListener("click", handleStop);
 
+    // 键盘导航功能 - 跟踪当前选中的消息索引
+    let currentMessageIndex = -1;
+
+    function updateMessageSelection() {
+      // 每次都重新获取最新的消息列表
+      const messages = chatContainer.getElementsByClassName("message");
+      
+      // 移除所有消息的选中样式
+      Array.from(messages).forEach(msg => msg.style.outline = "none");
+      
+      // 如果有选中的消息，添加高亮样式
+      if (currentMessageIndex >= 0 && currentMessageIndex < messages.length) {
+        messages[currentMessageIndex].style.outline = "2px solid var(--accent)";
+        messages[currentMessageIndex].style.outlineOffset = "2px";
+      }
+    }
+
     userInput.addEventListener("keydown", (e) => {
       if (suggestionsList.style.display === "block") {
         if (e.key === "ArrowDown") {
@@ -1856,11 +1874,80 @@
         return;
       }
 
+      // 键盘导航消息
+      const currentMessages = chatContainer.getElementsByClassName("message");
+      
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        // 左箭头或上箭头 - 移动到上一条消息
+        e.preventDefault();
+        if (currentMessages.length > 0) {
+          currentMessageIndex = currentMessageIndex <= 0 
+            ? currentMessages.length - 1 
+            : currentMessageIndex - 1;
+          updateMessageSelection();
+          // 滚动到可见区域
+          currentMessages[currentMessageIndex].scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest' 
+          });
+        }
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        // 右箭头或下箭头 - 移动到下一条消息
+        e.preventDefault();
+        if (currentMessages.length > 0) {
+          currentMessageIndex = currentMessageIndex >= currentMessages.length - 1 
+            ? 0 
+            : currentMessageIndex + 1;
+          updateMessageSelection();
+          // 滚动到可见区域
+          currentMessages[currentMessageIndex].scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest' 
+          });
+        }
+      } else if (e.key === "Home") {
+        // Home - 跳转到第一条消息
+        e.preventDefault();
+        if (currentMessages.length > 0) {
+          currentMessageIndex = 0;
+          updateMessageSelection();
+          chatContainer.scrollTop = 0;
+        }
+      } else if (e.key === "End") {
+        // End - 跳转到最后一条消息
+        e.preventDefault();
+        if (currentMessages.length > 0) {
+          currentMessageIndex = currentMessages.length - 1;
+          updateMessageSelection();
+          scrollToBottom();
+        }
+      } else if (e.key === "Escape") {
+        // Escape - 取消选中
+        e.preventDefault();
+        currentMessageIndex = -1;
+        updateMessageSelection();
+        // 如果右键菜单打开，关闭它
+        if (contextMenu.classList.contains("visible")) {
+          hideContextMenu();
+        }
+      }
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSend();
       }
     });
+
+    // 监听消息添加，更新消息列表
+    const observer = new MutationObserver((mutations) => {
+      // 当有新消息时，重置选中状态到最后一条
+      const messages = chatContainer.getElementsByClassName("message");
+      if (messages.length > 0) {
+        currentMessageIndex = messages.length - 1;
+        updateMessageSelection();
+      }
+    });
+    observer.observe(chatContainer, { childList: true });
 
     exportBtn.addEventListener("click", () => {
       vscode.postMessage({ type: "exportChat" });
@@ -2003,7 +2090,7 @@
           if (isStreaming && currentAiMessageElement) {
             isStreaming = false;
 
-            // ✅ 修复：先用局部变量保存当前消息元素的引用，避免闭包引用即将被置空的全局变量
+            // ✅ 保存当前消息元素的引用
             const messageElementToDelete = currentAiMessageElement;
             const aiRawTextToCopy = currentAiRawText;
 
@@ -2011,12 +2098,22 @@
             currentAiMessageElement.innerHTML =
               marked.parse(currentAiRawText);
 
+            // 保存原始文本内容到 dataset
+            messageElementToDelete.dataset.content = aiRawTextToCopy;
+
             // 处理diff块和其他后处理
-            processDiffBlocks(currentAiMessageElement);
-            processCommitSuggestions(currentAiMessageElement, currentAiRawText);
+            processDiffBlocks(messageElementToDelete, aiRawTextToCopy);
+            processCommitSuggestions(messageElementToDelete, aiRawTextToCopy);
+
+            // 重新添加右键菜单事件监听
+            messageElementToDelete.addEventListener('contextmenu', (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              showContextMenu(e.clientX, e.clientY, messageElementToDelete, aiRawTextToCopy);
+            });
 
             // 重新添加消息操作按钮（因为 innerHTML 替换会移除它们）
-            if (!currentAiMessageElement.querySelector('.message-actions')) {
+            if (!messageElementToDelete.querySelector('.message-actions')) {
               const actionsDiv = document.createElement("div");
               actionsDiv.className = "message-actions";
 
@@ -2039,17 +2136,16 @@
                 console.log('[Delete button clicked from done case], target:', e.target);
                 e.preventDefault();
                 e.stopImmediatePropagation();
-                // ✅ 修复：使用保存的局部变量，而不是全局变量
                 deleteMessage(messageElementToDelete);
               };
 
               actionsDiv.appendChild(copyBtn);
               actionsDiv.appendChild(deleteBtn);
-              currentAiMessageElement.appendChild(actionsDiv);
+              messageElementToDelete.appendChild(actionsDiv);
             }
 
             // 添加淡入效果或其他完成动效
-            currentAiMessageElement.classList.add("final-render");
+            messageElementToDelete.classList.add("final-render");
 
             // 重要：处理完一次 AI 回复后，如果是 commit flow，重置状态
             // 但不能立即重置，因为可能还有后续渲染帧。
@@ -2730,7 +2826,10 @@
     });
 
     // 右键菜单项：复制
-    contextCopy.addEventListener("click", () => {
+    contextCopy.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('[Context menu copy clicked]');
       if (currentContextMessageText) {
         copyMessageText(currentContextMessageText);
       }
@@ -2738,7 +2837,10 @@
     });
 
     // 右键菜单项：删除
-    contextDelete.addEventListener("click", () => {
+    contextDelete.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      console.log('[Context menu delete clicked]');
       if (currentContextMessageElement) {
         deleteMessage(currentContextMessageElement);
       }
