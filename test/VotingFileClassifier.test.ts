@@ -2,12 +2,14 @@ import { describe, it, beforeEach } from 'mocha';
 import { expect } from 'chai';
 import { VotingFileClassifier } from '../src/vscode/guard/VotingFileClassifier';
 import { GroupExplanation } from '../src/vscode/guard/types';
+import { PreferenceMemory } from '../src/vscode/guard/preferences';
 
 describe('VotingFileClassifier', () => {
   let classifier: VotingFileClassifier;
 
   beforeEach(() => {
-    classifier = new VotingFileClassifier();
+    const preferenceMemory = new PreferenceMemory();
+    classifier = new VotingFileClassifier(preferenceMemory);
   });
 
   describe('classify', () => {

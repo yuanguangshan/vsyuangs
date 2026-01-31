@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 - **Confidence Scoring**: Every commit group now has a confidence score (0.0-1.0)
 - **Explainable AI**: Each classification includes reasons for the decision
 - **Human Feedback Loop**: Users can correct wrong classifications, improving future accuracy
-- **Safety Thresholds**: 
+- **Safety Thresholds**:
   - ≥ 60% confidence → auto-group
   - 30-60% confidence → suggest
   - < 30% confidence → needs-confirmation
@@ -23,8 +23,9 @@ All notable changes to this project will be documented in this file.
 
 ### 🧠 Learning Enhancements
 - User corrections are recorded and used to adjust future grouping behavior
-- Weight adjustment system based on human feedback
-- Preference memory with time-based decay
+- Weight adjustment system based on human feedback (with upper/lower bounds)
+- Preference memory with time-based decay (7-day window)
+- **v1.5.1**: PreferenceMemory now actively adjusts signal weights in VotingFileClassifier
 
 ### 💬 UX Improvements
 - Commit preview and Sidebar Chat now display grouping confidence and rationale
@@ -36,9 +37,11 @@ All notable changes to this project will be documented in this file.
 - Added GroupExplanation type with detailed reasoning
 - Created PreferenceMemory system for learning from corrections
 - Extended FileGroup interface to include explanation data
+- **v1.5.1**: PreferenceMemory now actively influences decision-making through weight adjustments
 
 ### 📚 Documentation
 - Added SMART_STAGE_GOVERNANCE.md with detailed feature explanation
+- Added GOVERNED_AI_WHITEPAPER.md technical documentation
 - Updated README with Smart Stage governance features
 - Documented confidence threshold behavior
 

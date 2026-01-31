@@ -86,8 +86,8 @@ export interface GroupingSuggestion {
 export class SmartStageSuggester {
   private static readonly CONFIDENCE_THRESHOLD_HIGH = 0.6;
   private static readonly CONFIDENCE_THRESHOLD_MEDIUM = 0.3;
-  private static classifier = new VotingFileClassifier();
   private static preferenceMemory = new PreferenceMemory();
+  private static classifier = new VotingFileClassifier(SmartStageSuggester.preferenceMemory);
   /**
    * 分析暂存区并生成分组建议
    */
@@ -188,7 +188,7 @@ export class SmartStageSuggester {
 
     for (const hunk of file.hunks) {
       for (const line of hunk.lines) {
-        contentParts.push(line.raw); // 使用原始行内容
+        contentParts.push(line.content); // 使用内容而非原始行，避免重复符号
       }
     }
 

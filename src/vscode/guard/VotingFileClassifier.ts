@@ -1,14 +1,34 @@
 import { Vote, CommitGroup, GroupExplanation } from './types';
+import { PreferenceMemory } from './preferences';
 
 export class VotingFileClassifier {
+  constructor(private preferenceMemory: PreferenceMemory) {}
+
   classify(filePath: string, diff: string): GroupExplanation {
-    const votes: Vote[] = [];
+    const rawVotes: Vote[] = [];
 
-    this.collectPathVotes(filePath, votes);
-    this.collectDiffVotes(diff, votes);
-    this.collectKeywordVotes(diff, votes);
+    this.collectPathVotes(filePath, rawVotes);
+    this.collectDiffVotes(diff, rawVotes);
+    this.collectKeywordVotes(diff, rawVotes);
 
-    return this.aggregate(votes);
+    // Apply preference adjustments to votes
+    const adjustedVotes = rawVotes.map(vote =>
+      this.applyPreferenceWeight(vote, filePath)
+    );
+
+    return this.aggregate(adjustedVotes);
+  }
+
+  private applyPreferenceWeight(vote: Vote, filePath: string): Vote {
+    const multiplier = this.preferenceMemory.getWeightMultiplier(
+      vote.source,
+      vote.category
+    );
+
+    return {
+      ...vote,
+      weight: vote.weight * multiplier
+    };
   }
 
   private aggregate(votes: Vote[]): GroupExplanation {
