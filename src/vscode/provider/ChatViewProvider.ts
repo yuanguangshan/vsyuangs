@@ -92,7 +92,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             return {
                 availableModels: [
                     { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: '快速且高效' },
-                    { id: 'gpt-4o', name: 'GPT-4o', description: '平衡性能' },
+                    { id: 'glm4.7', name: 'glm4.7', description: '平衡性能' },
                     { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', description: '高性能' },
                     { id: 'gpt-4', name: 'GPT-4', description: '最强能力' },
                     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', description: '经济实惠' }
