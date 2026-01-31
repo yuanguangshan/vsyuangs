@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(chatViewDisposable);
 
-    // 4. 注册优化命令
+    // 4. 注册命令处理函数
     const optimizeCommandHandler = (uri: vscode.Uri, range: vscode.Range) => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -53,18 +53,41 @@ export function activate(context: vscode.ExtensionContext) {
         }
     };
 
+    const selectionCommandHandler = async (
+        callback: (code: string, document: vscode.TextDocument, range: vscode.Range) => Promise<void>
+    ) => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor');
+            return;
+        }
+
+        if (!editor.document) {
+            vscode.window.showErrorMessage('No active document');
+            return;
+        }
+
+        const code = editor.document.getText(editor.selection);
+        if (!code) {
+            vscode.window.showWarningMessage('请先选中代码');
+            return;
+        }
+
+        await callback(code, editor.document, editor.selection);
+    };
+
     // 5. 注册命令
     context.subscriptions.push(
         vscode.commands.registerCommand('yuangs.optimizeCode', optimizeCommandHandler),
-        vscode.commands.registerCommand('yuangs.explainSelection', (code, document, range) => {
-            explainSelection(code, document, range);
-        }),
-        vscode.commands.registerCommand('yuangs.optimizeSelection', (code, document, range) => {
-            optimizeSelection(code, document, range);
-        }),
-        vscode.commands.registerCommand('yuangs.sendSelection', (code, document, range) => {
-            sendToYuangs(code, document, range);
-        }),
+        vscode.commands.registerCommand('yuangs.explainSelection', () => 
+            selectionCommandHandler(explainSelection)
+        ),
+        vscode.commands.registerCommand('yuangs.optimizeSelection', () => 
+            selectionCommandHandler(optimizeSelection)
+        ),
+        vscode.commands.registerCommand('yuangs.sendSelection', () => 
+            selectionCommandHandler(sendToYuangs)
+        ),
         vscode.commands.registerCommand('yuangs.askAI', async () => {
             // Ask AI 命令：打开侧边栏并聚焦到输入框
             await vscode.commands.executeCommand('workbench.view.extension.yuangs-sidebar');

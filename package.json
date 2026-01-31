@@ -57,6 +57,26 @@
         "icon": "$(comment-discussion)"
       },
       {
+        "command": "yuangs.optimizeCode",
+        "title": "Yuangs: 优化代码",
+        "category": "Yuangs AI"
+      },
+      {
+        "command": "yuangs.explainSelection",
+        "title": "Yuangs: 解释代码",
+        "category": "Yuangs AI"
+      },
+      {
+        "command": "yuangs.optimizeSelection",
+        "title": "Yuangs: 优化选中的代码",
+        "category": "Yuangs AI"
+      },
+      {
+        "command": "yuangs.sendSelection",
+        "title": "Yuangs: 发送到 Yuangs",
+        "category": "Yuangs AI"
+      },
+      {
         "command": "vsyuangs.showScanStats",
         "title": "显示扫描统计",
         "category": "vsyuangs"
@@ -83,6 +103,28 @@
           "command": "yuangs.applyEdit",
           "when": "view == yuangs.chatView",
           "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "yuangs.optimizeCode",
+          "when": "editorHasSelection",
+          "group": "yuangs@1"
+        },
+        {
+          "command": "yuangs.explainSelection",
+          "when": "editorHasSelection",
+          "group": "yuangs@2"
+        },
+        {
+          "command": "yuangs.optimizeSelection",
+          "when": "editorHasSelection",
+          "group": "yuangs@3"
+        },
+        {
+          "command": "yuangs.sendSelection",
+          "when": "editorHasSelection",
+          "group": "yuangs@4"
         }
       ]
     },
