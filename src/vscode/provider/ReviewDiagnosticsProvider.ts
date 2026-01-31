@@ -296,6 +296,18 @@ class ReviewCodeActionProvider implements vscode.CodeActionProvider {
 }
 
 /**
+ * 单例管理器（用于 ProactiveGuard 集成）
+ */
+let providerInstance: ReviewDiagnosticsProvider | null = null;
+
+export function getReviewDiagnosticsProvider(): ReviewDiagnosticsProvider {
+  if (!providerInstance) {
+    providerInstance = new ReviewDiagnosticsProvider();
+  }
+  return providerInstance;
+}
+
+/**
  * 注册命令
  */
 export function registerReviewCommands(
