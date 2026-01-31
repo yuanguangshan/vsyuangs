@@ -18,6 +18,8 @@ import { DiffParser, DiffParseResult, DiffApplier, ApplyResult } from './diff';
 import { DiffSecurityValidator } from './diffSecurityValidator';
 import { normalizeLine, tokenizeLine, calculateSimilarity } from './level2Similarity';
 import { selectAnchors, AnchorSelectionResult } from './anchorSelector';
+import { DiffApplyTransaction, executeTransaction } from './diffApplyTransaction';
+import { buildSemanticReviewContext, reviewPhase3, Phase3ReviewResult } from './semanticReviewContext';
 
 /**
  * 降级级别
