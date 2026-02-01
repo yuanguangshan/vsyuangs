@@ -54,31 +54,37 @@ export class LLMAdapter {
           console.log(`[LLMAdapter] Using DSL-based context prompt`);
           contextPrompt = await buildContextPromptWithReferences(contextBuffer, userInput);
         } else {
-        // 区分流式传输和非流式传输
-        // ✅ 修复：流式传输也使用 ranked 策略，确保 @references 优先级最高
-        if (onChunk) {
-          // 流式传输时使用排名策略，确保用户 @ 引用的文件优先显示
-          // 适当增加 token 限制，避免重要内容被截断
-          console.log(`[LLMAdapter] Using RANKED strategy with 12000 tokens (streaming mode)`);
-          contextPrompt = contextBuffer.buildPrompt('', {
-            strategy: 'ranked',  // 使用排名策略，按重要性排序
-            maxTokens: 12000     // 增加token限制，确保 @references 内容完整
-          });
-        } else {
-          // 非流式传输时使用完整的排名策略
-          console.log(`[LLMAdapter] Using RANKED strategy with 16000 tokens (non-streaming mode)`);
-          contextPrompt = contextBuffer.buildPrompt('', {
-            strategy: 'ranked',  // 使用排名策略
-            maxTokens: 16000     // 设置最大token限制
-          });
-        }
+          // 区分流式传输和非流式传输
+          // ✅ 修复：流式传输也使用 ranked 策略，确保 @references 优先级最高
+          if (onChunk) {
+            // 流式传输时使用排名策略，确保用户 @ 引用的文件优先显示
+            // 适当增加 token 限制，避免重要内容被截断
+            console.log(`[LLMAdapter] Using RANKED strategy with 12000 tokens (streaming mode)`);
+            contextPrompt = contextBuffer.buildPrompt('', {
+              strategy: 'ranked',  // 使用排名策略，按重要性排序
+              maxTokens: 12000     // 增加token限制，确保 @references 内容完整
+            });
+          } else {
+            // 非流式传输时使用完整的排名策略
+            console.log(`[LLMAdapter] Using RANKED strategy with 16000 tokens (non-streaming mode)`);
+            contextPrompt = contextBuffer.buildPrompt('', {
+              strategy: 'ranked',  // 使用排名策略
+              maxTokens: 16000     // 设置最大token限制
+            });
+          }
         }
 
         console.log(`[LLMAdapter] Generated context prompt length: ${contextPrompt.length} chars`);
 
-        // 将ContextBuffer内容作为system消息添加到消息列表开头
+        // 将ContextBuffer内容作为背景信息消息添加到消息列表开头
+        // 使用更明显的隔离符，确保 AI 不会混淆上下文和对话历史
+        const contextRoleMessage = {
+          role: 'system',
+          content: `[CONTEXT DATA STARTED]\n\n${contextPrompt}\n\n[CONTEXT DATA ENDED]\n\nAbove is the project context including files and documentation. Use this information to answer the following questions.`
+        };
+
         fullMessages = [
-          { role: 'system', content: contextPrompt },
+          contextRoleMessage as any,
           ...fullMessages
         ];
       } else {

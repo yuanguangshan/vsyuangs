@@ -6,12 +6,12 @@ import { recordEdge } from './knowledgeGraph';
 import crypto from 'crypto';
 
 function computeStableId(item: {
-  path: string;
-  semantic?: string;
-  content: string;
+    path: string;
+    semantic?: string;
+    content: string;
 }) {
-  const sig = `${item.path}::${item.semantic ?? ''}::${item.content.slice(0, 512)}`;
-  return crypto.createHash('sha256').update(sig).digest('hex');
+    const sig = `${item.path}::${item.semantic ?? ''}::${item.content.slice(0, 512)}`;
+    return crypto.createHash('sha256').update(sig).digest('hex');
 }
 
 export type ContextItem = {
@@ -48,8 +48,8 @@ export type ContextItem = {
 export type InjectionStrategy = 'ranked' | 'recent' | 'all';
 
 export interface BuildPromptOptions {
-  maxTokens?: number;
-  strategy?: InjectionStrategy;
+    maxTokens?: number;
+    strategy?: InjectionStrategy;
 }
 
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
@@ -273,25 +273,32 @@ export class ContextBuffer {
      */
     private computeItemScore(item: ContextItem): number {
         if (!item.importance) {
-            // 如果没有重要性信息，默认为中等评分
             return 0.5;
         }
 
-        const baseScore = computeContextImportance(item.importance);
+        let baseScore = computeContextImportance(item.importance);
 
-        // 使用次数的影响（对数增长，避免过度放大）
-        const useFactor = Math.log(1 + item.importance.useCount);
+        // ✅ 核心修复：如果文件被标记为用户显式引用，给予极高的基础分
+        if (item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected')) {
+            baseScore = Math.max(baseScore, 10.0); // 即使 baseScore 很低，也强行拉高到 10.0
+        }
+
+        // 使用次数的影响
+        const useFactor = Math.log(2 + item.importance.useCount);
 
         // 新鲜度衰减（最近使用的项目获得更高评分）
         const now = Date.now();
         const daysSinceLastUse = (now - item.importance.lastUsed) / (1000 * 60 * 60 * 24);
-        const freshnessFactor = Math.exp(-daysSinceLastUse / 7); // 7天半衰期
+        const freshnessFactor = Math.exp(-daysSinceLastUse / 7);
 
-        // 显式引用的影响
+        // 显式引用的影响 (增加权重比例)
         const explicitReferenceFactor = item.usageStats ?
-            Math.log(1 + item.usageStats.referencedCount) : 0;
+            item.usageStats.referencedCount : 0;
 
-        return baseScore * useFactor * freshnessFactor * (1 + explicitReferenceFactor * 0.1);
+        // ✅ 增加一个巨大的倍率给用户显式引用的文件
+        const userExplicitMultiplier = (item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected')) ? 100 : 1;
+
+        return baseScore * useFactor * freshnessFactor * (1 + explicitReferenceFactor) * userExplicitMultiplier;
     }
 
     /**
@@ -394,7 +401,12 @@ export class ContextBuffer {
                         ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
                         : `[Reference] ${item.type}: ${item.path}`;
 
-                    const body = item.summary ?? item.content;
+                    // ✅ 核心修复：对于高置信度或显式引用的项，除非内容被归档，否则优先显示完整 content
+                    // 原逻辑是 item.summary ?? item.content，这会导致有摘要时 AI 看不到细节
+                    const isUserReferenced = item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected');
+                    const isArchived = item.content?.includes('[ARCHIVED:');
+
+                    const body = (isUserReferenced && !isArchived) ? item.content : (item.summary ?? item.content);
 
                     return `${title}\n---\n${body}\n---`;
                 }).join('\n\n');
@@ -456,16 +468,7 @@ export class ContextBuffer {
         }
 
         const contextBlock = sections.join('\n\n');
-
-        return `
-${contextBlock}
-
-# Task Instructions
-Based on the provided context (if any), answer the user's question. If the context contains source code, treat it as your "source of truth."
-
-User Question:
-${userInput}
-`;
+        return contextBlock;
     }
 
     /**
