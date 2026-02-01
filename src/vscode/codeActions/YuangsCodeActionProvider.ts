@@ -30,7 +30,7 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
     // 1. 发送到 Yuangs
     if (shouldIncludeQuickFix) {
       const action = this.createAction(
-        '发送到 Yuangs',
+        '📤 发送到 Yuangs【苑广山】',
         'yuangs.sendSelection',
         selectedText,
         document,
@@ -44,7 +44,7 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
     // 2. 解释这段代码
     if (shouldIncludeQuickFix) {
       actions.push(this.createAction(
-        '解释这段代码',
+        '🧠 解释这段代码【苑广山】',
         'yuangs.explainSelection',
         selectedText,
         document,
@@ -56,7 +56,7 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
     // 3. 优化这段代码
     if (shouldIncludeRefactor) {
       actions.push(this.createAction(
-        '优化这段代码',
+        '⚡ 优化这段代码【苑广山】',
         'yuangs.optimizeSelection',
         selectedText,
         document,
