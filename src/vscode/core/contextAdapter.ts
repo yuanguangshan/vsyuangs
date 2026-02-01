@@ -25,13 +25,20 @@ export class VSCodeContextAdapter {
    * ✅ 改进版：添加去重、性能优化和更好的用户反馈
    */
   async resolveUserReferences(userInput: string): Promise<void> {
-    const references = userInput.match(/@[^\s]+/g);
-    if (!references) return;
+    console.log(`[ContextAdapter] 🔍 Parsing user input for @ references: "${userInput.substring(0, 100)}"`);
+    
+    // 改进正则表达式：支持路径中的特殊字符，如 . / - _
+    const references = userInput.match(/@[a-zA-Z0-9_\-./\\]+/g);
+    
+    if (!references) {
+      console.log(`[ContextAdapter] ❌ No @ references found in input`);
+      return;
+    }
 
     // ✅ 去重：防止同一文件被多次引用
     const uniqueRefs = [...new Set(references)];
     
-    console.log(`[ContextAdapter] Found ${references.length} references (${uniqueRefs.length} unique): ${uniqueRefs.join(', ')}`);
+    console.log(`[ContextAdapter] ✅ Found ${references.length} references (${uniqueRefs.length} unique): ${uniqueRefs.join(', ')}`);
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
       vscode.window.showWarningMessage('Yuangs AI: No workspace folder open');
@@ -46,6 +53,7 @@ export class VSCodeContextAdapter {
     for (const ref of uniqueRefs) {
       // 移除 @ 前缀
       const relPath = ref.substring(1);
+      console.log(`[ContextAdapter] 📄 Processing reference: "${relPath}"`);
       
       // ✅ 性能优化：只在文件名不含路径分隔符时才进行模糊搜索
       const useFuzzySearch = !relPath.includes('/') && !relPath.includes('\\');
@@ -56,18 +64,23 @@ export class VSCodeContextAdapter {
       // 1. 先尝试直接路径匹配
       try {
         fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relPath);
-        await vscode.workspace.fs.stat(fileUri);
+        const stat = await vscode.workspace.fs.stat(fileUri);
+        console.log(`[ContextAdapter] ✅ Direct path match found: ${fileUri.fsPath}`);
       } catch (directPathError) {
+        console.log(`[ContextAdapter] ⚠️ Direct path failed for "${relPath}": ${directPathError}`);
+        
         // 2. 只在文件名时才进行模糊搜索（避免扫描整个 workspace）
         if (useFuzzySearch) {
           try {
             const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 5);
             if (files.length > 0) {
               fileUri = files[0];
-              console.log(`[ContextAdapter] Fuzzy search found ${files.length} match(es) for "${relPath}", using first`);
+              console.log(`[ContextAdapter] 🔍 Fuzzy search found ${files.length} match(es) for "${relPath}", using: ${fileUri.fsPath}`);
+            } else {
+              console.log(`[ContextAdapter] ❌ Fuzzy search found 0 matches for "${relPath}"`);
             }
           } catch (searchError) {
-            console.warn(`[ContextAdapter] Fuzzy search failed for "${relPath}":`, searchError);
+            console.warn(`[ContextAdapter] ⚠️ Fuzzy search failed for "${relPath}":`, searchError);
           }
         }
       }
@@ -109,7 +122,7 @@ export class VSCodeContextAdapter {
           });
           
           loadedFiles.push(path.basename(fileUri.fsPath));
-          console.log(`[ContextAdapter] ✅ Added referenced file: ${fileUri.fsPath}`);
+          console.log(`[ContextAdapter] ✅ Added referenced file to context: ${fileUri.fsPath} (${content.length} chars)`);
           
         } catch (e) {
           console.warn(`[ContextAdapter] ⚠️ Failed to read referenced file ${relPath}: ${e}`);
