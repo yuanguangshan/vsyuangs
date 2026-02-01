@@ -5,6 +5,7 @@ import { YuangsPanel } from '../sidePanel/YuangsPanel';
  * 优化代码命令处理
  */
 export async function optimizeCode(
+  extensionUri: vscode.Uri,
   document: vscode.TextDocument,
   range: vscode.Range | vscode.Selection
 ): Promise<void> {
@@ -28,7 +29,7 @@ export async function optimizeCode(
   const markdownContent = generateMarkdown(originalCode, optimizedCode, explanation);
 
   // 4. 在侧边栏显示 Markdown 内容
-  YuangsPanel.show(markdownContent, 'Yuangs AI - 代码优化');
+  YuangsPanel.show(extensionUri, markdownContent, 'Yuangs AI - 代码优化');
 }
 
 /**

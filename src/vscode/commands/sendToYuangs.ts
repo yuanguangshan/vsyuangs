@@ -3,7 +3,12 @@ import { sendPrompt } from '../../engine/prompt/send.prompt';
 import { yuangsEngine } from '../../engine/aiClient';
 import { YuangsPanel } from '../sidePanel/YuangsPanel';
 
-export async function sendToYuangs(code: string, document: vscode.TextDocument, range: vscode.Range) {
+export async function sendToYuangs(
+  extensionUri: vscode.Uri,
+  code: string,
+  document: vscode.TextDocument,
+  range: vscode.Range
+) {
   try {
     const language = document.languageId;
     const prompt = sendPrompt(code, language);
@@ -22,7 +27,7 @@ export async function sendToYuangs(code: string, document: vscode.TextDocument, 
 
     // Display result in side panel
     if (result) {
-      YuangsPanel.show(result, 'Yuangs 分析');
+      YuangsPanel.show(extensionUri, result, 'Yuangs 分析');
     }
 
   } catch (error) {

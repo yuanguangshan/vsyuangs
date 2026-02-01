@@ -3,7 +3,12 @@ import { explainPrompt } from '../../engine/prompt/explain.prompt';
 import { yuangsEngine } from '../../engine/aiClient';
 import { YuangsPanel } from '../sidePanel/YuangsPanel';
 
-export async function explainSelection(code: string, document: vscode.TextDocument, range: vscode.Range) {
+export async function explainSelection(
+  extensionUri: vscode.Uri,
+  code: string,
+  document: vscode.TextDocument,
+  range: vscode.Range
+) {
   try {
     const language = document.languageId;
     const prompt = explainPrompt(code, language);
@@ -22,7 +27,7 @@ export async function explainSelection(code: string, document: vscode.TextDocume
 
     // Display result in side panel
     if (result) {
-      YuangsPanel.show(result, '代码解释');
+      YuangsPanel.show(extensionUri, result, '代码解释');
     }
 
   } catch (error) {

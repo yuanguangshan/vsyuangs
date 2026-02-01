@@ -46,15 +46,15 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         if (range) {
-            optimizeCode(editor.document, range);
+            optimizeCode(context.extensionUri, editor.document, range);
         } else {
             // If no range (e.g., called from palette), use the current selection
-            optimizeCode(editor.document, editor.selection);
+            optimizeCode(context.extensionUri, editor.document, editor.selection);
         }
     };
 
     const selectionCommandHandler = async (
-        callback: (code: string, document: vscode.TextDocument, range: vscode.Range) => Promise<void>
+        callback: (extensionUri: vscode.Uri, code: string, document: vscode.TextDocument, range: vscode.Range) => Promise<void>
     ) => {
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
@@ -73,20 +73,20 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        await callback(code, editor.document, editor.selection);
+        await callback(context.extensionUri, code, editor.document, editor.selection);
     };
 
     // 5. 注册命令
     context.subscriptions.push(
         vscode.commands.registerCommand('yuangs.optimizeCode', optimizeCommandHandler),
         vscode.commands.registerCommand('yuangs.explainSelection', () => 
-            selectionCommandHandler(explainSelection)
+            selectionCommandHandler((...args) => explainSelection(...args))
         ),
         vscode.commands.registerCommand('yuangs.optimizeSelection', () => 
-            selectionCommandHandler(optimizeSelection)
+            selectionCommandHandler((...args) => optimizeSelection(...args))
         ),
         vscode.commands.registerCommand('yuangs.sendSelection', () => 
-            selectionCommandHandler(sendToYuangs)
+            selectionCommandHandler((...args) => sendToYuangs(...args))
         ),
         vscode.commands.registerCommand('yuangs.askAI', async () => {
             // Ask AI 命令：打开侧边栏并聚焦到输入框

@@ -4,7 +4,12 @@ import { yuangsEngine } from '../../engine/aiClient';
 import { YuangsPanel } from '../sidePanel/YuangsPanel';
 import { applyDiff } from '../../engine/diff/applyDiff';
 
-export async function optimizeSelection(code: string, document: vscode.TextDocument, range: vscode.Range) {
+export async function optimizeSelection(
+  extensionUri: vscode.Uri,
+  code: string,
+  document: vscode.TextDocument,
+  range: vscode.Range
+) {
   try {
     const language = document.languageId;
     const prompt = optimizePrompt(code, language);
@@ -30,10 +35,10 @@ export async function optimizeSelection(code: string, document: vscode.TextDocum
         // Show diff in side panel with apply option
         const diffContent = `## 优化结果\n\n### 原始代码:\n\`\`\`${language}\n${code}\n\`\`\`\n\n### 优化后:\n\`\`\`${language}\n${optimizedCode}\n\`\`\`\n\n[应用优化](command:yuangs.applyOptimization?${encodeURIComponent(JSON.stringify({documentUri: document.uri.toString(), range, optimizedCode}))})`;
         
-        YuangsPanel.show(diffContent, '代码优化');
+        YuangsPanel.show(extensionUri, diffContent, '代码优化');
       } else {
         // If couldn't parse optimized code, just show the raw result
-        YuangsPanel.show(result, '代码优化');
+        YuangsPanel.show(extensionUri, result, '代码优化');
       }
     }
 
