@@ -322,10 +322,29 @@ export class ContextBuffer {
     buildPrompt(userInput: string, options: BuildPromptOptions = {}): string {
         const { maxTokens, strategy = 'ranked' } = options;
 
-        if (this.isEmpty()) return userInput;
+        console.log(`[ContextBuffer] buildPrompt called with:`, {
+            userInput: userInput?.substring(0, 50) || '(empty)',
+            maxTokens,
+            strategy,
+            totalItems: this.items.length,
+            isEmpty: this.isEmpty()
+        });
+
+        if (this.isEmpty()) {
+            console.log(`[ContextBuffer] ContextBuffer is EMPTY, returning userInput only`);
+            return userInput;
+        }
 
         // 根据策略排序items
         const sortedItems = this.sortItemsByStrategy([...this.items], strategy);
+        console.log(`[ContextBuffer] Items sorted by ${strategy}. Top 5 items:`);
+        sortedItems.slice(0, 5).forEach((item, idx) => {
+            console.log(`[ContextBuffer]   ${idx + 1}. ${item.alias || item.path}`, {
+                confidence: item.importance?.confidence,
+                tags: item.tags,
+                contentLength: item.content?.length || 0
+            });
+        });
 
         // 如果指定了maxTokens，我们需要截断内容以满足限制
         let filteredItems = sortedItems;

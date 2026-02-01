@@ -252,6 +252,15 @@ class ReviewCodeActionProvider implements vscode.CodeActionProvider {
   ): vscode.ProviderResult<vscode.CodeAction[]> {
     const actions: vscode.CodeAction[] = [];
 
+    // 检查请求的代码操作类型
+    const only = context.only;
+    const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
+
+    // 如果只请求了其他类型的操作（如 refactor），则不返回任何操作
+    if (!shouldIncludeQuickFix) {
+      return actions;
+    }
+
     // 查找相关的 diagnostics
     for (const diagnostic of context.diagnostics) {
       if (diagnostic.source !== 'AI Review') {

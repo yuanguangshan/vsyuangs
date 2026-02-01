@@ -53,6 +53,15 @@ export class ProactiveCodeActionProvider implements vscode.CodeActionProvider {
       return actions;
     }
 
+    // 检查请求的代码操作类型
+    const only = context.only;
+    const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
+
+    // 如果只请求了其他类型的操作（如 refactor），则不返回任何操作
+    if (!shouldIncludeQuickFix) {
+      return actions;
+    }
+
     // 为每个 diagnostic 创建操作
     for (const diagnostic of proactiveDiagnostics) {
       const issue = this.extractSecurityIssue(diagnostic);

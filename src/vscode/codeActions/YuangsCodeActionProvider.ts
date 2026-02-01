@@ -9,8 +9,10 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
 
   provideCodeActions(
     document: vscode.TextDocument,
-    range: vscode.Range
-  ): vscode.CodeAction[] {
+    range: vscode.Range,
+    context: vscode.CodeActionContext,
+    token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.CodeAction[]> {
 
     // Only show actions when text is selected
     if (range.isEmpty) return [];
@@ -20,35 +22,46 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
 
     const actions: vscode.CodeAction[] = [];
 
+    // Filter actions based on the requested kind if specified
+    const only = context.only;
+    const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
+    const shouldIncludeRefactor = !only || only.contains(vscode.CodeActionKind.Refactor);
+
     // Send to Yuangs action
-    actions.push(this.createAction(
-      '📤 发送到 Yuangs',
-      'yuangs.sendSelection',
-      selectedText,
-      document,
-      range,
-      vscode.CodeActionKind.QuickFix
-    ));
+    if (shouldIncludeQuickFix) {
+      actions.push(this.createAction(
+        '📤 发送到 Yuangs',
+        'yuangs.sendSelection',
+        selectedText,
+        document,
+        range,
+        vscode.CodeActionKind.QuickFix
+      ));
+    }
 
     // Explain code action
-    actions.push(this.createAction(
-      '🧠 解释这段代码',
-      'yuangs.explainSelection',
-      selectedText,
-      document,
-      range,
-      vscode.CodeActionKind.QuickFix
-    ));
+    if (shouldIncludeQuickFix) {
+      actions.push(this.createAction(
+        '🧠 解释这段代码',
+        'yuangs.explainSelection',
+        selectedText,
+        document,
+        range,
+        vscode.CodeActionKind.QuickFix
+      ));
+    }
 
     // Optimize code action
-    actions.push(this.createAction(
-      '⚡ 优化这段代码',
-      'yuangs.optimizeSelection',
-      selectedText,
-      document,
-      range,
-      vscode.CodeActionKind.Refactor
-    ));
+    if (shouldIncludeRefactor) {
+      actions.push(this.createAction(
+        '⚡ 优化这段代码',
+        'yuangs.optimizeSelection',
+        selectedText,
+        document,
+        range,
+        vscode.CodeActionKind.Refactor
+      ));
+    }
 
     return actions;
   }

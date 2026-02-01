@@ -16,10 +16,6 @@
   },
   "license": "MIT",
   "main": "./dist/vscode/extension.js",
-  "activationEvents": [
-    "onView:yuangs.chatView",
-    "onCommand:yuangs.askAI"
-  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
