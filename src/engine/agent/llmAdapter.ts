@@ -37,20 +37,22 @@ export class LLMAdapter {
           // 如果有 DSL 查询结果，使用 buildContextPromptWithReferences 来构建提示
           contextPrompt = await buildContextPromptWithReferences(contextBuffer, userInput);
         } else {
-          // 区分流式传输和非流式传输，流式传输时使用更简洁的策略以提高性能
-          if (onChunk) {
-            // 流式传输时使用最近的上下文，减少复杂度和渲染抖动
-            contextPrompt = contextBuffer.buildPrompt('', {
-              strategy: 'recent',  // 使用最近策略，更稳定
-              maxTokens: 4000      // 减少token数量，降低渲染负担
-            });
-          } else {
-            // 非流式传输时使用完整的排名策略
-            contextPrompt = contextBuffer.buildPrompt('', {
-              strategy: 'ranked',  // 使用排名策略
-              maxTokens: 16000     // 设置最大token限制
-            });
-          }
+        // 区分流式传输和非流式传输
+        // ✅ 修复：流式传输也使用 ranked 策略，确保 @references 优先级最高
+        if (onChunk) {
+          // 流式传输时使用排名策略，确保用户 @ 引用的文件优先显示
+          // 适当增加 token 限制，避免重要内容被截断
+          contextPrompt = contextBuffer.buildPrompt('', {
+            strategy: 'ranked',  // 使用排名策略，按重要性排序
+            maxTokens: 120000     // 增加token限制，确保 @references 内容完整
+          });
+        } else {
+          // 非流式传输时使用完整的排名策略
+          contextPrompt = contextBuffer.buildPrompt('', {
+            strategy: 'ranked',  // 使用排名策略
+            maxTokens: 16000     // 设置最大token限制
+          });
+        }
         }
 
         // 将ContextBuffer内容作为system消息添加到消息列表开头
