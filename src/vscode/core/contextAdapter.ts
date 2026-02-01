@@ -115,6 +115,10 @@ export class VSCodeContextAdapter {
           const document = await vscode.workspace.openTextDocument(fileUri);
           const content = document.getText();
           
+          // ✅ 关键修复：使用工作区相对路径作为 alias，而不是简单的文件名
+          // 这样 @src/engine/aiClient.ts 才能正确匹配到 alias
+          const relativePath = vscode.workspace.asRelativePath(fileUri);
+          
           await this.contextManager.addContextItemAsync({
              type: 'file',
              path: fileUri.fsPath,
@@ -123,7 +127,7 @@ export class VSCodeContextAdapter {
              summary: `User referenced file: ${path.basename(fileUri.fsPath)}`,
              summarized: true,
              summaryQuality: 1.0, 
-             alias: `@${relPath}`,
+             alias: relativePath, // 统一使用相对路径 (例如 "src/engine/aiClient.ts")
              tags: ['user-referenced', 'explicit'],
              importance: {
                  id: fileUri.fsPath,

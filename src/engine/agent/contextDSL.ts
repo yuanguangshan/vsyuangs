@@ -195,22 +195,27 @@ export class DSLQueryEngine {
     return items.filter(item => {
       // 路径匹配（修复版）
       if (query.path) {
-        const qPath = query.path;
-        const iPath = item.path;
+        // ✅ 增强修复：标准化路径分隔符 (统一转为 /)
+        // 解决 Windows 下 path 为反斜杠而 alias 为正斜杠导致的匹配失败
+        const normalize = (p: string) => p.replace(/\\/g, '/');
+        const qPath = normalize(query.path);
+        const iPath = normalize(item.path);
 
         // 1. 尝试绝对路径精确匹配
         const exactMatch = iPath === qPath;
 
         // 2. 尝试 Alias 匹配 (移除 @ 前缀比较)
-        const cleanAlias = item.alias ? item.alias.replace(/^@/, '') : '';
-        const aliasMatch = item.alias === qPath || cleanAlias === qPath;
+        const rawAlias = item.alias || '';
+        const normAlias = normalize(rawAlias);
+        const cleanAlias = normAlias.replace(/^@/, '');
+        
+        const aliasMatch = normAlias === qPath || cleanAlias === qPath;
 
         // 3. 尝试相对路径/后缀匹配 (智能匹配)
         // 如果 query.path 是 "utils.ts"，它应该匹配 "/.../src/utils.ts"
         const suffixMatch = qPath && (
           iPath.endsWith(qPath) ||
-          iPath.endsWith('/' + qPath) ||
-          iPath.endsWith('\\' + qPath)
+          iPath.endsWith('/' + qPath)
         ) || false;
 
         // 只要满足任意一个条件，就算匹配成功
