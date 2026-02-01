@@ -278,13 +278,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                             // 关闭文件面板
                             webviewView.webview.postMessage({ type: 'closeFilesPanel' });
 
-                            // 自动触发 AI 分析
-                            const prompt = `Please analyze this file: ${path.basename(uri.fsPath)}`;
-                            webviewView.webview.postMessage({
-                                type: 'appendMessage',
-                                value: { role: 'user', content: prompt }
-                            });
-                            await this.handleAgentTask(prompt);
+                            // ✅ 修复：不再自动触发 AI 分析
+                            // 现在文件选择器使用 @ 引用方式，文件内容会通过 resolveUserReferences 正确加载
+                            // 保留此 readFile 处理器是为了将来可能的其他用途
                         } catch (error: any) {
                             console.error(`[ChatViewProvider] Failed to read file ${data.path}:`, error);
                             webviewView.webview.postMessage({
@@ -495,7 +491,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             // 2. 调用 flush() 等待所有异步上下文添加完成
             // 3. 调用 collectContext() 收集其他上下文
             // 4. LLMAdapter.think() 会从 ContextBuffer 构建上下文提示
-            
+
             const contextManager = this._runtime.getContextManager();
 
             let fullAiResponse = '';
@@ -619,17 +615,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         try {
             if (diffData.type === 'unified') {
                 console.log('[ChatViewProvider] Applying unified diff with graded applier...');
-                
+
                 // 转换为标准 unified diff 格式
                 const diffText = this.convertToUnifiedDiffFormat(diffData);
                 console.log(`[ChatViewProvider] Diff text (${diffText.length} chars):`, diffText.substring(0, 200) + '...');
-                
+
                 // 获取原始代码（用于 Phase 1 安全扫描）
                 const originalCode = await this.getOriginalCodeForDiff(diffData);
-                
+
                 // 解析 diff
                 const parseResult = DiffParser.parse(diffText);
-                
+
                 if (!parseResult.success) {
                     console.warn('[ChatViewProvider] Diff parsing failed:', parseResult.message);
                     throw new Error(`Diff 解析失败: ${parseResult.message}`);
@@ -704,7 +700,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
                 // 发送成功消息到 UI
                 this._view.webview.postMessage({ type: 'diffApplied' });
-                
+
                 // 记录降级信息到 UI
                 if (applyResult.usedLevel && applyResult.usedLevel !== 'intelligent_fix') {
                     const levelNames: Record<string, string> = {
@@ -1041,26 +1037,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private async handlePerformCommit(message: string) {
         try {
             await GitManager.commit(message);
-            
+
             // 1. 通知前端成功
             this._view?.webview.postMessage({ type: 'success', value: 'Git Commit 成功' });
-            
+
             // 2. VS Code 原生提示
             vscode.window.showInformationMessage(`✅ 代码已提交: ${message.trim().split('\n')[0]}`);
-            
+
             // 3. 清理状态 (清空输入框)
             await GitManager.setCommitMessage('');
-            
+
         } catch (error: any) {
             console.error('[ChatViewProvider] Commit failed:', error);
-            
+
             // 4. 错误分级处理 (安全 & UX)
             const errorMessage = error instanceof Error ? error.message : '未知错误';
-            
+
             // 发送给前端的错误消息 (用于 Toast 或 状态栏)
-            this._view?.webview.postMessage({ 
-                type: 'error', 
-                value: errorMessage 
+            this._view?.webview.postMessage({
+                type: 'error',
+                value: errorMessage
             });
 
             // VS Code 弹窗提示 (对于严重错误)
@@ -1078,36 +1074,36 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private async handleGeneratePatch(type: 'staged' | 'unstaged' | 'last') {
         try {
             const patch = await GitManager.generatePatch(type);
-            
+
             // 发送 patch 内容到前端，显示为 AI 消息
             const typeNames = {
                 'staged': '暂存区 Patch',
                 'unstaged': '工作区 Patch',
                 'last': '最后一次提交 Patch'
             };
-            
+
             const message = `# ${typeNames[type]}\n\n\`\`\`diff\n${patch}\n\`\`\``;
-            
-            this._view?.webview.postMessage({ 
-                type: 'appendMessage', 
-                value: { 
-                    role: 'assistant', 
-                    content: message 
-                } 
+
+            this._view?.webview.postMessage({
+                type: 'appendMessage',
+                value: {
+                    role: 'assistant',
+                    content: message
+                }
             });
-            
+
             vscode.window.showInformationMessage(`✅ ${typeNames[type]} 生成成功`);
-            
+
         } catch (error: any) {
             console.error('[ChatViewProvider] Generate patch failed:', error);
-            
+
             const errorMessage = error instanceof Error ? error.message : '未知错误';
-            
-            this._view?.webview.postMessage({ 
-                type: 'error', 
-                value: errorMessage 
+
+            this._view?.webview.postMessage({
+                type: 'error',
+                value: errorMessage
             });
-            
+
             vscode.window.showErrorMessage(`生成 patch 失败: ${errorMessage}`);
         }
     }

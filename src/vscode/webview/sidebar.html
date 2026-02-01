@@ -2872,36 +2872,29 @@
 
     // 处理文件点击
     function handleFileClick(filePath) {
-      // 读取文件内容并添加到上下文，然后询问AI关于该文件的内容
-      vscode.postMessage({
-        type: "readFile",
-        path: filePath,
-      });
-
-      // 自动发送一个关于该文件的问题给AI
-      const question = `请分析这个文件: ${filePath}`;
-      addMessage(question, "user");
-
-      // 关闭文件面板以便用户可以看到AI回复
+      // ✅ 修复：不再立即发送 ask 消息，而是在输入框中插入 @文件路径
+      // 这样可以让 @ 引用解析机制正常工作，确保文件内容被正确加载到上下文中
+      
+      // 关闭文件面板
       filesPanel.classList.remove("open");
-
-      vscode.postMessage({ type: "ask", value: question });
-      userInput.value = "";
+      
+      // 在输入框中插入 @文件路径 和提示文本
+      const question = `@${filePath} 请分析这个文件`;
+      userInput.value = question;
+      
+      // 自动调整输入框高度
       userInput.style.height = "auto";
-      currentAiMessageElement = null;
-      currentAiRawText = "";
-      userInput.disabled = true;
-      sendBtn.style.display = "none";
-      stopBtn.classList.add("visible");
-
-      // 添加加载指示器
-      const loader = document.createElement("div");
-      loader.id = "ai-loader";
-      loader.className = "message ai-message system-message";
-      loader.innerHTML =
-        '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
-      chatContainer.appendChild(loader);
-      scrollToBottom();
+      userInput.style.height = userInput.scrollHeight + "px";
+      
+      // 聚焦到输入框，让用户可以看到并修改
+      userInput.focus();
+      
+      // 将光标移动到末尾
+      userInput.setSelectionRange(question.length, question.length);
+      
+      // 可选：自动触发发送（如果你希望自动发送的话）
+      // 注释掉下面这行，让用户手动点击发送按钮
+      // sendBtn.click();
     }
 
     // 获取文件语言（辅助函数）
