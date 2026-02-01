@@ -524,7 +524,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 finalPrompt,
                 (chunk: string) => {
                     fullAiResponse += chunk;
-                    if (view.webview) {
+                    if (view && view.webview) {
                         view.webview.postMessage({ type: 'aiChunk', value: chunk });
                     }
                 },
@@ -538,7 +538,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             );
 
             // 发送上下文信息到UI（但不自动弹出面板）
-            if (view.webview) {
+            if (view && view.webview) {
                 this.sendContextToUI(contextManager);
             }
 
