@@ -400,14 +400,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             console.warn('[ChatViewProvider] No webview available');
             return;
         }
+        if (!this._runtime) {
+            console.warn('[ChatViewProvider] No runtime available');
+            return;
+        }
 
         // 保存 view 引用以避免后续 null 检查
-        const view = this._view;
-
-        // 如果有正在运行的任务，先取消它
-        if (this._abortController) {
-            this._abortController.abort();
-        }
+        const view = this._view!;
 
         // 创建新的 AbortController
         this._abortController = new AbortController();
@@ -524,9 +523,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 finalPrompt,
                 (chunk: string) => {
                     fullAiResponse += chunk;
-                    if (view && view.webview) {
-                        view.webview.postMessage({ type: 'aiChunk', value: chunk });
-                    }
+                    this._view!.webview.postMessage({ type: 'aiChunk', value: chunk });
                 },
                 this._currentModel, // 使用当前选中的模型
                 () => {
@@ -538,28 +535,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             );
 
             // 发送上下文信息到UI（但不自动弹出面板）
-            if (view && view.webview) {
-                this.sendContextToUI(contextManager);
-            }
+            this.sendContextToUI(contextManager);
 
             // 只保存有意义的 AI 回复，过滤空内容
             if (fullAiResponse && fullAiResponse.trim()) {
                 this._messages.push({ role: 'assistant', content: fullAiResponse });
             }
             this._saveHistory();
-            this._view?.webview.postMessage({ type: 'done' });
+            this._view!.webview.postMessage({ type: 'done' });
             (GovernanceService as any).adjudicate = originalAdjudicate;
 
         } catch (error: any) {
             // 检查是否是取消操作
             if (signal.aborted) {
                 console.log('[ChatViewProvider] Task was aborted');
-                this._view?.webview.postMessage({
+                this._view!.webview.postMessage({
                     type: 'error',
                     value: 'Generation stopped by user'
                 });
             } else {
-                this._view.webview.postMessage({ type: 'error', value: error.message });
+                this._view!.webview.postMessage({ type: 'error', value: error.message });
             }
         } finally {
             // 清理 AbortController
@@ -1180,7 +1175,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
 function getNonce() {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567899';
     for (let i = 0; i < 32; i++) {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
