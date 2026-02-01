@@ -44,13 +44,13 @@ export class LLMAdapter {
           // 适当增加 token 限制，避免重要内容被截断
           contextPrompt = contextBuffer.buildPrompt('', {
             strategy: 'ranked',  // 使用排名策略，按重要性排序
-            maxTokens: 120000     // 增加token限制，确保 @references 内容完整
+            maxTokens: 100000     // 增加token限制，确保 @references 内容完整
           });
         } else {
           // 非流式传输时使用完整的排名策略
           contextPrompt = contextBuffer.buildPrompt('', {
             strategy: 'ranked',  // 使用排名策略
-            maxTokens: 16000     // 设置最大token限制
+            maxTokens: 100000     // 设置最大token限制
           });
         }
         }
