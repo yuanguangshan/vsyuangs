@@ -53,18 +53,13 @@
         "icon": "$(comment-discussion)"
       },
       {
-        "command": "yuangs.optimizeCode",
-        "title": "Yuangs: 优化代码",
-        "category": "Yuangs AI"
-      },
-      {
         "command": "yuangs.explainSelection",
-        "title": "Yuangs: 解释代码",
+        "title": "Yuangs: 解释这段代码",
         "category": "Yuangs AI"
       },
       {
         "command": "yuangs.optimizeSelection",
-        "title": "Yuangs: 优化选中的代码",
+        "title": "Yuangs: 优化这段代码",
         "category": "Yuangs AI"
       },
       {
@@ -103,27 +98,36 @@
       ],
       "editor/context": [
         {
-          "command": "yuangs.optimizeCode",
+          "command": "yuangs.sendSelection",
           "when": "editorHasSelection",
-          "group": "yuangs@1"
+          "group": "navigation@1"
         },
         {
           "command": "yuangs.explainSelection",
           "when": "editorHasSelection",
-          "group": "yuangs@2"
+          "group": "navigation@2"
         },
         {
           "command": "yuangs.optimizeSelection",
           "when": "editorHasSelection",
-          "group": "yuangs@3"
-        },
-        {
-          "command": "yuangs.sendSelection",
-          "when": "editorHasSelection",
-          "group": "yuangs@4"
+          "group": "navigation@3"
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "yuangs.sendSelection",
+        "key": "ctrl+shift+y",
+        "mac": "cmd+shift+y",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "yuangs.explainSelection",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorHasSelection"
+      }
+    ],
     "configuration": {
       "title": "vsyuangs",
       "properties": {

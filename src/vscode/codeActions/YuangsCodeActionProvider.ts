@@ -27,22 +27,24 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
     const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
     const shouldIncludeRefactor = !only || only.contains(vscode.CodeActionKind.Refactor);
 
-    // Send to Yuangs action
+    // 1. 发送到 Yuangs
     if (shouldIncludeQuickFix) {
-      actions.push(this.createAction(
-        '📤 发送到 Yuangs',
+      const action = this.createAction(
+        '发送到 Yuangs',
         'yuangs.sendSelection',
         selectedText,
         document,
         range,
         vscode.CodeActionKind.QuickFix
-      ));
+      );
+      action.isPreferred = true; // 设为首选，这样在灯泡里会靠前
+      actions.push(action);
     }
 
-    // Explain code action
+    // 2. 解释这段代码
     if (shouldIncludeQuickFix) {
       actions.push(this.createAction(
-        '🧠 解释这段代码',
+        '解释这段代码',
         'yuangs.explainSelection',
         selectedText,
         document,
@@ -51,10 +53,10 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
       ));
     }
 
-    // Optimize code action
+    // 3. 优化这段代码
     if (shouldIncludeRefactor) {
       actions.push(this.createAction(
-        '⚡ 优化这段代码',
+        '优化这段代码',
         'yuangs.optimizeSelection',
         selectedText,
         document,
