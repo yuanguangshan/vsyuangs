@@ -1009,25 +1009,52 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this._context.workspaceState.update('chatHistory', this._messages);
     }
 
+    private formatTimestamp(date: Date): string {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return [
+            date.getFullYear(),
+            pad(date.getMonth() + 1),
+            pad(date.getDate()),
+            pad(date.getHours()),
+            pad(date.getMinutes()),
+            pad(date.getSeconds()),
+        ].join('');
+    }
+
     private async exportChatHistory() {
         if (this._messages.length === 0) {
             vscode.window.showWarningMessage('No chat history to export.');
             return;
         }
 
-        const mdContent = this._messages.map(m => {
-            const role = m.role === 'user' ? '### 👤 User' : '### 🤖 Assistant';
-            return `${role}\n\n${m.content}\n\n---\n`;
-        }).join('\n');
+        const now = new Date();
+        const timestamp = this.formatTimestamp(now);
+        const filename = `yuangs_chat_${timestamp}.md`;
+
+        // 优化：处理无工作区或多工作区的边界情况
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        const defaultUri = workspaceFolder
+            ? vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filename))
+            : undefined;
 
         const uri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(path.join(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', 'chat_export.md')),
-            filters: { 'Markdown': ['md'] }
+            defaultUri,
+            filters: { 'Markdown': ['md'] },
+            title: 'Export Chat History'
         });
 
         if (uri) {
-            fs.writeFileSync(uri.fsPath, mdContent);
-            vscode.window.showInformationMessage('Chat history exported successfully!');
+            try {
+                const mdContent = this._messages.map(m => {
+                    const role = m.role === 'user' ? '### 👤 User' : '### 🤖 Assistant';
+                    return `${role}\n\n${m.content}\n\n---\n`;
+                }).join('\n');
+
+                await vscode.workspace.fs.writeFile(uri, Buffer.from(mdContent));
+                vscode.window.showInformationMessage(`Chat history exported to ${path.basename(uri.fsPath)}`);
+            } catch (e: any) {
+                vscode.window.showErrorMessage(`Failed to export chat history: ${e.message}`);
+            }
         }
     }
 

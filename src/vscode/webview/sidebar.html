@@ -21,7 +21,7 @@
       --border-color: var(--vscode-widget-border);
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
       --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-      
+
       /* 自定义高级配色 */
       --user-msg-bg: var(--vscode-button-background);
       --user-msg-text: var(--vscode-button-foreground);
@@ -49,13 +49,16 @@
       width: 6px;
       height: 6px;
     }
+
     ::-webkit-scrollbar-track {
       background: transparent;
     }
+
     ::-webkit-scrollbar-thumb {
       background: var(--vscode-scrollbarSlider-background);
       border-radius: 10px;
     }
+
     ::-webkit-scrollbar-thumb:hover {
       background: var(--vscode-scrollbarSlider-hoverBackground);
     }
@@ -74,11 +77,14 @@
       padding: 0 16px;
       box-sizing: border-box;
       z-index: 100;
-      backdrop-filter: blur(10px); /* 毛玻璃效果 */
+      backdrop-filter: blur(10px);
+      /* 毛玻璃效果 */
     }
 
     /* 移除旧的彩虹线，改用精致的 Logo 样式 */
-    header::before { display: none; }
+    header::before {
+      display: none;
+    }
 
     .header-title {
       font-size: 14px;
@@ -124,7 +130,7 @@
       font-weight: 500;
       opacity: 1;
     }
-    
+
     .icon-btn.context-btn:hover {
       background: var(--vscode-button-secondaryHoverBackground);
     }
@@ -137,7 +143,8 @@
       padding: 4px 10px;
       background: var(--vscode-input-background);
       border: 1px solid var(--border-color);
-      border-radius: 100px; /* 胶囊样式 */
+      border-radius: 100px;
+      /* 胶囊样式 */
       cursor: pointer;
       transition: all 0.2s;
       font-size: 12px;
@@ -168,7 +175,7 @@
       z-index: 3000;
       padding: 4px;
     }
-    
+
     .model-option {
       padding: 8px 12px;
       cursor: pointer;
@@ -304,7 +311,8 @@
       padding: 20px 16px;
       display: flex;
       flex-direction: column;
-      gap: 24px; /* 增加消息间距 */
+      gap: 24px;
+      /* 增加消息间距 */
     }
 
     .message {
@@ -337,10 +345,18 @@
     }
 
     /* AI 消息内的 Markdown 样式优化 */
-    .ai-message p { margin: 0.5em 0; }
-    .ai-message p:first-child { margin-top: 0; }
-    .ai-message p:last-child { margin-bottom: 0; }
-    
+    .ai-message p {
+      margin: 0.5em 0;
+    }
+
+    .ai-message p:first-child {
+      margin-top: 0;
+    }
+
+    .ai-message p:last-child {
+      margin-bottom: 0;
+    }
+
     .ai-message code {
       font-family: 'Fira Code', Consolas, monospace;
       font-size: 0.9em;
@@ -354,7 +370,8 @@
     .ai-message pre {
       background: var(--vscode-editor-background);
       border: 1px solid var(--border-color);
-      padding: 30px 12px 12px 12px; /* Top padding reserved for header */
+      padding: 30px 12px 12px 12px;
+      /* Top padding reserved for header */
       border-radius: 8px;
       overflow-x: auto;
       margin: 12px 0;
@@ -370,8 +387,10 @@
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #ff5f56; /* Red */
-      box-shadow: 15px 0 0 #ffbd2e, 30px 0 0 #27c93f; /* Yellow & Green */
+      background: #ff5f56;
+      /* Red */
+      box-shadow: 15px 0 0 #ffbd2e, 30px 0 0 #27c93f;
+      /* Yellow & Green */
       opacity: 0.8;
     }
 
@@ -379,9 +398,12 @@
     .ai-message pre.diff-block {
       border-left: 3px solid var(--accent);
     }
+
     .ai-message pre.diff-block::before {
-      display: none; /* Diff 块不显示红绿灯，改用文字 */
+      display: none;
+      /* Diff 块不显示红绿灯，改用文字 */
     }
+
     .ai-message pre.diff-block::after {
       content: "REVIEW DIFF";
       position: absolute;
@@ -425,13 +447,13 @@
       font-size: 14px;
       transition: all 0.2s;
     }
-    
+
     .message-action-btn:hover {
       background: var(--vscode-list-hoverBackground);
       color: var(--text-primary);
       transform: none;
     }
-    
+
     .user-message .message-action-btn {
       /* 用户消息是深色背景时，操作栏需要适配 */
       background: rgba(255, 255, 255, 0.3);
@@ -490,15 +512,22 @@
       align-self: center;
       font-size: 11px;
       color: var(--text-secondary);
-      background: rgba(127,127,127, 0.05);
+      background: rgba(127, 127, 127, 0.05);
       padding: 4px 12px;
       border-radius: 100px;
       border: 1px solid transparent;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* =========================================
@@ -506,31 +535,35 @@
        ========================================= */
     #input-area {
       padding: 16px 20px 24px 20px;
-      background: transparent; /* 移除背景色，实现悬浮感 */
+      background: transparent;
+      /* 移除背景色，实现悬浮感 */
       border-top: none;
       position: relative;
     }
-    
+
     /* 添加渐变遮罩，防止聊天内容突然截断 */
     #input-area::before {
-        content: "";
-        position: absolute;
-        top: -20px;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: linear-gradient(to top, var(--bg-primary), transparent);
-        pointer-events: none;
+      content: "";
+      position: absolute;
+      top: -20px;
+      left: 0;
+      right: 0;
+      height: 20px;
+      background: linear-gradient(to top, var(--bg-primary), transparent);
+      pointer-events: none;
     }
 
     .input-wrapper {
       display: flex;
       background: var(--vscode-input-background);
       border: 1px solid var(--border-color);
-      border-radius: 16px; /* 更大的圆角 */
+      border-radius: 16px;
+      /* 更大的圆角 */
       padding: 8px 12px;
-      align-items: flex-end; /* 对齐到底部 */
-      box-shadow: var(--shadow-md); /* 悬浮阴影 */
+      align-items: flex-end;
+      /* 对齐到底部 */
+      box-shadow: var(--shadow-md);
+      /* 悬浮阴影 */
       transition: all 0.2s ease;
     }
 
@@ -555,7 +588,8 @@
       font-family: inherit;
     }
 
-    #send-btn, #stop-btn {
+    #send-btn,
+    #stop-btn {
       margin-bottom: 2px;
       width: 28px;
       height: 28px;
@@ -564,7 +598,7 @@
       align-items: center;
       justify-content: center;
     }
-    
+
     #send-btn {
       background: var(--accent);
       color: white;
@@ -597,9 +631,11 @@
       0% {
         box-shadow: 0 0 0 0 rgba(235, 86, 86, 0.7);
       }
+
       70% {
         box-shadow: 0 0 0 6px rgba(235, 86, 86, 0);
       }
+
       100% {
         box-shadow: 0 0 0 0 rgba(235, 86, 86, 0);
       }
@@ -648,13 +684,16 @@
     /* =========================================
        7. 侧边面板 (Context & Files)
        ========================================= */
-    #files-panel, #context-panel {
-      box-shadow: 0 0 40px rgba(0,0,0,0.2); /* 更柔和的深阴影 */
+    #files-panel,
+    #context-panel {
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+      /* 更柔和的深阴影 */
       background: var(--bg-secondary);
       backdrop-filter: blur(20px);
     }
-    
-    .files-panel-header, .context-panel-header {
+
+    .files-panel-header,
+    .context-panel-header {
       height: 48px;
       padding: 0 16px;
       border-bottom: 1px solid var(--border-color);
@@ -663,8 +702,9 @@
       align-items: center;
       justify-content: space-between;
     }
-    
-    .files-panel-title, .context-panel-title {
+
+    .files-panel-title,
+    .context-panel-title {
       font-weight: 600;
       font-size: 14px;
       display: flex;
@@ -672,11 +712,12 @@
       gap: 8px;
     }
 
-    .files-panel-stats, .context-panel-stats {
+    .files-panel-stats,
+    .context-panel-stats {
       font-size: 11px;
       opacity: 0.7;
     }
-    
+
     /* 文件面板 */
     #files-panel {
       position: fixed;
@@ -696,7 +737,8 @@
       left: 0;
     }
 
-    .files-panel-close, .context-panel-close {
+    .files-panel-close,
+    .context-panel-close {
       background: transparent;
       border: none;
       color: var(--text-primary);
@@ -706,7 +748,8 @@
       transition: opacity 0.2s;
     }
 
-    .files-panel-close:hover, .context-panel-close:hover {
+    .files-panel-close:hover,
+    .context-panel-close:hover {
       opacity: 1;
     }
 
@@ -715,7 +758,8 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    .files-search, .context-search {
+    .files-search,
+    .context-search {
       flex: 1;
       background: var(--vscode-input-background);
       border: 1px solid var(--border-color);
@@ -726,8 +770,9 @@
       outline: none;
       transition: border-color 0.2s;
     }
-    
-    .files-search:focus, .context-search:focus {
+
+    .files-search:focus,
+    .context-search:focus {
       border-color: var(--accent);
     }
 
@@ -798,7 +843,8 @@
       opacity: 0.9;
     }
 
-    .file-empty, .file-loading {
+    .file-empty,
+    .file-loading {
       text-align: center;
       padding: 40px 20px;
       opacity: 0.5;
@@ -918,6 +964,7 @@
         opacity: 0;
         transform: translateY(-10px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -1025,7 +1072,8 @@
       border: 1px solid var(--border-color);
       box-shadow: var(--shadow-md);
       top: 60px;
-      right: 20px; /* 靠右对齐 */
+      right: 20px;
+      /* 靠右对齐 */
       border-radius: 8px;
       font-weight: 500;
       display: flex;
@@ -1092,7 +1140,9 @@
     }
 
     @keyframes blink {
-      50% { opacity: 0; }
+      50% {
+        opacity: 0;
+      }
     }
 
     /* 流式传输样式 */
@@ -1140,18 +1190,38 @@
     }
 
     @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0); }
-      40% { transform: scale(1); }
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0);
+      }
+
+      40% {
+        transform: scale(1);
+      }
     }
 
     @keyframes slideInRight {
-      from { opacity: 0; transform: translateX(100%); }
-      to { opacity: 1; transform: translateX(0); }
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
 
     @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
+      from {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0;
+      }
     }
 
     /* Apply Commit Button */
@@ -1227,6 +1297,12 @@
 
     #log-panel.collapsed {
       max-height: 40px;
+      overflow: hidden;
+    }
+
+    /* Collapse log panel: hide content from layout and accessibility tree */
+    #log-panel.collapsed .log-panel-content {
+      display: none;
     }
 
     .log-panel-header {
@@ -1365,19 +1441,19 @@
   </style>
 </head>
 
-  <body>
+<body>
   <script>
     // 检测是否启用调试模式
     const urlParams = new URLSearchParams(window.location.search);
     const DEBUG_MODE = urlParams.get('debug') === 'true';
-    
+
     // 调试日志函数
     function debugLog(...args) {
       if (DEBUG_MODE) {
         console.log('[DEBUG]', ...args);
       }
     }
-    
+
     // 如果是调试模式，显示调试面板
     window.addEventListener('DOMContentLoaded', () => {
       const debugInfo = document.getElementById('debug-info');
@@ -1434,8 +1510,7 @@
   </header>
 
   <div class="git-toolbar">
-    <button class="secondary-btn" id="commit-btn"
-      title="Generate Conventional Commit Message based on staged changes">
+    <button class="secondary-btn" id="commit-btn" title="Generate Conventional Commit Message based on staged changes">
       <span>📝</span> Commit
     </button>
     <button class="secondary-btn" id="review-btn" title="Run Expert Code Review on staged changes">
@@ -1750,7 +1825,7 @@
       const div = document.createElement("div");
       div.className = `message ${role}-message`;
       div.dataset.content = text; // 保存原始文本内容
-      
+
       // ✅ 添加右键菜单事件监听
       div.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -1813,7 +1888,7 @@
     function copyMessageText(text) {
       // 在 VS Code webview 环境中，navigator.clipboard API 可能受到限制
       // 使用多种方法尝试复制
-      
+
       // 方法 1: 尝试使用现代 Clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -1836,10 +1911,10 @@
         document.body.appendChild(textArea);
         textArea.select();
         textArea.setSelectionRange(0, 99999); // 选中全部文本
-        
+
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-        
+
         if (successful) {
           showFlashNotification("✓ 已复制到剪贴板");
           return;
@@ -1848,7 +1923,7 @@
         }
       } catch (err) {
         console.error("execCommand 复制失败:", err);
-        
+
         // 方法 3: 作为最后的 fallback，让用户手动复制
         alert(`复制失败，请手动复制以下内容：\n\n${text}`);
         return;
@@ -1862,10 +1937,10 @@
         console.error('[deleteMessage] messageElement is null/undefined');
         return;
       }
-      
+
       // ❌ 移除 confirm 弹窗，在 VS Code webview 环境中可能被拦截
       // 改为直接删除并显示 Toast 提示
-      
+
       try {
         // 添加淡出动画效果
         messageElement.style.transition = "opacity 0.3s, transform 0.3s";
@@ -1880,10 +1955,10 @@
             messageElement.parentNode.removeChild(messageElement);
           }
           console.log('[deleteMessage] Element removed successfully');
-          
+
           // 显示通知
           showFlashNotification("🗑️ 消息已删除");
-          
+
           // 可选：通知后端从历史记录中删除
           // vscode.postMessage({ type: "deleteMessage", index: ... });
         }, 300);
@@ -2104,10 +2179,10 @@
     function updateMessageSelection() {
       // 每次都重新获取最新的消息列表
       const messages = chatContainer.getElementsByClassName("message");
-      
+
       // 移除所有消息的选中样式
       Array.from(messages).forEach(msg => msg.style.outline = "none");
-      
+
       // 如果有选中的消息，添加高亮样式
       if (currentMessageIndex >= 0 && currentMessageIndex < messages.length) {
         messages[currentMessageIndex].style.outline = "2px solid var(--accent)";
@@ -2141,33 +2216,33 @@
 
       // 键盘导航消息
       const currentMessages = chatContainer.getElementsByClassName("message");
-      
+
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         // 左箭头或上箭头 - 移动到上一条消息
         e.preventDefault();
         if (currentMessages.length > 0) {
-          currentMessageIndex = currentMessageIndex <= 0 
-            ? currentMessages.length - 1 
+          currentMessageIndex = currentMessageIndex <= 0
+            ? currentMessages.length - 1
             : currentMessageIndex - 1;
           updateMessageSelection();
           // 滚动到可见区域
-          currentMessages[currentMessageIndex].scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'nearest' 
+          currentMessages[currentMessageIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
           });
         }
       } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         // 右箭头或下箭头 - 移动到下一条消息
         e.preventDefault();
         if (currentMessages.length > 0) {
-          currentMessageIndex = currentMessageIndex >= currentMessages.length - 1 
-            ? 0 
+          currentMessageIndex = currentMessageIndex >= currentMessages.length - 1
+            ? 0
             : currentMessageIndex + 1;
           updateMessageSelection();
           // 滚动到可见区域
-          currentMessages[currentMessageIndex].scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'nearest' 
+          currentMessages[currentMessageIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
           });
         }
       } else if (e.key === "Home") {
@@ -2515,7 +2590,7 @@
     });
 
     // === 日志面板功能 ===
-    
+
     // 日志面板相关元素
     const logPanel = document.getElementById("log-panel");
     const logPanelContent = document.getElementById("log-panel-content");
@@ -2534,7 +2609,7 @@
       const timeStr = timestamp.toTimeString().split(' ')[0];
       const logEntry = { timestamp, timeStr, level, message };
       logEntries.push(logEntry);
-      
+
       if (logEntries.length > MAX_LOG_ENTRIES) {
         logEntries.shift();
       }
@@ -2575,10 +2650,10 @@
     }
 
     function copyAllLogs() {
-      const allLogs = logEntries.map(entry => 
+      const allLogs = logEntries.map(entry =>
         `${entry.timeStr} [${entry.level.toUpperCase()}] ${entry.message}`
       ).join('\n');
-      
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(allLogs).then(() => {
           showFlashNotification(`📋 Copied ${logEntries.length} logs`);
@@ -2602,23 +2677,23 @@
     const originalConsoleWarn = console.warn;
     const originalConsoleError = console.error;
 
-    console.log = function(...args) {
+    console.log = function (...args) {
       originalConsoleLog.apply(console, args);
-      addLog('info', args.map(arg => 
+      addLog('info', args.map(arg =>
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' '));
     };
 
-    console.warn = function(...args) {
+    console.warn = function (...args) {
       originalConsoleWarn.apply(console, args);
-      addLog('warn', args.map(arg => 
+      addLog('warn', args.map(arg =>
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' '));
     };
 
-    console.error = function(...args) {
+    console.error = function (...args) {
       originalConsoleError.apply(console, args);
-      addLog('error', args.map(arg => 
+      addLog('error', args.map(arg =>
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
       ).join(' '));
     };
@@ -2874,24 +2949,24 @@
     function handleFileClick(filePath) {
       // ✅ 修复：不再立即发送 ask 消息，而是在输入框中插入 @文件路径
       // 这样可以让 @ 引用解析机制正常工作，确保文件内容被正确加载到上下文中
-      
+
       // 关闭文件面板
       filesPanel.classList.remove("open");
-      
+
       // 在输入框中插入 @文件路径 和提示文本
       const question = `@${filePath} 请分析这个文件`;
       userInput.value = question;
-      
+
       // 自动调整输入框高度
       userInput.style.height = "auto";
       userInput.style.height = userInput.scrollHeight + "px";
-      
+
       // 聚焦到输入框，让用户可以看到并修改
       userInput.focus();
-      
+
       // 将光标移动到末尾
       userInput.setSelectionRange(question.length, question.length);
-      
+
       // 可选：自动触发发送（如果你希望自动发送的话）
       // 注释掉下面这行，让用户手动点击发送按钮
       // sendBtn.click();
@@ -3191,7 +3266,7 @@
     const contextMenu = document.getElementById("context-menu");
     const contextCopy = document.getElementById("context-copy");
     const contextDelete = document.getElementById("context-delete");
-    
+
     // 当前右键菜单关联的消息元素和文本
     let currentContextMessageElement = null;
     let currentContextMessageText = "";
@@ -3200,7 +3275,7 @@
     function showContextMenu(x, y, messageElement, messageText) {
       currentContextMessageElement = messageElement;
       currentContextMessageText = messageText;
-      
+
       // 设置菜单位置
       contextMenu.style.left = x + "px";
       contextMenu.style.top = y + "px";
@@ -3361,14 +3436,14 @@
     }
 
     // 使用事件监听器绑定按钮，而不是 onclick
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const commitBtn = document.getElementById('commit-btn');
       const reviewBtn = document.getElementById('review-btn');
 
       console.log('[DEBUG] DOM loaded, binding buttons...');
 
       if (commitBtn) {
-        commitBtn.addEventListener('click', function(e) {
+        commitBtn.addEventListener('click', function (e) {
           console.log('[DEBUG] Commit button clicked!');
           e.preventDefault();
           e.stopPropagation();
@@ -3380,7 +3455,7 @@
       }
 
       if (reviewBtn) {
-        reviewBtn.addEventListener('click', function(e) {
+        reviewBtn.addEventListener('click', function (e) {
           console.log('[DEBUG] Review button clicked!');
           e.preventDefault();
           e.stopPropagation();
@@ -3447,7 +3522,7 @@
           e.stopPropagation();
           const type = option.dataset.type;
           patchDropdown.classList.remove('visible');
-          
+
           vscode.postMessage({
             type: 'generatePatch',
             value: type
