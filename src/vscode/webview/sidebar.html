@@ -1211,6 +1211,157 @@
       padding: 8px;
       border-radius: 0 4px 4px 0;
     }
+
+    /* =========================================
+       9. 日志面板 (Log Panel)
+       ========================================= */
+    #log-panel {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      max-height: 200px;
+      transition: max-height 0.3s ease;
+    }
+
+    #log-panel.collapsed {
+      max-height: 40px;
+    }
+
+    .log-panel-header {
+      height: 36px;
+      padding: 0 12px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .log-panel-title {
+      font-weight: 600;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .log-panel-stats {
+      font-size: 10px;
+      opacity: 0.7;
+    }
+
+    .log-panel-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .log-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+      font-size: 12px;
+    }
+
+    .log-action-btn:hover {
+      opacity: 1;
+    }
+
+    #log-toggle-btn {
+      transition: transform 0.3s ease;
+    }
+
+    #log-panel.collapsed #log-toggle-btn {
+      transform: rotate(180deg);
+    }
+
+    .log-panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+      font-family: 'Fira Code', Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(127, 127, 127, 0.1);
+      cursor: pointer;
+      transition: background 0.2s;
+      word-break: break-all;
+    }
+
+    .log-entry:hover {
+      background: rgba(127, 127, 127, 0.05);
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-time {
+      color: var(--text-secondary);
+      opacity: 0.8;
+      flex-shrink: 0;
+      font-size: 10px;
+      min-width: 70px;
+    }
+
+    .log-level {
+      font-weight: 600;
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .log-entry.log-info .log-level {
+      color: #3794ef;
+      background: rgba(55, 148, 239, 0.1);
+    }
+
+    .log-entry.log-warn .log-level {
+      color: #cca700;
+      background: rgba(204, 167, 0, 0.1);
+    }
+
+    .log-entry.log-error .log-level {
+      color: #f14c4c;
+      background: rgba(241, 76, 76, 0.1);
+    }
+
+    .log-entry.log-debug .log-level {
+      color: #c5c5c5;
+      background: rgba(197, 197, 197, 0.1);
+    }
+
+    .log-message {
+      flex: 1;
+      color: var(--text-primary);
+    }
+
+    .log-entry.log-error .log-message {
+      color: #f14c4c;
+    }
+
+    .log-entry.log-warn .log-message {
+      color: #d7ba7d;
+    }
   </style>
 </head>
 
@@ -1327,6 +1478,34 @@
   <!-- 调试信息 -->
   <div id="debug-info" style="font-size: 10px; color: #888; padding: 5px; border-top: 1px solid #333;">
     Debug: <span id="debug-status">Ready</span>
+  </div>
+
+  <!-- 日志区域 -->
+  <div id="log-panel">
+    <div class="log-panel-header">
+      <div class="log-panel-title">
+        <span>📋 Debug Log</span>
+        <span class="log-panel-stats" id="log-stats">0 entries</span>
+      </div>
+      <div class="log-panel-actions">
+        <button class="log-action-btn" id="log-clear-btn" title="Clear Logs">
+          🗑️
+        </button>
+        <button class="log-action-btn" id="log-copy-btn" title="Copy All Logs">
+          📋
+        </button>
+        <button class="log-action-btn" id="log-toggle-btn" title="Toggle Log Panel">
+          ▼
+        </button>
+      </div>
+    </div>
+    <div class="log-panel-content" id="log-panel-content">
+      <div class="log-entry log-info">
+        <span class="log-time">--:--:--</span>
+        <span class="log-level">[INFO]</span>
+        <span class="log-message">Debug panel initialized. Click logs to copy.</span>
+      </div>
+    </div>
   </div>
 
   <div id="chat-container">
@@ -2334,6 +2513,119 @@
           break;
       }
     });
+
+    // === 日志面板功能 ===
+    
+    // 日志面板相关元素
+    const logPanel = document.getElementById("log-panel");
+    const logPanelContent = document.getElementById("log-panel-content");
+    const logStats = document.getElementById("log-stats");
+    const logClearBtn = document.getElementById("log-clear-btn");
+    const logCopyBtn = document.getElementById("log-copy-btn");
+    const logToggleBtn = document.getElementById("log-toggle-btn");
+
+    // 日志存储
+    const logEntries = [];
+    const MAX_LOG_ENTRIES = 1000;
+
+    // 添加日志函数
+    function addLog(level, message) {
+      const timestamp = new Date();
+      const timeStr = timestamp.toTimeString().split(' ')[0];
+      const logEntry = { timestamp, timeStr, level, message };
+      logEntries.push(logEntry);
+      
+      if (logEntries.length > MAX_LOG_ENTRIES) {
+        logEntries.shift();
+      }
+
+      const logDiv = document.createElement("div");
+      logDiv.className = `log-entry log-${level.toLowerCase()}`;
+      logDiv.innerHTML = `
+        <span class="log-time">${timeStr}</span>
+        <span class="log-level">[${level.toUpperCase()}]</span>
+        <span class="log-message">${escapeHtml(message)}</span>
+      `;
+      logDiv.addEventListener("click", () => {
+        copyLog(`${timeStr} [${level.toUpperCase()}] ${message}`);
+      });
+      logPanelContent.appendChild(logDiv);
+      logPanelContent.scrollTop = logPanelContent.scrollHeight;
+      logStats.textContent = `${logEntries.length} entries`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function copyLog(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showFlashNotification("📋 Log copied");
+        }).catch(err => console.warn("Clipboard API 失败:", err));
+      }
+    }
+
+    function clearLogs() {
+      logEntries.length = 0;
+      logPanelContent.innerHTML = '';
+      addLog('info', 'Logs cleared by user');
+    }
+
+    function copyAllLogs() {
+      const allLogs = logEntries.map(entry => 
+        `${entry.timeStr} [${entry.level.toUpperCase()}] ${entry.message}`
+      ).join('\n');
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(allLogs).then(() => {
+          showFlashNotification(`📋 Copied ${logEntries.length} logs`);
+        }).catch(err => console.warn("Clipboard API 失败:", err));
+      }
+    }
+
+    function toggleLogPanel() {
+      logPanel.classList.toggle("collapsed");
+      const isCollapsed = logPanel.classList.contains("collapsed");
+      logToggleBtn.textContent = isCollapsed ? "▶" : "▼";
+    }
+
+    // 日志面板事件绑定
+    logClearBtn.addEventListener("click", clearLogs);
+    logCopyBtn.addEventListener("click", copyAllLogs);
+    logToggleBtn.addEventListener("click", toggleLogPanel);
+
+    // 拦截 console 输出
+    const originalConsoleLog = console.log;
+    const originalConsoleWarn = console.warn;
+    const originalConsoleError = console.error;
+
+    console.log = function(...args) {
+      originalConsoleLog.apply(console, args);
+      addLog('info', args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' '));
+    };
+
+    console.warn = function(...args) {
+      originalConsoleWarn.apply(console, args);
+      addLog('warn', args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' '));
+    };
+
+    console.error = function(...args) {
+      originalConsoleError.apply(console, args);
+      addLog('error', args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' '));
+    };
+
+    // 初始化日志
+    addLog('info', 'Log panel initialized successfully');
+    console.log('[LOG] Debug panel is ready to capture logs');
 
     // 初始化文件面板
     if (typeof setupFilesPanel === "function") {
