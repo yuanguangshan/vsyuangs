@@ -1,9 +1,9 @@
 # Project Documentation
 
-- **Generated at:** 2026-02-01 16:29:01
+- **Generated at:** 2026-02-01 22:06:29
 - **Root Dir:** `.`
 - **File Count:** 191
-- **Total Size:** 1366.49 KB
+- **Total Size:** 1384.63 KB
 
 <a name="toc"></a>
 ## 📂 扫描目录
@@ -43,9 +43,9 @@
 - [docs/reviewSchema.json](#📄-docsreviewschemajson) (221 lines, 6.81 KB)
 - [docs/v1.3-v1.4-implementation-summary.md](#📄-docsv13-v14-implementation-summarymd) (351 lines, 9.46 KB)
 - [docs/v1.3-v1.4-user-guide.md](#📄-docsv13-v14-user-guidemd) (361 lines, 8.51 KB)
-- [git_reviews.md](#📄-git_reviewsmd) (0 lines, 0.00 KB)
+- [git_reviews.md](#📄-git_reviewsmd) (173 lines, 5.77 KB)
 - [package-lock.json](#📄-package-lockjson) (5136 lines, 180.96 KB)
-- [package.json](#📄-packagejson) (232 lines, 6.53 KB)
+- [package.json](#📄-packagejson) (236 lines, 6.62 KB)
 - [policy.yaml](#📄-policyyaml) (26 lines, 0.56 KB)
 - [run-tests.js](#📄-run-testsjs) (64 lines, 1.72 KB)
 - [src/core/AutomatedTestScanner.ts](#📄-srccoreautomatedtestscannerts) (546 lines, 15.98 KB)
@@ -65,8 +65,8 @@
 - [src/engine/agent/chatHistoryStorage.ts](#📄-srcengineagentchathistorystoragets) (51 lines, 1.70 KB)
 - [src/engine/agent/context.ts](#📄-srcengineagentcontextts) (31 lines, 1.22 KB)
 - [src/engine/agent/contextBank.ts](#📄-srcengineagentcontextbankts) (542 lines, 16.67 KB)
-- [src/engine/agent/contextBuffer.ts](#📄-srcengineagentcontextbufferts) (523 lines, 18.44 KB)
-- [src/engine/agent/contextDSL.ts](#📄-srcengineagentcontextdslts) (367 lines, 9.41 KB)
+- [src/engine/agent/contextBuffer.ts](#📄-srcengineagentcontextbufferts) (526 lines, 19.26 KB)
+- [src/engine/agent/contextDSL.ts](#📄-srcengineagentcontextdslts) (404 lines, 11.17 KB)
 - [src/engine/agent/contextImportance.ts](#📄-srcengineagentcontextimportancets) (82 lines, 1.89 KB)
 - [src/engine/agent/contextManager.ts](#📄-srcengineagentcontextmanagerts) (255 lines, 7.55 KB)
 - [src/engine/agent/contextProtocol.ts](#📄-srcengineagentcontextprotocolts) (445 lines, 13.83 KB)
@@ -84,7 +84,7 @@
 - [src/engine/agent/index.ts](#📄-srcengineagentindexts) (14 lines, 0.85 KB)
 - [src/engine/agent/knowledgeGraph.ts](#📄-srcengineagentknowledgegraphts) (49 lines, 1.30 KB)
 - [src/engine/agent/llm.ts](#📄-srcengineagentllmts) (124 lines, 3.54 KB)
-- [src/engine/agent/llmAdapter.ts](#📄-srcengineagentllmadapterts) (242 lines, 9.17 KB)
+- [src/engine/agent/llmAdapter.ts](#📄-srcengineagentllmadapterts) (248 lines, 9.55 KB)
 - [src/engine/agent/policy/engine.ts](#📄-srcengineagentpolicyenginets) (91 lines, 2.26 KB)
 - [src/engine/agent/policy/index.ts](#📄-srcengineagentpolicyindexts) (3 lines, 0.09 KB)
 - [src/engine/agent/policy/policies/noDangerousShell.ts](#📄-srcengineagentpolicypoliciesnodangerousshellts) (49 lines, 1.79 KB)
@@ -140,12 +140,12 @@
 - [src/engine/utils/renderer.ts](#📄-srcengineutilsrendererts) (116 lines, 3.64 KB)
 - [src/runtime/vscode/VSCodeExecutor.ts](#📄-srcruntimevscodevscodeexecutorts) (147 lines, 6.20 KB)
 - [src/utils/git.ts](#📄-srcutilsgitts) (43 lines, 1.03 KB)
-- [src/vscode/codeActions/YuangsCodeActionProvider.ts](#📄-srcvscodecodeactionsyuangscodeactionproviderts) (87 lines, 2.13 KB)
+- [src/vscode/codeActions/YuangsCodeActionProvider.ts](#📄-srcvscodecodeactionsyuangscodeactionproviderts) (89 lines, 2.28 KB)
 - [src/vscode/commands/askAI.ts](#📄-srcvscodecommandsaskaits) (78 lines, 2.54 KB)
 - [src/vscode/commands/optimize.ts](#📄-srcvscodecommandsoptimizets) (83 lines, 2.23 KB)
 - [src/vscode/commands/optimizeSelection.ts](#📄-srcvscodecommandsoptimizeselectionts) (63 lines, 2.40 KB)
 - [src/vscode/commands/sendToYuangs.ts](#📄-srcvscodecommandssendtoyuangsts) (32 lines, 1.01 KB)
-- [src/vscode/core/contextAdapter.ts](#📄-srcvscodecorecontextadapterts) (443 lines, 15.66 KB)
+- [src/vscode/core/contextAdapter.ts](#📄-srcvscodecorecontextadapterts) (447 lines, 15.97 KB)
 - [src/vscode/core/executorAdapter.ts](#📄-srcvscodecoreexecutoradapterts) (323 lines, 9.47 KB)
 - [src/vscode/decorations/inlineDiff.ts](#📄-srcvscodedecorationsinlinediffts) (108 lines, 3.63 KB)
 - [src/vscode/extension.ts](#📄-srcvscodeextensionts) (98 lines, 3.54 KB)
@@ -155,13 +155,13 @@
 - [src/vscode/guard/explanationProtocol.ts](#📄-srcvscodeguardexplanationprotocolts) (90 lines, 2.31 KB)
 - [src/vscode/guard/preferences.ts](#📄-srcvscodeguardpreferencests) (61 lines, 1.95 KB)
 - [src/vscode/guard/types.ts](#📄-srcvscodeguardtypests) (21 lines, 0.38 KB)
-- [src/vscode/provider/ChatViewProvider.ts](#📄-srcvscodeproviderchatviewproviderts) (1161 lines, 48.38 KB)
+- [src/vscode/provider/ChatViewProvider.ts](#📄-srcvscodeproviderchatviewproviderts) (1188 lines, 49.26 KB)
 - [src/vscode/provider/ProactiveCodeActionProvider.ts](#📄-srcvscodeproviderproactivecodeactionproviderts) (462 lines, 12.82 KB)
 - [src/vscode/provider/ReviewDiagnosticsProvider.ts](#📄-srcvscodeproviderreviewdiagnosticsproviderts) (335 lines, 9.22 KB)
 - [src/vscode/sidePanel/YuangsPanel.ts](#📄-srcvscodesidepanelyuangspanelts) (295 lines, 7.77 KB)
 - [src/vscode/utils/ignoreFilter.ts](#📄-srcvscodeutilsignorefilterts) (202 lines, 6.41 KB)
 - [src/vscode/webview/context-panel-functions.js](#📄-srcvscodewebviewcontext-panel-functionsjs) (204 lines, 5.94 KB)
-- [src/vscode/webview/sidebar.html](#📄-srcvscodewebviewsidebarhtml) (3202 lines, 93.48 KB)
+- [src/vscode/webview/sidebar.html](#📄-srcvscodewebviewsidebarhtml) (3562 lines, 101.44 KB)
 - [src/ygs.md](#📄-srcygsmd) (3 lines, 0.12 KB)
 - [test-demo-security-scan.ts](#📄-test-demo-security-scants) (121 lines, 3.86 KB)
 - [test/DiffImprovements.test.ts](#📄-testdiffimprovementstestts) (104 lines, 3.28 KB)
@@ -11934,6 +11934,179 @@ v1.3-v1.4 已实现：
 
 ````markdown
 
+---
+
+## 📋 Code Review - 2026/2/1 19:34:25
+
+**📊 评分:** 👍 72/100  
+**🔧 级别:** STANDARD  
+**🌿 分支:** `main`  
+**💾 提交:** `92ce7bd`  
+**📂 范围:** 未暂存 (3 个文件)  
+
+### 📝 总体评价
+
+本次变更在形式上较小，但语义影响非常大：`.ai/context.json` 从一个包含完整项目语义描述与 AI 上下文的配置文件，变更为几乎被清空的状态。这种变更如果是有意为之，需要明确设计动机；如果是误操作，则风险较高。
+
+### ⚠️ 发现的问题 (4)
+
+#### 1. [ERROR] .ai/context.json:1
+
+上下文配置被整体移除，可能导致 AI 运行时失去关键语义输入。
+
+**💡 建议:** 如果这是一次重构，建议保留最小可用的 context schema（例如空数组或占位对象），并在提交说明中明确说明迁移或废弃原因。
+
+<details>
+<summary>代码片段</summary>
+
+```
+文件由包含完整 JSON 数组变为仅剩 1 行（空或不完整内容）
+```
+
+</details>
+
+#### 2. [WARNING] .ai/context.json:1
+
+context.json 语义职责不清：当前状态无法判断该文件是被弃用还是暂时清空。
+
+**💡 建议:** 建议在文件中增加注释字段（如 `_comment`）或在 README / CHANGELOG 中说明该配置文件的当前角色。
+
+#### 3. [WARNING] .ai/context.json:1
+
+潜在破坏向后兼容性。
+
+**💡 建议:** 如果已有代码或 AgentRuntime 依赖该文件的结构，建议同步更新解析逻辑，并增加 schema 校验与默认值兜底。
+
+#### 4. [INFO] .ai/context.json:1
+
+删除了大量“项目自描述文档”，降低了 AI 的自解释与自发现能力。
+
+**💡 建议:** 可以考虑将这类长文本迁移到 docs/ 或 README.md 中，而在 context.json 中仅保留引用或摘要。
+
+### 👍 优点
+
+- ✅ 变更范围集中，仅影响单一配置文件
+- ✅ 如果目的是减少上下文噪音或迁移到新机制，此改动为后续重构提供了干净起点
+- ✅ 避免了在 JSON 中长期维护大量自然语言文本的维护成本
+
+### 💡 建议
+
+- 明确 `.ai/context.json` 的设计定位：是运行时必须配置、AI 训练上下文，还是临时引导文件
+- 为 context.json 引入 schema 校验（如 JSON Schema），防止出现“空但不合法”的状态
+- 在 CI 或启动阶段增加校验：当 context 为空时给出显式警告
+- 如果这是一次上下文系统升级，建议拆分为两个提交：一个迁移/删除旧内容，一个引入新机制
+
+[↑ 返回顶部](#)
+
+
+---
+
+## 📋 Code Review - 2026/2/1 19:37:17
+
+**📊 评分:** 👍 72/100  
+**🔧 级别:** STANDARD  
+**🌿 分支:** `main`  
+**💾 提交:** `92ce7bd`  
+**📂 范围:** 未暂存 (4 个文件)  
+
+### 📝 总体评价
+
+该变更在功能意图上明确（将 AI 上下文从简单 todo 文件升级为完整的项目知识与对话历史），但从工程实践和可维护性角度看存在明显问题，主要集中在职责边界、数据膨胀、可维护性与潜在性能风险上。
+
+### ⚠️ 发现的问题 (5)
+
+#### 1. [WARNING] .ai/context.json:1
+
+context.json 中存储了大量非结构化、对话式内容，超出了“上下文索引/元数据”文件的合理职责范围。
+
+**💡 建议:** 建议将长篇说明性文档、README 草稿、路线图等内容拆分为独立的 Markdown 文件，仅在 context.json 中以引用（path + summary）的形式存在。
+
+<details>
+<summary>代码片段</summary>
+
+```
+{ "type": "file", "path": "todo.md", "content": "NGS AI 是一个高度集成的 VS Code AI 助手插件..." }
+```
+
+</details>
+
+#### 2. [WARNING] .ai/context.json:1
+
+JSON 文件中直接嵌入超长文本，后期极易引发合并冲突（Git conflict）并降低审查可读性。
+
+**💡 建议:** 将内容迁移到版本化文档（docs/*.md），context.json 仅维护结构化索引，减少 diff 噪音。
+
+<details>
+<summary>代码片段</summary>
+
+```
+大量连续自然语言文本直接嵌入 JSON value
+```
+
+</details>
+
+#### 3. [WARNING] .ai/context.json:1
+
+上下文内容混合了事实描述、规划建议和对话历史，语义层级不清晰。
+
+**💡 建议:** 区分不同语义类型（如 design, roadmap, history, decision），通过 type 字段或独立文件进行分层管理。
+
+<details>
+<summary>代码片段</summary>
+
+```
+v1.0 / v1.5 / v2.0 路线图与历史对话混合在同一 content 字段中
+```
+
+</details>
+
+#### 4. [INFO] .ai/context.json:1
+
+context.json 体积快速膨胀，可能导致 AI 上下文加载时的 Token 浪费。
+
+**💡 建议:** 考虑引入摘要机制（summary + fullContent），仅在必要时加载完整内容。
+
+<details>
+<summary>代码片段</summary>
+
+```
+整段 README 草稿和多轮问答直接作为上下文
+```
+
+</details>
+
+#### 5. [INFO] .ai/context.json:1
+
+path 字段从具体文件（todo.md）变为隐式承载大量概念内容，路径语义不再准确。
+
+**💡 建议:** 确保 path 与实际文件系统或逻辑实体一致，例如 docs/architecture.md、docs/roadmap.md。
+
+<details>
+<summary>代码片段</summary>
+
+```
+"path": "todo.md"
+```
+
+</details>
+
+### 👍 优点
+
+- ✅ 内容在语义层面高度一致，完整描述了项目架构、设计理念和未来规划
+- ✅ 体现了清晰的 Agent Runtime、ContextManager 和 Git 集成设计思路
+- ✅ 对上下文感知、Diff 应用和 Git 工作流的设计具有较高工程成熟度
+
+### 💡 建议
+
+- 将 context.json 重新定位为“上下文索引与入口”，而不是知识仓库本体
+- 引入文档分层与引用机制，避免 JSON 中出现超长自然语言块
+- 为 AI 上下文加载设计明确的 Token 预算策略（summary 优先，全量按需）
+- 在后续演进中为 context schema 增加版本号，防止未来结构性变更破坏兼容性
+- 考虑为 .ai 目录增加 lint / 校验工具，限制单条 context 的最大长度
+
+[↑ 返回顶部](#)
+
+
 ````
 
 [⬆ 回到目录](#toc)
@@ -11943,7 +12116,7 @@ v1.3-v1.4 已实现：
 ````json
 {
   "name": "yuangs-vscode",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
@@ -17077,7 +17250,6 @@ v1.3-v1.4 已实现：
     }
   }
 }
-
 ````
 
 [⬆ 回到目录](#toc)
@@ -17090,7 +17262,7 @@ v1.3-v1.4 已实现：
   "publisher": "yuanguangshan",
   "displayName": "Yuangs AI Agent",
   "description": "治理-执行 (Think-Govern-Execute) 闭环能力的 Agent 插件",
-  "version": "1.3.0",
+  "version": "2.0.0",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -17140,18 +17312,13 @@ v1.3-v1.4 已实现：
         "icon": "$(comment-discussion)"
       },
       {
-        "command": "yuangs.optimizeCode",
-        "title": "Yuangs: 优化代码",
-        "category": "Yuangs AI"
-      },
-      {
         "command": "yuangs.explainSelection",
-        "title": "Yuangs: 解释代码",
+        "title": "Yuangs: 解释这段代码",
         "category": "Yuangs AI"
       },
       {
         "command": "yuangs.optimizeSelection",
-        "title": "Yuangs: 优化选中的代码",
+        "title": "Yuangs: 优化这段代码",
         "category": "Yuangs AI"
       },
       {
@@ -17190,27 +17357,36 @@ v1.3-v1.4 已实现：
       ],
       "editor/context": [
         {
-          "command": "yuangs.optimizeCode",
+          "command": "yuangs.sendSelection",
           "when": "editorHasSelection",
-          "group": "yuangs@1"
+          "group": "navigation@1"
         },
         {
           "command": "yuangs.explainSelection",
           "when": "editorHasSelection",
-          "group": "yuangs@2"
+          "group": "navigation@2"
         },
         {
           "command": "yuangs.optimizeSelection",
           "when": "editorHasSelection",
-          "group": "yuangs@3"
-        },
-        {
-          "command": "yuangs.sendSelection",
-          "when": "editorHasSelection",
-          "group": "yuangs@4"
+          "group": "navigation@3"
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "yuangs.sendSelection",
+        "key": "ctrl+shift+y",
+        "mac": "cmd+shift+y",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "yuangs.explainSelection",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorHasSelection"
+      }
+    ],
     "configuration": {
       "title": "vsyuangs",
       "properties": {
@@ -24450,12 +24626,12 @@ import { recordEdge } from './knowledgeGraph';
 import crypto from 'crypto';
 
 function computeStableId(item: {
-  path: string;
-  semantic?: string;
-  content: string;
+    path: string;
+    semantic?: string;
+    content: string;
 }) {
-  const sig = `${item.path}::${item.semantic ?? ''}::${item.content.slice(0, 512)}`;
-  return crypto.createHash('sha256').update(sig).digest('hex');
+    const sig = `${item.path}::${item.semantic ?? ''}::${item.content.slice(0, 512)}`;
+    return crypto.createHash('sha256').update(sig).digest('hex');
 }
 
 export type ContextItem = {
@@ -24492,8 +24668,8 @@ export type ContextItem = {
 export type InjectionStrategy = 'ranked' | 'recent' | 'all';
 
 export interface BuildPromptOptions {
-  maxTokens?: number;
-  strategy?: InjectionStrategy;
+    maxTokens?: number;
+    strategy?: InjectionStrategy;
 }
 
 const estimateTokens = (text: string) => Math.ceil(text.length / 4);
@@ -24717,25 +24893,32 @@ export class ContextBuffer {
      */
     private computeItemScore(item: ContextItem): number {
         if (!item.importance) {
-            // 如果没有重要性信息，默认为中等评分
             return 0.5;
         }
 
-        const baseScore = computeContextImportance(item.importance);
+        let baseScore = computeContextImportance(item.importance);
 
-        // 使用次数的影响（对数增长，避免过度放大）
-        const useFactor = Math.log(1 + item.importance.useCount);
+        // ✅ 核心修复：如果文件被标记为用户显式引用，给予极高的基础分
+        if (item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected')) {
+            baseScore = Math.max(baseScore, 10.0); // 即使 baseScore 很低，也强行拉高到 10.0
+        }
+
+        // 使用次数的影响
+        const useFactor = Math.log(2 + item.importance.useCount);
 
         // 新鲜度衰减（最近使用的项目获得更高评分）
         const now = Date.now();
         const daysSinceLastUse = (now - item.importance.lastUsed) / (1000 * 60 * 60 * 24);
-        const freshnessFactor = Math.exp(-daysSinceLastUse / 7); // 7天半衰期
+        const freshnessFactor = Math.exp(-daysSinceLastUse / 7);
 
-        // 显式引用的影响
+        // 显式引用的影响 (增加权重比例)
         const explicitReferenceFactor = item.usageStats ?
-            Math.log(1 + item.usageStats.referencedCount) : 0;
+            item.usageStats.referencedCount : 0;
 
-        return baseScore * useFactor * freshnessFactor * (1 + explicitReferenceFactor * 0.1);
+        // ✅ 增加一个巨大的倍率给用户显式引用的文件
+        const userExplicitMultiplier = (item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected')) ? 100 : 1;
+
+        return baseScore * useFactor * freshnessFactor * (1 + explicitReferenceFactor) * userExplicitMultiplier;
     }
 
     /**
@@ -24838,7 +25021,12 @@ export class ContextBuffer {
                         ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
                         : `[Reference] ${item.type}: ${item.path}`;
 
-                    const body = item.summary ?? item.content;
+                    // ✅ 核心修复：对于高置信度或显式引用的项，除非内容被归档，否则优先显示完整 content
+                    // 原逻辑是 item.summary ?? item.content，这会导致有摘要时 AI 看不到细节
+                    const isUserReferenced = item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected');
+                    const isArchived = item.content?.includes('[ARCHIVED:');
+
+                    const body = (isUserReferenced && !isArchived) ? item.content : (item.summary ?? item.content);
 
                     return `${title}\n---\n${body}\n---`;
                 }).join('\n\n');
@@ -24900,16 +25088,7 @@ export class ContextBuffer {
         }
 
         const contextBlock = sections.join('\n\n');
-
-        return `
-${contextBlock}
-
-# Task Instructions
-Based on the provided context (if any), answer the user's question. If the context contains source code, treat it as your "source of truth."
-
-User Question:
-${userInput}
-`;
+        return contextBlock;
     }
 
     /**
@@ -25049,7 +25228,8 @@ export class DSLParser {
     // 按空格分割查询字符串
     const parts = queryString.trim().split(/\s+/);
 
-    for (const part of parts) {
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
       if (part.startsWith('@') || part.startsWith('#')) {
         // 处理路径引用
         if (part.startsWith('@!')) {
@@ -25057,11 +25237,21 @@ export class DSLParser {
           continue;
         } else if (part.startsWith('#')) {
           // 目录引用
-          query.path = part.substring(1);
+          // Check if next part exists and doesn't start with special chars - if so, combine them
+          if (i + 1 < parts.length && !parts[i + 1].startsWith('@') && !parts[i + 1].startsWith('#') && !parts[i + 1].includes(':')) {
+            query.path = parts[++i]; // Use the next part as the path
+          } else {
+            query.path = part.substring(1);
+          }
           query.type = 'directory';
         } else {
           // 文件引用
-          query.path = part.substring(1);
+          // Check if next part exists and doesn't start with special chars - if so, combine them
+          if (i + 1 < parts.length && !parts[i + 1].startsWith('@') && !parts[i + 1].startsWith('#') && !parts[i + 1].includes(':')) {
+            query.path = parts[++i]; // Use the next part as the path
+          } else {
+            query.path = part.substring(1);
+          }
           query.type = 'file';
         }
       } else if (part.includes(':')) {
@@ -25157,9 +25347,35 @@ export class DSLQueryEngine {
 
   private applyFilters(items: ContextItem[], query: DSLQuery): ContextItem[] {
     return items.filter(item => {
-      // 路径匹配
-      if (query.path && item.path !== query.path) {
-        return false;
+      // 路径匹配（修复版）
+      if (query.path) {
+        // ✅ 增强修复：标准化路径分隔符 (统一转为 /)
+        // 解决 Windows 下 path 为反斜杠而 alias 为正斜杠导致的匹配失败
+        const normalize = (p: string) => p.replace(/\\/g, '/');
+        const qPath = normalize(query.path);
+        const iPath = normalize(item.path);
+
+        // 1. 尝试绝对路径精确匹配
+        const exactMatch = iPath === qPath;
+
+        // 2. 尝试 Alias 匹配 (移除 @ 前缀比较)
+        const rawAlias = item.alias || '';
+        const normAlias = normalize(rawAlias);
+        const cleanAlias = normAlias.replace(/^@/, '');
+        
+        const aliasMatch = normAlias === qPath || cleanAlias === qPath;
+
+        // 3. 尝试相对路径/后缀匹配 (智能匹配)
+        // 如果 query.path 是 "utils.ts"，它应该匹配 "/.../src/utils.ts"
+        const suffixMatch = qPath && (
+          iPath.endsWith(qPath) ||
+          iPath.endsWith('/' + qPath)
+        ) || false;
+
+        // 只要满足任意一个条件，就算匹配成功
+        if (!exactMatch && !aliasMatch && !suffixMatch) {
+          return false;
+        }
       }
 
       // 路径模式匹配 (简化版 glob)
@@ -27484,31 +27700,37 @@ export class LLMAdapter {
           console.log(`[LLMAdapter] Using DSL-based context prompt`);
           contextPrompt = await buildContextPromptWithReferences(contextBuffer, userInput);
         } else {
-        // 区分流式传输和非流式传输
-        // ✅ 修复：流式传输也使用 ranked 策略，确保 @references 优先级最高
-        if (onChunk) {
-          // 流式传输时使用排名策略，确保用户 @ 引用的文件优先显示
-          // 适当增加 token 限制，避免重要内容被截断
-          console.log(`[LLMAdapter] Using RANKED strategy with 12000 tokens (streaming mode)`);
-          contextPrompt = contextBuffer.buildPrompt('', {
-            strategy: 'ranked',  // 使用排名策略，按重要性排序
-            maxTokens: 12000     // 增加token限制，确保 @references 内容完整
-          });
-        } else {
-          // 非流式传输时使用完整的排名策略
-          console.log(`[LLMAdapter] Using RANKED strategy with 16000 tokens (non-streaming mode)`);
-          contextPrompt = contextBuffer.buildPrompt('', {
-            strategy: 'ranked',  // 使用排名策略
-            maxTokens: 16000     // 设置最大token限制
-          });
-        }
+          // 区分流式传输和非流式传输
+          // ✅ 修复：流式传输也使用 ranked 策略，确保 @references 优先级最高
+          if (onChunk) {
+            // 流式传输时使用排名策略，确保用户 @ 引用的文件优先显示
+            // 适当增加 token 限制，避免重要内容被截断
+            console.log(`[LLMAdapter] Using RANKED strategy with 12000 tokens (streaming mode)`);
+            contextPrompt = contextBuffer.buildPrompt('', {
+              strategy: 'ranked',  // 使用排名策略，按重要性排序
+              maxTokens: 12000     // 增加token限制，确保 @references 内容完整
+            });
+          } else {
+            // 非流式传输时使用完整的排名策略
+            console.log(`[LLMAdapter] Using RANKED strategy with 16000 tokens (non-streaming mode)`);
+            contextPrompt = contextBuffer.buildPrompt('', {
+              strategy: 'ranked',  // 使用排名策略
+              maxTokens: 16000     // 设置最大token限制
+            });
+          }
         }
 
         console.log(`[LLMAdapter] Generated context prompt length: ${contextPrompt.length} chars`);
 
-        // 将ContextBuffer内容作为system消息添加到消息列表开头
+        // 将ContextBuffer内容作为背景信息消息添加到消息列表开头
+        // 使用更明显的隔离符，确保 AI 不会混淆上下文和对话历史
+        const contextRoleMessage = {
+          role: 'system',
+          content: `[CONTEXT DATA STARTED]\n\n${contextPrompt}\n\n[CONTEXT DATA ENDED]\n\nAbove is the project context including files and documentation. Use this information to answer the following questions.`
+        };
+
         fullMessages = [
-          { role: 'system', content: contextPrompt },
+          contextRoleMessage as any,
           ...fullMessages
         ];
       } else {
@@ -32317,22 +32539,24 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
     const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
     const shouldIncludeRefactor = !only || only.contains(vscode.CodeActionKind.Refactor);
 
-    // Send to Yuangs action
+    // 1. 发送到 Yuangs
     if (shouldIncludeQuickFix) {
-      actions.push(this.createAction(
-        '📤 发送到 Yuangs',
+      const action = this.createAction(
+        '📤 发送到 Yuangs【苑广山】',
         'yuangs.sendSelection',
         selectedText,
         document,
         range,
         vscode.CodeActionKind.QuickFix
-      ));
+      );
+      action.isPreferred = true; // 设为首选，这样在灯泡里会靠前
+      actions.push(action);
     }
 
-    // Explain code action
+    // 2. 解释这段代码
     if (shouldIncludeQuickFix) {
       actions.push(this.createAction(
-        '🧠 解释这段代码',
+        '🧠 解释这段代码【苑广山】',
         'yuangs.explainSelection',
         selectedText,
         document,
@@ -32341,10 +32565,10 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
       ));
     }
 
-    // Optimize code action
+    // 3. 优化这段代码
     if (shouldIncludeRefactor) {
       actions.push(this.createAction(
-        '⚡ 优化这段代码',
+        '⚡ 优化这段代码【苑广山】',
         'yuangs.optimizeSelection',
         selectedText,
         document,
@@ -32785,6 +33009,10 @@ export class VSCodeContextAdapter {
           const document = await vscode.workspace.openTextDocument(fileUri);
           const content = document.getText();
           
+          // ✅ 关键修复：使用工作区相对路径作为 alias，而不是简单的文件名
+          // 这样 @src/engine/aiClient.ts 才能正确匹配到 alias
+          const relativePath = vscode.workspace.asRelativePath(fileUri);
+          
           await this.contextManager.addContextItemAsync({
              type: 'file',
              path: fileUri.fsPath,
@@ -32793,7 +33021,7 @@ export class VSCodeContextAdapter {
              summary: `User referenced file: ${path.basename(fileUri.fsPath)}`,
              summarized: true,
              summaryQuality: 1.0, 
-             alias: `@${relPath}`,
+             alias: relativePath, // 统一使用相对路径 (例如 "src/engine/aiClient.ts")
              tags: ['user-referenced', 'explicit'],
              importance: {
                  id: fileUri.fsPath,
@@ -35266,6 +35494,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                             const contextManager = this._runtime.getContextManager();
 
                             // 将文件内容添加到上下文
+                            const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : path.basename(uri.fsPath);
+
                             await contextManager.addContextItemAsync({
                                 type: 'file',
                                 path: uri.fsPath,
@@ -35274,7 +35504,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                                 summary: `User selected file: ${path.basename(uri.fsPath)}`,
                                 summarized: true,
                                 summaryQuality: 1.0,
-                                alias: path.basename(uri.fsPath),
+                                alias: relativePath, // 使用相对路径 (e.g., "src/components/Button.tsx")
                                 tags: ['user-selected', 'explicit', 'file-panel'],
                                 importance: {
                                     id: uri.fsPath,
@@ -35303,13 +35533,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                             // 关闭文件面板
                             webviewView.webview.postMessage({ type: 'closeFilesPanel' });
 
-                            // 自动触发 AI 分析
-                            const prompt = `Please analyze this file: ${path.basename(uri.fsPath)}`;
-                            webviewView.webview.postMessage({
-                                type: 'appendMessage',
-                                value: { role: 'user', content: prompt }
-                            });
-                            await this.handleAgentTask(prompt);
+                            // ✅ 修复：不再自动触发 AI 分析
+                            // 现在文件选择器使用 @ 引用方式，文件内容会通过 resolveUserReferences 正确加载
+                            // 保留此 readFile 处理器是为了将来可能的其他用途
                         } catch (error: any) {
                             console.error(`[ChatViewProvider] Failed to read file ${data.path}:`, error);
                             webviewView.webview.postMessage({
@@ -35520,7 +35746,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             // 2. 调用 flush() 等待所有异步上下文添加完成
             // 3. 调用 collectContext() 收集其他上下文
             // 4. LLMAdapter.think() 会从 ContextBuffer 构建上下文提示
-            
+
             const contextManager = this._runtime.getContextManager();
 
             let fullAiResponse = '';
@@ -35644,17 +35870,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         try {
             if (diffData.type === 'unified') {
                 console.log('[ChatViewProvider] Applying unified diff with graded applier...');
-                
+
                 // 转换为标准 unified diff 格式
                 const diffText = this.convertToUnifiedDiffFormat(diffData);
                 console.log(`[ChatViewProvider] Diff text (${diffText.length} chars):`, diffText.substring(0, 200) + '...');
-                
+
                 // 获取原始代码（用于 Phase 1 安全扫描）
                 const originalCode = await this.getOriginalCodeForDiff(diffData);
-                
+
                 // 解析 diff
                 const parseResult = DiffParser.parse(diffText);
-                
+
                 if (!parseResult.success) {
                     console.warn('[ChatViewProvider] Diff parsing failed:', parseResult.message);
                     throw new Error(`Diff 解析失败: ${parseResult.message}`);
@@ -35729,7 +35955,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
                 // 发送成功消息到 UI
                 this._view.webview.postMessage({ type: 'diffApplied' });
-                
+
                 // 记录降级信息到 UI
                 if (applyResult.usedLevel && applyResult.usedLevel !== 'intelligent_fix') {
                     const levelNames: Record<string, string> = {
@@ -35970,12 +36196,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 if (!this._runtime) this._runtime = new VSCodeAgentRuntime();
                 const contextManager = this._runtime.getContextManager();
 
+                const relativePathForAlias = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, fullPath) : path.basename(fullPath);
+
                 await contextManager.addContextItemAsync({
                     type: 'file',
                     path: fullPath,
                     content: content,
                     semantic: 'source_code',
-                    alias: path.basename(fullPath),
+                    alias: relativePathForAlias,
                     importance: {
                         id: path.basename(fullPath) + '-' + Date.now(), // 生成唯一ID
                         path: fullPath,
@@ -36036,25 +36264,52 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this._context.workspaceState.update('chatHistory', this._messages);
     }
 
+    private formatTimestamp(date: Date): string {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return [
+            date.getFullYear(),
+            pad(date.getMonth() + 1),
+            pad(date.getDate()),
+            pad(date.getHours()),
+            pad(date.getMinutes()),
+            pad(date.getSeconds()),
+        ].join('');
+    }
+
     private async exportChatHistory() {
         if (this._messages.length === 0) {
             vscode.window.showWarningMessage('No chat history to export.');
             return;
         }
 
-        const mdContent = this._messages.map(m => {
-            const role = m.role === 'user' ? '### 👤 User' : '### 🤖 Assistant';
-            return `${role}\n\n${m.content}\n\n---\n`;
-        }).join('\n');
+        const now = new Date();
+        const timestamp = this.formatTimestamp(now);
+        const filename = `yuangs_chat_${timestamp}.md`;
+
+        // 优化：处理无工作区或多工作区的边界情况
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        const defaultUri = workspaceFolder
+            ? vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filename))
+            : undefined;
 
         const uri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(path.join(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '', 'chat_export.md')),
-            filters: { 'Markdown': ['md'] }
+            defaultUri,
+            filters: { 'Markdown': ['md'] },
+            title: 'Export Chat History'
         });
 
         if (uri) {
-            fs.writeFileSync(uri.fsPath, mdContent);
-            vscode.window.showInformationMessage('Chat history exported successfully!');
+            try {
+                const mdContent = this._messages.map(m => {
+                    const role = m.role === 'user' ? '### 👤 User' : '### 🤖 Assistant';
+                    return `${role}\n\n${m.content}\n\n---\n`;
+                }).join('\n');
+
+                await vscode.workspace.fs.writeFile(uri, Buffer.from(mdContent));
+                vscode.window.showInformationMessage(`Chat history exported to ${path.basename(uri.fsPath)}`);
+            } catch (e: any) {
+                vscode.window.showErrorMessage(`Failed to export chat history: ${e.message}`);
+            }
         }
     }
 
@@ -36064,26 +36319,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private async handlePerformCommit(message: string) {
         try {
             await GitManager.commit(message);
-            
+
             // 1. 通知前端成功
             this._view?.webview.postMessage({ type: 'success', value: 'Git Commit 成功' });
-            
+
             // 2. VS Code 原生提示
             vscode.window.showInformationMessage(`✅ 代码已提交: ${message.trim().split('\n')[0]}`);
-            
+
             // 3. 清理状态 (清空输入框)
             await GitManager.setCommitMessage('');
-            
+
         } catch (error: any) {
             console.error('[ChatViewProvider] Commit failed:', error);
-            
+
             // 4. 错误分级处理 (安全 & UX)
             const errorMessage = error instanceof Error ? error.message : '未知错误';
-            
+
             // 发送给前端的错误消息 (用于 Toast 或 状态栏)
-            this._view?.webview.postMessage({ 
-                type: 'error', 
-                value: errorMessage 
+            this._view?.webview.postMessage({
+                type: 'error',
+                value: errorMessage
             });
 
             // VS Code 弹窗提示 (对于严重错误)
@@ -36101,36 +36356,36 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private async handleGeneratePatch(type: 'staged' | 'unstaged' | 'last') {
         try {
             const patch = await GitManager.generatePatch(type);
-            
+
             // 发送 patch 内容到前端，显示为 AI 消息
             const typeNames = {
                 'staged': '暂存区 Patch',
                 'unstaged': '工作区 Patch',
                 'last': '最后一次提交 Patch'
             };
-            
+
             const message = `# ${typeNames[type]}\n\n\`\`\`diff\n${patch}\n\`\`\``;
-            
-            this._view?.webview.postMessage({ 
-                type: 'appendMessage', 
-                value: { 
-                    role: 'assistant', 
-                    content: message 
-                } 
+
+            this._view?.webview.postMessage({
+                type: 'appendMessage',
+                value: {
+                    role: 'assistant',
+                    content: message
+                }
             });
-            
+
             vscode.window.showInformationMessage(`✅ ${typeNames[type]} 生成成功`);
-            
+
         } catch (error: any) {
             console.error('[ChatViewProvider] Generate patch failed:', error);
-            
+
             const errorMessage = error instanceof Error ? error.message : '未知错误';
-            
-            this._view?.webview.postMessage({ 
-                type: 'error', 
-                value: errorMessage 
+
+            this._view?.webview.postMessage({
+                type: 'error',
+                value: errorMessage
             });
-            
+
             vscode.window.showErrorMessage(`生成 patch 失败: ${errorMessage}`);
         }
     }
@@ -37753,7 +38008,7 @@ function hideContextPanel() {
       --border-color: var(--vscode-widget-border);
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
       --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-      
+
       /* 自定义高级配色 */
       --user-msg-bg: var(--vscode-button-background);
       --user-msg-text: var(--vscode-button-foreground);
@@ -37781,13 +38036,16 @@ function hideContextPanel() {
       width: 6px;
       height: 6px;
     }
+
     ::-webkit-scrollbar-track {
       background: transparent;
     }
+
     ::-webkit-scrollbar-thumb {
       background: var(--vscode-scrollbarSlider-background);
       border-radius: 10px;
     }
+
     ::-webkit-scrollbar-thumb:hover {
       background: var(--vscode-scrollbarSlider-hoverBackground);
     }
@@ -37806,11 +38064,14 @@ function hideContextPanel() {
       padding: 0 16px;
       box-sizing: border-box;
       z-index: 100;
-      backdrop-filter: blur(10px); /* 毛玻璃效果 */
+      backdrop-filter: blur(10px);
+      /* 毛玻璃效果 */
     }
 
     /* 移除旧的彩虹线，改用精致的 Logo 样式 */
-    header::before { display: none; }
+    header::before {
+      display: none;
+    }
 
     .header-title {
       font-size: 14px;
@@ -37856,7 +38117,7 @@ function hideContextPanel() {
       font-weight: 500;
       opacity: 1;
     }
-    
+
     .icon-btn.context-btn:hover {
       background: var(--vscode-button-secondaryHoverBackground);
     }
@@ -37869,7 +38130,8 @@ function hideContextPanel() {
       padding: 4px 10px;
       background: var(--vscode-input-background);
       border: 1px solid var(--border-color);
-      border-radius: 100px; /* 胶囊样式 */
+      border-radius: 100px;
+      /* 胶囊样式 */
       cursor: pointer;
       transition: all 0.2s;
       font-size: 12px;
@@ -37900,7 +38162,7 @@ function hideContextPanel() {
       z-index: 3000;
       padding: 4px;
     }
-    
+
     .model-option {
       padding: 8px 12px;
       cursor: pointer;
@@ -38036,7 +38298,8 @@ function hideContextPanel() {
       padding: 20px 16px;
       display: flex;
       flex-direction: column;
-      gap: 24px; /* 增加消息间距 */
+      gap: 24px;
+      /* 增加消息间距 */
     }
 
     .message {
@@ -38069,10 +38332,18 @@ function hideContextPanel() {
     }
 
     /* AI 消息内的 Markdown 样式优化 */
-    .ai-message p { margin: 0.5em 0; }
-    .ai-message p:first-child { margin-top: 0; }
-    .ai-message p:last-child { margin-bottom: 0; }
-    
+    .ai-message p {
+      margin: 0.5em 0;
+    }
+
+    .ai-message p:first-child {
+      margin-top: 0;
+    }
+
+    .ai-message p:last-child {
+      margin-bottom: 0;
+    }
+
     .ai-message code {
       font-family: 'Fira Code', Consolas, monospace;
       font-size: 0.9em;
@@ -38086,7 +38357,8 @@ function hideContextPanel() {
     .ai-message pre {
       background: var(--vscode-editor-background);
       border: 1px solid var(--border-color);
-      padding: 30px 12px 12px 12px; /* Top padding reserved for header */
+      padding: 30px 12px 12px 12px;
+      /* Top padding reserved for header */
       border-radius: 8px;
       overflow-x: auto;
       margin: 12px 0;
@@ -38102,8 +38374,10 @@ function hideContextPanel() {
       width: 10px;
       height: 10px;
       border-radius: 50%;
-      background: #ff5f56; /* Red */
-      box-shadow: 15px 0 0 #ffbd2e, 30px 0 0 #27c93f; /* Yellow & Green */
+      background: #ff5f56;
+      /* Red */
+      box-shadow: 15px 0 0 #ffbd2e, 30px 0 0 #27c93f;
+      /* Yellow & Green */
       opacity: 0.8;
     }
 
@@ -38111,9 +38385,12 @@ function hideContextPanel() {
     .ai-message pre.diff-block {
       border-left: 3px solid var(--accent);
     }
+
     .ai-message pre.diff-block::before {
-      display: none; /* Diff 块不显示红绿灯，改用文字 */
+      display: none;
+      /* Diff 块不显示红绿灯，改用文字 */
     }
+
     .ai-message pre.diff-block::after {
       content: "REVIEW DIFF";
       position: absolute;
@@ -38157,13 +38434,13 @@ function hideContextPanel() {
       font-size: 14px;
       transition: all 0.2s;
     }
-    
+
     .message-action-btn:hover {
       background: var(--vscode-list-hoverBackground);
       color: var(--text-primary);
       transform: none;
     }
-    
+
     .user-message .message-action-btn {
       /* 用户消息是深色背景时，操作栏需要适配 */
       background: rgba(255, 255, 255, 0.3);
@@ -38222,15 +38499,22 @@ function hideContextPanel() {
       align-self: center;
       font-size: 11px;
       color: var(--text-secondary);
-      background: rgba(127,127,127, 0.05);
+      background: rgba(127, 127, 127, 0.05);
       padding: 4px 12px;
       border-radius: 100px;
       border: 1px solid transparent;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* =========================================
@@ -38238,31 +38522,35 @@ function hideContextPanel() {
        ========================================= */
     #input-area {
       padding: 16px 20px 24px 20px;
-      background: transparent; /* 移除背景色，实现悬浮感 */
+      background: transparent;
+      /* 移除背景色，实现悬浮感 */
       border-top: none;
       position: relative;
     }
-    
+
     /* 添加渐变遮罩，防止聊天内容突然截断 */
     #input-area::before {
-        content: "";
-        position: absolute;
-        top: -20px;
-        left: 0;
-        right: 0;
-        height: 20px;
-        background: linear-gradient(to top, var(--bg-primary), transparent);
-        pointer-events: none;
+      content: "";
+      position: absolute;
+      top: -20px;
+      left: 0;
+      right: 0;
+      height: 20px;
+      background: linear-gradient(to top, var(--bg-primary), transparent);
+      pointer-events: none;
     }
 
     .input-wrapper {
       display: flex;
       background: var(--vscode-input-background);
       border: 1px solid var(--border-color);
-      border-radius: 16px; /* 更大的圆角 */
+      border-radius: 16px;
+      /* 更大的圆角 */
       padding: 8px 12px;
-      align-items: flex-end; /* 对齐到底部 */
-      box-shadow: var(--shadow-md); /* 悬浮阴影 */
+      align-items: flex-end;
+      /* 对齐到底部 */
+      box-shadow: var(--shadow-md);
+      /* 悬浮阴影 */
       transition: all 0.2s ease;
     }
 
@@ -38287,7 +38575,8 @@ function hideContextPanel() {
       font-family: inherit;
     }
 
-    #send-btn, #stop-btn {
+    #send-btn,
+    #stop-btn {
       margin-bottom: 2px;
       width: 28px;
       height: 28px;
@@ -38296,7 +38585,7 @@ function hideContextPanel() {
       align-items: center;
       justify-content: center;
     }
-    
+
     #send-btn {
       background: var(--accent);
       color: white;
@@ -38329,9 +38618,11 @@ function hideContextPanel() {
       0% {
         box-shadow: 0 0 0 0 rgba(235, 86, 86, 0.7);
       }
+
       70% {
         box-shadow: 0 0 0 6px rgba(235, 86, 86, 0);
       }
+
       100% {
         box-shadow: 0 0 0 0 rgba(235, 86, 86, 0);
       }
@@ -38380,13 +38671,16 @@ function hideContextPanel() {
     /* =========================================
        7. 侧边面板 (Context & Files)
        ========================================= */
-    #files-panel, #context-panel {
-      box-shadow: 0 0 40px rgba(0,0,0,0.2); /* 更柔和的深阴影 */
+    #files-panel,
+    #context-panel {
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.2);
+      /* 更柔和的深阴影 */
       background: var(--bg-secondary);
       backdrop-filter: blur(20px);
     }
-    
-    .files-panel-header, .context-panel-header {
+
+    .files-panel-header,
+    .context-panel-header {
       height: 48px;
       padding: 0 16px;
       border-bottom: 1px solid var(--border-color);
@@ -38395,8 +38689,9 @@ function hideContextPanel() {
       align-items: center;
       justify-content: space-between;
     }
-    
-    .files-panel-title, .context-panel-title {
+
+    .files-panel-title,
+    .context-panel-title {
       font-weight: 600;
       font-size: 14px;
       display: flex;
@@ -38404,11 +38699,12 @@ function hideContextPanel() {
       gap: 8px;
     }
 
-    .files-panel-stats, .context-panel-stats {
+    .files-panel-stats,
+    .context-panel-stats {
       font-size: 11px;
       opacity: 0.7;
     }
-    
+
     /* 文件面板 */
     #files-panel {
       position: fixed;
@@ -38428,7 +38724,8 @@ function hideContextPanel() {
       left: 0;
     }
 
-    .files-panel-close, .context-panel-close {
+    .files-panel-close,
+    .context-panel-close {
       background: transparent;
       border: none;
       color: var(--text-primary);
@@ -38438,7 +38735,8 @@ function hideContextPanel() {
       transition: opacity 0.2s;
     }
 
-    .files-panel-close:hover, .context-panel-close:hover {
+    .files-panel-close:hover,
+    .context-panel-close:hover {
       opacity: 1;
     }
 
@@ -38447,7 +38745,8 @@ function hideContextPanel() {
       border-bottom: 1px solid var(--border-color);
     }
 
-    .files-search, .context-search {
+    .files-search,
+    .context-search {
       flex: 1;
       background: var(--vscode-input-background);
       border: 1px solid var(--border-color);
@@ -38458,8 +38757,9 @@ function hideContextPanel() {
       outline: none;
       transition: border-color 0.2s;
     }
-    
-    .files-search:focus, .context-search:focus {
+
+    .files-search:focus,
+    .context-search:focus {
       border-color: var(--accent);
     }
 
@@ -38530,7 +38830,8 @@ function hideContextPanel() {
       opacity: 0.9;
     }
 
-    .file-empty, .file-loading {
+    .file-empty,
+    .file-loading {
       text-align: center;
       padding: 40px 20px;
       opacity: 0.5;
@@ -38650,6 +38951,7 @@ function hideContextPanel() {
         opacity: 0;
         transform: translateY(-10px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -38757,7 +39059,8 @@ function hideContextPanel() {
       border: 1px solid var(--border-color);
       box-shadow: var(--shadow-md);
       top: 60px;
-      right: 20px; /* 靠右对齐 */
+      right: 20px;
+      /* 靠右对齐 */
       border-radius: 8px;
       font-weight: 500;
       display: flex;
@@ -38824,7 +39127,9 @@ function hideContextPanel() {
     }
 
     @keyframes blink {
-      50% { opacity: 0; }
+      50% {
+        opacity: 0;
+      }
     }
 
     /* 流式传输样式 */
@@ -38872,18 +39177,38 @@ function hideContextPanel() {
     }
 
     @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0); }
-      40% { transform: scale(1); }
+
+      0%,
+      80%,
+      100% {
+        transform: scale(0);
+      }
+
+      40% {
+        transform: scale(1);
+      }
     }
 
     @keyframes slideInRight {
-      from { opacity: 0; transform: translateX(100%); }
-      to { opacity: 1; transform: translateX(0); }
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
 
     @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
+      from {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0;
+      }
     }
 
     /* Apply Commit Button */
@@ -38943,22 +39268,179 @@ function hideContextPanel() {
       padding: 8px;
       border-radius: 0 4px 4px 0;
     }
+
+    /* =========================================
+       9. 日志面板 (Log Panel)
+       ========================================= */
+    #log-panel {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      max-height: 200px;
+      transition: max-height 0.3s ease;
+    }
+
+    #log-panel.collapsed {
+      max-height: 40px;
+      overflow: hidden;
+    }
+
+    /* Collapse log panel: hide content from layout and accessibility tree */
+    #log-panel.collapsed .log-panel-content {
+      display: none;
+    }
+
+    .log-panel-header {
+      height: 36px;
+      padding: 0 12px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .log-panel-title {
+      font-weight: 600;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .log-panel-stats {
+      font-size: 10px;
+      opacity: 0.7;
+    }
+
+    .log-panel-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .log-action-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+      font-size: 12px;
+    }
+
+    .log-action-btn:hover {
+      opacity: 1;
+    }
+
+    #log-toggle-btn {
+      transition: transform 0.3s ease;
+    }
+
+    #log-panel.collapsed #log-toggle-btn {
+      transform: rotate(180deg);
+    }
+
+    .log-panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+      font-family: 'Fira Code', Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(127, 127, 127, 0.1);
+      cursor: pointer;
+      transition: background 0.2s;
+      word-break: break-all;
+    }
+
+    .log-entry:hover {
+      background: rgba(127, 127, 127, 0.05);
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-time {
+      color: var(--text-secondary);
+      opacity: 0.8;
+      flex-shrink: 0;
+      font-size: 10px;
+      min-width: 70px;
+    }
+
+    .log-level {
+      font-weight: 600;
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      min-width: 50px;
+      text-align: center;
+    }
+
+    .log-entry.log-info .log-level {
+      color: #3794ef;
+      background: rgba(55, 148, 239, 0.1);
+    }
+
+    .log-entry.log-warn .log-level {
+      color: #cca700;
+      background: rgba(204, 167, 0, 0.1);
+    }
+
+    .log-entry.log-error .log-level {
+      color: #f14c4c;
+      background: rgba(241, 76, 76, 0.1);
+    }
+
+    .log-entry.log-debug .log-level {
+      color: #c5c5c5;
+      background: rgba(197, 197, 197, 0.1);
+    }
+
+    .log-message {
+      flex: 1;
+      color: var(--text-primary);
+    }
+
+    .log-entry.log-error .log-message {
+      color: #f14c4c;
+    }
+
+    .log-entry.log-warn .log-message {
+      color: #d7ba7d;
+    }
   </style>
 </head>
 
-  <body>
+<body>
   <script>
     // 检测是否启用调试模式
     const urlParams = new URLSearchParams(window.location.search);
     const DEBUG_MODE = urlParams.get('debug') === 'true';
-    
+
     // 调试日志函数
     function debugLog(...args) {
       if (DEBUG_MODE) {
         console.log('[DEBUG]', ...args);
       }
     }
-    
+
     // 如果是调试模式，显示调试面板
     window.addEventListener('DOMContentLoaded', () => {
       const debugInfo = document.getElementById('debug-info');
@@ -39015,8 +39497,7 @@ function hideContextPanel() {
   </header>
 
   <div class="git-toolbar">
-    <button class="secondary-btn" id="commit-btn"
-      title="Generate Conventional Commit Message based on staged changes">
+    <button class="secondary-btn" id="commit-btn" title="Generate Conventional Commit Message based on staged changes">
       <span>📝</span> Commit
     </button>
     <button class="secondary-btn" id="review-btn" title="Run Expert Code Review on staged changes">
@@ -39059,6 +39540,34 @@ function hideContextPanel() {
   <!-- 调试信息 -->
   <div id="debug-info" style="font-size: 10px; color: #888; padding: 5px; border-top: 1px solid #333;">
     Debug: <span id="debug-status">Ready</span>
+  </div>
+
+  <!-- 日志区域 -->
+  <div id="log-panel">
+    <div class="log-panel-header">
+      <div class="log-panel-title">
+        <span>📋 Debug Log</span>
+        <span class="log-panel-stats" id="log-stats">0 entries</span>
+      </div>
+      <div class="log-panel-actions">
+        <button class="log-action-btn" id="log-clear-btn" title="Clear Logs">
+          🗑️
+        </button>
+        <button class="log-action-btn" id="log-copy-btn" title="Copy All Logs">
+          📋
+        </button>
+        <button class="log-action-btn" id="log-toggle-btn" title="Toggle Log Panel">
+          ▼
+        </button>
+      </div>
+    </div>
+    <div class="log-panel-content" id="log-panel-content">
+      <div class="log-entry log-info">
+        <span class="log-time">--:--:--</span>
+        <span class="log-level">[INFO]</span>
+        <span class="log-message">Debug panel initialized. Click logs to copy.</span>
+      </div>
+    </div>
   </div>
 
   <div id="chat-container">
@@ -39303,7 +39812,7 @@ function hideContextPanel() {
       const div = document.createElement("div");
       div.className = `message ${role}-message`;
       div.dataset.content = text; // 保存原始文本内容
-      
+
       // ✅ 添加右键菜单事件监听
       div.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -39366,7 +39875,7 @@ function hideContextPanel() {
     function copyMessageText(text) {
       // 在 VS Code webview 环境中，navigator.clipboard API 可能受到限制
       // 使用多种方法尝试复制
-      
+
       // 方法 1: 尝试使用现代 Clipboard API
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -39389,10 +39898,10 @@ function hideContextPanel() {
         document.body.appendChild(textArea);
         textArea.select();
         textArea.setSelectionRange(0, 99999); // 选中全部文本
-        
+
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-        
+
         if (successful) {
           showFlashNotification("✓ 已复制到剪贴板");
           return;
@@ -39401,7 +39910,7 @@ function hideContextPanel() {
         }
       } catch (err) {
         console.error("execCommand 复制失败:", err);
-        
+
         // 方法 3: 作为最后的 fallback，让用户手动复制
         alert(`复制失败，请手动复制以下内容：\n\n${text}`);
         return;
@@ -39415,10 +39924,10 @@ function hideContextPanel() {
         console.error('[deleteMessage] messageElement is null/undefined');
         return;
       }
-      
+
       // ❌ 移除 confirm 弹窗，在 VS Code webview 环境中可能被拦截
       // 改为直接删除并显示 Toast 提示
-      
+
       try {
         // 添加淡出动画效果
         messageElement.style.transition = "opacity 0.3s, transform 0.3s";
@@ -39433,10 +39942,10 @@ function hideContextPanel() {
             messageElement.parentNode.removeChild(messageElement);
           }
           console.log('[deleteMessage] Element removed successfully');
-          
+
           // 显示通知
           showFlashNotification("🗑️ 消息已删除");
-          
+
           // 可选：通知后端从历史记录中删除
           // vscode.postMessage({ type: "deleteMessage", index: ... });
         }, 300);
@@ -39657,10 +40166,10 @@ function hideContextPanel() {
     function updateMessageSelection() {
       // 每次都重新获取最新的消息列表
       const messages = chatContainer.getElementsByClassName("message");
-      
+
       // 移除所有消息的选中样式
       Array.from(messages).forEach(msg => msg.style.outline = "none");
-      
+
       // 如果有选中的消息，添加高亮样式
       if (currentMessageIndex >= 0 && currentMessageIndex < messages.length) {
         messages[currentMessageIndex].style.outline = "2px solid var(--accent)";
@@ -39694,33 +40203,33 @@ function hideContextPanel() {
 
       // 键盘导航消息
       const currentMessages = chatContainer.getElementsByClassName("message");
-      
+
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         // 左箭头或上箭头 - 移动到上一条消息
         e.preventDefault();
         if (currentMessages.length > 0) {
-          currentMessageIndex = currentMessageIndex <= 0 
-            ? currentMessages.length - 1 
+          currentMessageIndex = currentMessageIndex <= 0
+            ? currentMessages.length - 1
             : currentMessageIndex - 1;
           updateMessageSelection();
           // 滚动到可见区域
-          currentMessages[currentMessageIndex].scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'nearest' 
+          currentMessages[currentMessageIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
           });
         }
       } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         // 右箭头或下箭头 - 移动到下一条消息
         e.preventDefault();
         if (currentMessages.length > 0) {
-          currentMessageIndex = currentMessageIndex >= currentMessages.length - 1 
-            ? 0 
+          currentMessageIndex = currentMessageIndex >= currentMessages.length - 1
+            ? 0
             : currentMessageIndex + 1;
           updateMessageSelection();
           // 滚动到可见区域
-          currentMessages[currentMessageIndex].scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'nearest' 
+          currentMessages[currentMessageIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
           });
         }
       } else if (e.key === "Home") {
@@ -40067,6 +40576,119 @@ function hideContextPanel() {
       }
     });
 
+    // === 日志面板功能 ===
+
+    // 日志面板相关元素
+    const logPanel = document.getElementById("log-panel");
+    const logPanelContent = document.getElementById("log-panel-content");
+    const logStats = document.getElementById("log-stats");
+    const logClearBtn = document.getElementById("log-clear-btn");
+    const logCopyBtn = document.getElementById("log-copy-btn");
+    const logToggleBtn = document.getElementById("log-toggle-btn");
+
+    // 日志存储
+    const logEntries = [];
+    const MAX_LOG_ENTRIES = 1000;
+
+    // 添加日志函数
+    function addLog(level, message) {
+      const timestamp = new Date();
+      const timeStr = timestamp.toTimeString().split(' ')[0];
+      const logEntry = { timestamp, timeStr, level, message };
+      logEntries.push(logEntry);
+
+      if (logEntries.length > MAX_LOG_ENTRIES) {
+        logEntries.shift();
+      }
+
+      const logDiv = document.createElement("div");
+      logDiv.className = `log-entry log-${level.toLowerCase()}`;
+      logDiv.innerHTML = `
+        <span class="log-time">${timeStr}</span>
+        <span class="log-level">[${level.toUpperCase()}]</span>
+        <span class="log-message">${escapeHtml(message)}</span>
+      `;
+      logDiv.addEventListener("click", () => {
+        copyLog(`${timeStr} [${level.toUpperCase()}] ${message}`);
+      });
+      logPanelContent.appendChild(logDiv);
+      logPanelContent.scrollTop = logPanelContent.scrollHeight;
+      logStats.textContent = `${logEntries.length} entries`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function copyLog(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showFlashNotification("📋 Log copied");
+        }).catch(err => console.warn("Clipboard API 失败:", err));
+      }
+    }
+
+    function clearLogs() {
+      logEntries.length = 0;
+      logPanelContent.innerHTML = '';
+      addLog('info', 'Logs cleared by user');
+    }
+
+    function copyAllLogs() {
+      const allLogs = logEntries.map(entry =>
+        `${entry.timeStr} [${entry.level.toUpperCase()}] ${entry.message}`
+      ).join('\n');
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(allLogs).then(() => {
+          showFlashNotification(`📋 Copied ${logEntries.length} logs`);
+        }).catch(err => console.warn("Clipboard API 失败:", err));
+      }
+    }
+
+    function toggleLogPanel() {
+      logPanel.classList.toggle("collapsed");
+      const isCollapsed = logPanel.classList.contains("collapsed");
+      logToggleBtn.textContent = isCollapsed ? "▶" : "▼";
+    }
+
+    // 日志面板事件绑定
+    logClearBtn.addEventListener("click", clearLogs);
+    logCopyBtn.addEventListener("click", copyAllLogs);
+    logToggleBtn.addEventListener("click", toggleLogPanel);
+
+    // 拦截 console 输出
+    const originalConsoleLog = console.log;
+    const originalConsoleWarn = console.warn;
+    const originalConsoleError = console.error;
+
+    console.log = function (...args) {
+      originalConsoleLog.apply(console, args);
+      addLog('info', args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' '));
+    };
+
+    console.warn = function (...args) {
+      originalConsoleWarn.apply(console, args);
+      addLog('warn', args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' '));
+    };
+
+    console.error = function (...args) {
+      originalConsoleError.apply(console, args);
+      addLog('error', args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' '));
+    };
+
+    // 初始化日志
+    addLog('info', 'Log panel initialized successfully');
+    console.log('[LOG] Debug panel is ready to capture logs');
+
     // 初始化文件面板
     if (typeof setupFilesPanel === "function") {
       setupFilesPanel();
@@ -40312,36 +40934,29 @@ function hideContextPanel() {
 
     // 处理文件点击
     function handleFileClick(filePath) {
-      // 读取文件内容并添加到上下文，然后询问AI关于该文件的内容
-      vscode.postMessage({
-        type: "readFile",
-        path: filePath,
-      });
+      // ✅ 修复：不再立即发送 ask 消息，而是在输入框中插入 @文件路径
+      // 这样可以让 @ 引用解析机制正常工作，确保文件内容被正确加载到上下文中
 
-      // 自动发送一个关于该文件的问题给AI
-      const question = `请分析这个文件: ${filePath}`;
-      addMessage(question, "user");
-
-      // 关闭文件面板以便用户可以看到AI回复
+      // 关闭文件面板
       filesPanel.classList.remove("open");
 
-      vscode.postMessage({ type: "ask", value: question });
-      userInput.value = "";
-      userInput.style.height = "auto";
-      currentAiMessageElement = null;
-      currentAiRawText = "";
-      userInput.disabled = true;
-      sendBtn.style.display = "none";
-      stopBtn.classList.add("visible");
+      // 在输入框中插入 @文件路径 和提示文本
+      const question = `@${filePath} 请分析这个文件`;
+      userInput.value = question;
 
-      // 添加加载指示器
-      const loader = document.createElement("div");
-      loader.id = "ai-loader";
-      loader.className = "message ai-message system-message";
-      loader.innerHTML =
-        '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
-      chatContainer.appendChild(loader);
-      scrollToBottom();
+      // 自动调整输入框高度
+      userInput.style.height = "auto";
+      userInput.style.height = userInput.scrollHeight + "px";
+
+      // 聚焦到输入框，让用户可以看到并修改
+      userInput.focus();
+
+      // 将光标移动到末尾
+      userInput.setSelectionRange(question.length, question.length);
+
+      // 可选：自动触发发送（如果你希望自动发送的话）
+      // 注释掉下面这行，让用户手动点击发送按钮
+      // sendBtn.click();
     }
 
     // 获取文件语言（辅助函数）
@@ -40638,7 +41253,7 @@ function hideContextPanel() {
     const contextMenu = document.getElementById("context-menu");
     const contextCopy = document.getElementById("context-copy");
     const contextDelete = document.getElementById("context-delete");
-    
+
     // 当前右键菜单关联的消息元素和文本
     let currentContextMessageElement = null;
     let currentContextMessageText = "";
@@ -40647,7 +41262,7 @@ function hideContextPanel() {
     function showContextMenu(x, y, messageElement, messageText) {
       currentContextMessageElement = messageElement;
       currentContextMessageText = messageText;
-      
+
       // 设置菜单位置
       contextMenu.style.left = x + "px";
       contextMenu.style.top = y + "px";
@@ -40808,14 +41423,14 @@ function hideContextPanel() {
     }
 
     // 使用事件监听器绑定按钮，而不是 onclick
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const commitBtn = document.getElementById('commit-btn');
       const reviewBtn = document.getElementById('review-btn');
 
       console.log('[DEBUG] DOM loaded, binding buttons...');
 
       if (commitBtn) {
-        commitBtn.addEventListener('click', function(e) {
+        commitBtn.addEventListener('click', function (e) {
           console.log('[DEBUG] Commit button clicked!');
           e.preventDefault();
           e.stopPropagation();
@@ -40827,7 +41442,7 @@ function hideContextPanel() {
       }
 
       if (reviewBtn) {
-        reviewBtn.addEventListener('click', function(e) {
+        reviewBtn.addEventListener('click', function (e) {
           console.log('[DEBUG] Review button clicked!');
           e.preventDefault();
           e.stopPropagation();
@@ -40894,7 +41509,7 @@ function hideContextPanel() {
           e.stopPropagation();
           const type = option.dataset.type;
           patchDropdown.classList.remove('visible');
-          
+
           vscode.postMessage({
             type: 'generatePatch',
             value: type
@@ -46167,5 +46782,5 @@ console.log('');
 ---
 ### 📊 最终统计汇总
 - **文件总数:** 191
-- **代码总行数:** 44530
-- **物理总大小:** 1366.49 KB
+- **代码总行数:** 45146
+- **物理总大小:** 1384.63 KB
