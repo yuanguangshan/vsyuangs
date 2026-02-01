@@ -1,24 +1,27 @@
 # Project Documentation
 
-- **Generated at:** 2026-02-01 03:29:52
+- **Generated at:** 2026-02-01 16:29:01
 - **Root Dir:** `.`
-- **File Count:** 189
-- **Total Size:** 1330.73 KB
+- **File Count:** 191
+- **Total Size:** 1366.49 KB
 
 <a name="toc"></a>
 ## 📂 扫描目录
 - [.gitignore](#📄-gitignore) (23 lines, 0.19 KB)
 - [.vscodeignore](#📄-vscodeignore) (17 lines, 0.24 KB)
-- [CHANGELOG.md](#📄-changelogmd) (56 lines, 2.20 KB)
 - [LICENSE](#📄-license) (21 lines, 1.04 KB)
 - [README.md](#📄-readmemd) (134 lines, 4.90 KB)
 - [asconfig.json](#📄-asconfigjson) (22 lines, 0.51 KB)
 - [c](#📄-c) (3 lines, 0.10 KB)
 - [compile.sh](#📄-compilesh) (196 lines, 6.41 KB)
 - [docs/98-SCORE-IMPLEMENTATION-SUMMARY.md](#📄-docs98-score-implementation-summarymd) (501 lines, 14.99 KB)
-- [docs/CHANGELOG.md](#📄-docschangelogmd) (78 lines, 3.18 KB)
+- [docs/@-REFERENCE-TESTING-GUIDE.md](#📄-docs@-reference-testing-guidemd) (290 lines, 8.48 KB)
+- [docs/CHANGELOG.md](#📄-docschangelogmd) (56 lines, 2.20 KB)
 - [docs/CODE_REVIEW_RESPONSE_V1.2.2.md](#📄-docscode_review_response_v122md) (963 lines, 23.59 KB)
 - [docs/FEATURES_INTEGRATION_GUIDE.md](#📄-docsfeatures_integration_guidemd) (770 lines, 17.26 KB)
+- [docs/FILE_CONTEXT_FIX_V2.md](#📄-docsfile_context_fix_v2md) (465 lines, 13.37 KB)
+- [docs/FILE_REFERENCE_DEBUG_GUIDE.md](#📄-docsfile_reference_debug_guidemd) (245 lines, 7.28 KB)
+- [docs/FILE_REFERENCE_FIX_V3.md](#📄-docsfile_reference_fix_v3md) (144 lines, 4.85 KB)
 - [docs/IMPLEMENTATION-COMPLETE.md](#📄-docsimplementation-completemd) (413 lines, 10.23 KB)
 - [docs/IMPROVEMENT-PLAN.md](#📄-docsimprovement-planmd) (308 lines, 7.36 KB)
 - [docs/IMPROVEMENTS_V1.2.1.md](#📄-docsimprovements_v121md) (856 lines, 23.72 KB)
@@ -38,11 +41,11 @@
 - [docs/diff-specification-v2.md](#📄-docsdiff-specification-v2md) (790 lines, 18.47 KB)
 - [docs/functionality-assessment.md](#📄-docsfunctionality-assessmentmd) (363 lines, 10.30 KB)
 - [docs/reviewSchema.json](#📄-docsreviewschemajson) (221 lines, 6.81 KB)
-- [docs/todo.md](#📄-docstodomd) (34 lines, 1.03 KB)
 - [docs/v1.3-v1.4-implementation-summary.md](#📄-docsv13-v14-implementation-summarymd) (351 lines, 9.46 KB)
 - [docs/v1.3-v1.4-user-guide.md](#📄-docsv13-v14-user-guidemd) (361 lines, 8.51 KB)
+- [git_reviews.md](#📄-git_reviewsmd) (0 lines, 0.00 KB)
 - [package-lock.json](#📄-package-lockjson) (5136 lines, 180.96 KB)
-- [package.json](#📄-packagejson) (236 lines, 6.61 KB)
+- [package.json](#📄-packagejson) (232 lines, 6.53 KB)
 - [policy.yaml](#📄-policyyaml) (26 lines, 0.56 KB)
 - [run-tests.js](#📄-run-testsjs) (64 lines, 1.72 KB)
 - [src/core/AutomatedTestScanner.ts](#📄-srccoreautomatedtestscannerts) (546 lines, 15.98 KB)
@@ -62,10 +65,10 @@
 - [src/engine/agent/chatHistoryStorage.ts](#📄-srcengineagentchathistorystoragets) (51 lines, 1.70 KB)
 - [src/engine/agent/context.ts](#📄-srcengineagentcontextts) (31 lines, 1.22 KB)
 - [src/engine/agent/contextBank.ts](#📄-srcengineagentcontextbankts) (542 lines, 16.67 KB)
-- [src/engine/agent/contextBuffer.ts](#📄-srcengineagentcontextbufferts) (504 lines, 17.67 KB)
+- [src/engine/agent/contextBuffer.ts](#📄-srcengineagentcontextbufferts) (523 lines, 18.44 KB)
 - [src/engine/agent/contextDSL.ts](#📄-srcengineagentcontextdslts) (367 lines, 9.41 KB)
 - [src/engine/agent/contextImportance.ts](#📄-srcengineagentcontextimportancets) (82 lines, 1.89 KB)
-- [src/engine/agent/contextManager.ts](#📄-srcengineagentcontextmanagerts) (227 lines, 6.72 KB)
+- [src/engine/agent/contextManager.ts](#📄-srcengineagentcontextmanagerts) (255 lines, 7.55 KB)
 - [src/engine/agent/contextProtocol.ts](#📄-srcengineagentcontextprotocolts) (445 lines, 13.83 KB)
 - [src/engine/agent/contextSkillBridge.ts](#📄-srcengineagentcontextskillbridgets) (146 lines, 4.84 KB)
 - [src/engine/agent/contextSkillPromotion.ts](#📄-srcengineagentcontextskillpromotionts) (434 lines, 16.19 KB)
@@ -81,7 +84,7 @@
 - [src/engine/agent/index.ts](#📄-srcengineagentindexts) (14 lines, 0.85 KB)
 - [src/engine/agent/knowledgeGraph.ts](#📄-srcengineagentknowledgegraphts) (49 lines, 1.30 KB)
 - [src/engine/agent/llm.ts](#📄-srcengineagentllmts) (124 lines, 3.54 KB)
-- [src/engine/agent/llmAdapter.ts](#📄-srcengineagentllmadapterts) (217 lines, 7.96 KB)
+- [src/engine/agent/llmAdapter.ts](#📄-srcengineagentllmadapterts) (242 lines, 9.17 KB)
 - [src/engine/agent/policy/engine.ts](#📄-srcengineagentpolicyenginets) (91 lines, 2.26 KB)
 - [src/engine/agent/policy/index.ts](#📄-srcengineagentpolicyindexts) (3 lines, 0.09 KB)
 - [src/engine/agent/policy/policies/noDangerousShell.ts](#📄-srcengineagentpolicypoliciesnodangerousshellts) (49 lines, 1.79 KB)
@@ -137,14 +140,13 @@
 - [src/engine/utils/renderer.ts](#📄-srcengineutilsrendererts) (116 lines, 3.64 KB)
 - [src/runtime/vscode/VSCodeExecutor.ts](#📄-srcruntimevscodevscodeexecutorts) (147 lines, 6.20 KB)
 - [src/utils/git.ts](#📄-srcutilsgitts) (43 lines, 1.03 KB)
-- [src/vscode/codeActions/YuangsCodeActionProvider.ts](#📄-srcvscodecodeactionsyuangscodeactionproviderts) (74 lines, 1.60 KB)
+- [src/vscode/codeActions/YuangsCodeActionProvider.ts](#📄-srcvscodecodeactionsyuangscodeactionproviderts) (87 lines, 2.13 KB)
 - [src/vscode/commands/askAI.ts](#📄-srcvscodecommandsaskaits) (78 lines, 2.54 KB)
 - [src/vscode/commands/optimize.ts](#📄-srcvscodecommandsoptimizets) (83 lines, 2.23 KB)
 - [src/vscode/commands/optimizeSelection.ts](#📄-srcvscodecommandsoptimizeselectionts) (63 lines, 2.40 KB)
 - [src/vscode/commands/sendToYuangs.ts](#📄-srcvscodecommandssendtoyuangsts) (32 lines, 1.01 KB)
-- [src/vscode/core/contextAdapter.ts](#📄-srcvscodecorecontextadapterts) (355 lines, 11.84 KB)
+- [src/vscode/core/contextAdapter.ts](#📄-srcvscodecorecontextadapterts) (443 lines, 15.66 KB)
 - [src/vscode/core/executorAdapter.ts](#📄-srcvscodecoreexecutoradapterts) (323 lines, 9.47 KB)
-- [src/vscode/core/runtime.ts](#📄-srcvscodecoreruntimets) (108 lines, 3.29 KB)
 - [src/vscode/decorations/inlineDiff.ts](#📄-srcvscodedecorationsinlinediffts) (108 lines, 3.63 KB)
 - [src/vscode/extension.ts](#📄-srcvscodeextensionts) (98 lines, 3.54 KB)
 - [src/vscode/git/SmartStageSuggester.ts](#📄-srcvscodegitsmartstagesuggesterts) (570 lines, 17.99 KB)
@@ -153,13 +155,13 @@
 - [src/vscode/guard/explanationProtocol.ts](#📄-srcvscodeguardexplanationprotocolts) (90 lines, 2.31 KB)
 - [src/vscode/guard/preferences.ts](#📄-srcvscodeguardpreferencests) (61 lines, 1.95 KB)
 - [src/vscode/guard/types.ts](#📄-srcvscodeguardtypests) (21 lines, 0.38 KB)
-- [src/vscode/provider/ChatViewProvider.ts](#📄-srcvscodeproviderchatviewproviderts) (1153 lines, 47.74 KB)
-- [src/vscode/provider/ProactiveCodeActionProvider.ts](#📄-srcvscodeproviderproactivecodeactionproviderts) (453 lines, 12.51 KB)
-- [src/vscode/provider/ReviewDiagnosticsProvider.ts](#📄-srcvscodeproviderreviewdiagnosticsproviderts) (326 lines, 8.91 KB)
+- [src/vscode/provider/ChatViewProvider.ts](#📄-srcvscodeproviderchatviewproviderts) (1161 lines, 48.38 KB)
+- [src/vscode/provider/ProactiveCodeActionProvider.ts](#📄-srcvscodeproviderproactivecodeactionproviderts) (462 lines, 12.82 KB)
+- [src/vscode/provider/ReviewDiagnosticsProvider.ts](#📄-srcvscodeproviderreviewdiagnosticsproviderts) (335 lines, 9.22 KB)
 - [src/vscode/sidePanel/YuangsPanel.ts](#📄-srcvscodesidepanelyuangspanelts) (295 lines, 7.77 KB)
 - [src/vscode/utils/ignoreFilter.ts](#📄-srcvscodeutilsignorefilterts) (202 lines, 6.41 KB)
 - [src/vscode/webview/context-panel-functions.js](#📄-srcvscodewebviewcontext-panel-functionsjs) (204 lines, 5.94 KB)
-- [src/vscode/webview/sidebar.html](#📄-srcvscodewebviewsidebarhtml) (3177 lines, 92.51 KB)
+- [src/vscode/webview/sidebar.html](#📄-srcvscodewebviewsidebarhtml) (3202 lines, 93.48 KB)
 - [src/ygs.md](#📄-srcygsmd) (3 lines, 0.12 KB)
 - [test-demo-security-scan.ts](#📄-test-demo-security-scants) (121 lines, 3.86 KB)
 - [test/DiffImprovements.test.ts](#📄-testdiffimprovementstestts) (104 lines, 3.28 KB)
@@ -250,69 +252,6 @@ build/**
 !build/release.wasm
 !dist/**
 
-````
-
-[⬆ 回到目录](#toc)
-
-## 📄 CHANGELOG.md
-
-````markdown
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-## [Unreleased]
-
-## [v1.5.0] - 2026-01-31
-
-### ✨ New Features
-- **Governed Smart Stage**: Voting-based file classification for Smart Stage
-- **Confidence Scoring**: Every commit group now has a confidence score (0.0-1.0)
-- **Explainable AI**: Each classification includes reasons for the decision
-- **Human Feedback Loop**: Users can correct wrong classifications, improving future accuracy
-- **Safety Thresholds**:
-  - ≥ 60% confidence → auto-group
-  - 30-60% confidence → suggest
-  - < 30% confidence → needs-confirmation
-
-### 🛡️ Safety Improvements
-- Smart Stage will no longer auto-commit when confidence < 0.3
-- Reduced risk of incorrect Git history generation
-- Added "Needs Confirmation" group for low-confidence cases
-
-### 🧠 Learning Enhancements
-- User corrections are recorded and used to adjust future grouping behavior
-- Weight adjustment system based on human feedback (with upper/lower bounds)
-- Preference memory with time-based decay (7-day window)
-- **v1.5.1**: PreferenceMemory now actively adjusts signal weights in VotingFileClassifier
-
-### 💬 UX Improvements
-- Commit preview and Sidebar Chat now display grouping confidence and rationale
-- Added "Wrong? Correct it" button in Smart Stage UI
-- Visual indicators for classification confidence levels
-
-### 🏗️ Architecture Changes
-- Introduced VotingFileClassifier with multi-signal analysis
-- Added GroupExplanation type with detailed reasoning
-- Created PreferenceMemory system for learning from corrections
-- Extended FileGroup interface to include explanation data
-- **v1.5.1**: PreferenceMemory now actively influences decision-making through weight adjustments
-
-### 📚 Documentation
-- Added SMART_STAGE_GOVERNANCE.md with detailed feature explanation
-- Added GOVERNED_AI_WHITEPAPER.md technical documentation
-- Updated README with Smart Stage governance features
-- Documented confidence threshold behavior
-
-## [v1.4.0] - YYYY-MM-DD
-
-### ✨ New Features
-- Initial release of Yuangs AI Agent
-- Basic AI chat functionality
-- WASM sandbox for secure command execution
-- Policy engine with configurable rules
-- Smart diff application
-- File and symbol reference system
 ````
 
 [⬆ 回到目录](#toc)
@@ -1241,88 +1180,362 @@ if (collisionDetected) {
 
 [⬆ 回到目录](#toc)
 
+## 📄 docs/@-REFERENCE-TESTING-GUIDE.md
+
+````markdown
+# @ 引用功能测试指南
+
+## 🎯 测试目标
+验证聊天输入框中的 `@filename` 引用功能是否正常工作。
+
+## 📋 测试步骤
+
+### 1. 基础引用测试
+
+**测试命令：**
+```
+@package.json 请告诉我这个项目的依赖有哪些？
+```
+
+**预期行为：**
+1. ✅ Console 输出：`[ContextAdapter] 🔍 Parsing user input for @ references: "..."`
+2. ✅ Console 输出：`[ContextAdapter] ✅ Found 1 references (1 unique): @package.json`
+3. ✅ Console 输出：`[ContextAdapter] ✅ Direct path match found: /path/to/package.json`
+4. ✅ Console 输出：`[ContextAdapter] ✅ Added referenced file to context: /path/to/package.json (XXXX chars)`
+5. ✅ 状态栏显示：`Yuangs AI: Loaded file: package.json`（持续5秒）
+6. ✅ AI 回复中能看到 package.json 的内容
+
+**如果失败，检查：**
+- [ ] 文件路径是否正确
+- [ ] Console 中是否有错误日志
+- [ ] 文件是否在 `node_modules` 中（会被自动忽略）
+
+---
+
+### 2. 模糊匹配测试
+
+**测试命令：**
+```
+@README 分析项目文档
+```
+
+**预期行为：**
+1. ✅ Console 输出：`[ContextAdapter] 🔍 Fuzzy search found X match(es) for "README", using: /path/to/README.md`
+2. ✅ Console 输出：`[ContextAdapter] ✅ Added referenced file to context: ...`
+3. ✅ AI 能够分析 README 内容
+
+**如果失败：**
+- Console 会输出：`[ContextAdapter] ❌ Fuzzy search found 0 matches for "README"`
+- 检查工作区中是否有名为 README 的文件
+
+---
+
+### 3. 路径引用测试
+
+**测试命令：**
+```
+@src/engine/agent/AgentRuntime.ts 解释这个文件的作用
+```
+
+**预期行为：**
+1. ✅ Console 输出：`[ContextAdapter] ✅ Direct path match found: .../AgentRuntime.ts`
+2. ✅ Console 输出：`[ContextAdapter] ✅ Added referenced file to context: ...`
+3. ✅ AI 能够准确解释 AgentRuntime.ts 的功能
+
+---
+
+### 4. 多文件引用测试
+
+**测试命令：**
+```
+@package.json @tsconfig.json 比较这两个配置文件
+```
+
+**预期行为：**
+1. ✅ Console 输出：`[ContextAdapter] ✅ Found 2 references (2 unique): @package.json, @tsconfig.json`
+2. ✅ 两个文件都被添加到上下文
+3. ✅ 状态栏显示：`Yuangs AI: Loaded 2 files: package.json, tsconfig.json`
+4. ✅ AI 能够比较两个文件
+
+---
+
+## 🔍 调试日志说明
+
+### 正常流程日志
+
+```
+[ContextAdapter] 🔍 Parsing user input for @ references: "@package.json..."
+[ContextAdapter] ✅ Found 1 references (1 unique): @package.json
+[ContextAdapter] 📄 Processing reference: "package.json"
+[ContextAdapter] ✅ Direct path match found: /Users/ygs/yuangs-vscode/package.json
+[ContextAdapter] ✅ Added referenced file to context: /Users/ygs/yuangs-vscode/package.json (1234 chars)
+[ContextAdapter] ✅ Successfully loaded: Loaded file: package.json
+```
+
+### 常见错误日志
+
+#### 错误1：未找到引用
+```
+[ContextAdapter] ❌ No @ references found in input
+```
+**原因：** 输入中没有 `@` 符号，或者格式不正确
+
+#### 错误2：文件不存在
+```
+[ContextAdapter] ⚠️ Direct path failed for "nonexistent.ts": ...
+[ContextAdapter] ❌ Fuzzy search found 0 matches for "nonexistent.ts"
+[ContextAdapter] ⚠️ Referenced file not found: nonexistent.ts
+```
+**原因：** 文件不存在或路径错误
+
+#### 错误3：模糊搜索失败（路径包含分隔符）
+```
+[ContextAdapter] 📄 Processing reference: "src/some/file.ts"
+[ContextAdapter] ✅ Direct path match found: /path/to/src/some/file.ts
+```
+**正常行为：** 包含路径的引用会尝试直接匹配，不会进行模糊搜索
+
+#### 错误4：文件在 node_modules 中
+```
+[ContextAdapter] ⚠️ Referenced file not found: package.json
+```
+**原因：** 模糊搜索会跳过 `node_modules` 目录
+
+---
+
+## 🐛 故障排查
+
+### 问题1：@ 引用完全不工作
+
+**检查清单：**
+1. ✅ 打开 VS Code 的"输出"面板，选择"扩展宿主"或"Yuangs AI"频道
+2. ✅ 发送包含 `@` 的消息
+3. ✅ 查看是否有 `[ContextAdapter] 🔍 Parsing user input...` 日志
+4. ✅ 如果没有此日志，说明 `resolveUserReferences` 方法未被调用
+   - 检查 `src/vscode/core/runtime.ts` 中的 `runChat` 方法
+   - 确认 `await this.contextAdapter.resolveUserReferences(userInput)` 被执行
+
+### 问题2：找到引用但文件未加载
+
+**检查清单：**
+1. ✅ 查看是否有 `[ContextAdapter] ✅ Direct path match found` 日志
+2. ✅ 查看是否有 `[ContextAdapter] ✅ Added referenced file to context` 日志
+3. ✅ 如果没有，检查文件读取是否有错误
+   - 查看 `Failed to read referenced file` 日志
+   - 检查文件是否有读取权限
+
+### 问题3：文件加载了但 AI 看不到
+
+**检查清单：**
+1. ✅ 查看是否有 `[LLMAdapter] ContextBuffer is NOT EMPTY` 日志
+2. ✅ 查看是否有 `[LLMAdapter] Generated context prompt length: XXX chars` 日志
+3. ✅ 如果 ContextBuffer 为空，说明文件没有被正确添加到上下文
+   - 检查 `contextManager.addContextItemAsync` 是否成功
+4. ✅ 如果有上下文但 AI 看不到，检查：
+   - `[LLMAdapter] Context Item X:` 日志中的 `contentLength`
+   - 确认文件内容不为空
+
+---
+
+## 📊 上下文验证
+
+### 验证方法1：直接询问 AI
+
+**提问：**
+```
+你现在能看到哪些文件？请列出所有引用的文件路径。
+```
+
+**预期回复：**
+- 如果看到 `package.json`，列出它的内容摘要
+- 如果没有看到任何文件，回复"我没有看到任何引用的文件"
+
+### 验证方法2：检查 ContextBuffer 日志
+
+**关键日志：**
+```
+[LLMAdapter] ContextBuffer is NOT EMPTY. Total items: 5
+[LLMAdapter] Context Item 1: {
+  path: '/path/to/package.json',
+  alias: '@package.json',
+  type: 'source_code',
+  confidence: 1.0,
+  tags: ['user-referenced', 'explicit'],
+  contentLength: 1234
+}
+```
+
+**说明：**
+- `confidence: 1.0` - 用户引用的文件，优先级最高
+- `tags: ['user-referenced', 'explicit']` - 确认是显式引用
+- `contentLength` - 文件内容长度，应大于0
+
+---
+
+## 🎯 成功标准
+
+### ✅ 完全成功的标志
+
+1. **文件加载成功：**
+   - ✅ 状态栏显示加载成功
+   - ✅ Console 显示添加成功
+   - ✅ 文件内容长度大于0
+
+2. **上下文注入成功：**
+   - ✅ LLMAdapter 日志显示 ContextBuffer 非空
+   - ✅ Context Item 列表中包含引用的文件
+   - ✅ confidence 为 1.0（显式引用）
+
+3. **AI 能够访问：**
+   - ✅ AI 回复包含文件内容
+   - ✅ AI 能够准确回答关于文件的问题
+   - ✅ AI 不会说"看不到文件"
+
+---
+
+## 📝 测试报告模板
+
+```
+## 测试时间：YYYY-MM-DD HH:mm:ss
+
+### 测试1：基础引用
+- 测试命令：@package.json 请告诉我这个项目的依赖有哪些？
+- 文件加载：✅ / ❌
+- 上下文注入：✅ / ❌
+- AI 访问：✅ / ❌
+- 备注：[任何异常行为]
+
+### 测试2：模糊匹配
+- 测试命令：@README 分析项目文档
+- 文件加载：✅ / ❌
+- 上下文注入：✅ / ❌
+- AI 访问：✅ / ❌
+- 备注：
+
+### 测试3：路径引用
+- 测试命令：@src/engine/agent/AgentRuntime.ts 解释这个文件的作用
+- 文件加载：✅ / ❌
+- 上下文注入：✅ / ❌
+- AI 访问：✅ / ❌
+- 备注：
+
+### 测试4：多文件引用
+- 测试命令：@package.json @tsconfig.json 比较这两个配置文件
+- 文件加载：✅ / ❌
+- 上下文注入：✅ / ❌
+- AI 访问：✅ / ❌
+- 备注：
+
+## 总结
+- 成功：X / 4
+- 失败：Y / 4
+- 主要问题：[问题描述]
+```
+
+---
+
+## 🚨 紧急问题报告
+
+如果遇到以下情况，请立即报告：
+
+1. **完全不工作：** Console 中完全没有 `[ContextAdapter]` 日志
+2. **所有文件都加载失败：** 即使明显存在的文件也无法加载
+3. **文件内容为空：** `contentLength: 0`
+4. **AI 完全看不到：** 上下文有数据，但 AI 说看不到
+
+**报告格式：**
+```
+问题描述：[简短描述]
+复现步骤：[步骤1, 步骤2, ...]
+Console 日志：[相关日志片段]
+截图：[如果可能]
+```
+
+---
+
+## 💡 最佳实践
+
+1. **使用相对路径：** `@src/file.ts` 优于绝对路径
+2. **文件名简洁：** `@AgentRuntime.ts` 比 `@TheAgentRuntimeImplementationFile.ts` 更易识别
+3. **避免歧义：** 如果有多个同名文件，使用完整路径
+4. **一次引用不超过5个文件：** 避免上下文过大
+5. **测试后清理：** 发送 `clear` 命令清理对话历史
+
+---
+
+## 🔗 相关文档
+
+- [Context Buffer 实现文档](./context-display-bottleneck-analysis.md)
+- [Context Protocol 文档](../../src/engine/agent/contextProtocol.ts)
+- [LLMAdapter 文档](../../src/engine/agent/llmAdapter.ts)
+
+---
+
+**最后更新：** 2026-02-01
+**维护者：** Yuangs AI Team
+````
+
+[⬆ 回到目录](#toc)
+
 ## 📄 docs/CHANGELOG.md
 
 ````markdown
 # Changelog
 
-## [1.0.3] - 2026-01-21
+All notable changes to this project will be documented in this file.
 
-### ✨ 新功能 (New Features)
-- **智能 Diff 应用 (Smart Diff Application)**: 
-  - 自动检测 AI 回复中的 diff 代码块
-  - 在 diff 代码块右上角显示"Apply"按钮（hover 时显示）
-  - 一键应用 diff 到代码文件
-  - 支持标准 unified diff 格式（`---`、`+++`、`@@`）
-  - 支持简单的 `+`/`-` 格式
-  - 自动创建不存在的文件
-  - 应用后自动保存并显示文件
+## [Unreleased]
 
-### 🎨 用户体验优化 (UX Improvements)
-- Diff 代码块特殊样式标识（边框、背景色）
-- 应用按钮状态反馈：
-  - 默认：`✓ Apply`（hover 时显示）
-  - 应用中：`⏳ Applying...`
-  - 成功：`✓ Applied`（绿色）
-  - 失败：`✗ Failed`（红色，3秒后恢复）
-- 实时处理流式渲染中的 diff 块
+## [v1.5.0] - 2026-01-31
 
-### 🛠 技术改进 (Technical Improvements)
-- 完整的 diff 解析器，支持多种格式
-- 智能文件查找和创建
-- 工作区编辑 API 集成
-- 错误处理和用户反馈
+### ✨ New Features
+- **Governed Smart Stage**: Voting-based file classification for Smart Stage
+- **Confidence Scoring**: Every commit group now has a confidence score (0.0-1.0)
+- **Explainable AI**: Each classification includes reasons for the decision
+- **Human Feedback Loop**: Users can correct wrong classifications, improving future accuracy
+- **Safety Thresholds**:
+  - ≥ 60% confidence → auto-group
+  - 30-60% confidence → suggest
+  - < 30% confidence → needs-confirmation
 
----
+### 🛡️ Safety Improvements
+- Smart Stage will no longer auto-commit when confidence < 0.3
+- Reduced risk of incorrect Git history generation
+- Added "Needs Confirmation" group for low-confidence cases
 
-## [1.0.2] - 2026-01-21
+### 🧠 Learning Enhancements
+- User corrections are recorded and used to adjust future grouping behavior
+- Weight adjustment system based on human feedback (with upper/lower bounds)
+- Preference memory with time-based decay (7-day window)
+- **v1.5.1**: PreferenceMemory now actively adjusts signal weights in VotingFileClassifier
 
-### ✨ 新功能 (New Features)
-- **智能文本选择 (Smart Text Selection)**: 
-  - 在聊天记录中选中文本后，自动填入输入框，方便一键发送
-  - 支持快速引用 AI 回答或重新发送之前的问题
-  - 自动清除选择，避免视觉干扰
-  - 输入框高度自动调整以适应内容
+### 💬 UX Improvements
+- Commit preview and Sidebar Chat now display grouping confidence and rationale
+- Added "Wrong? Correct it" button in Smart Stage UI
+- Visual indicators for classification confidence levels
 
-### 🛠 开发体验 (Developer Experience)
-- **一键编译脚本**: 
-  - 新增 `compile.sh` - 自动查找 Node.js 和 npm，智能编译
-  - 新增 `c` 快捷脚本 - 超简短命令，只需 `./c` 即可编译
-  - 支持多种 Node.js 安装方式（Homebrew、NVM、Volta、FNM 等）
-  - 显示详细的版本信息和编译进度
+### 🏗️ Architecture Changes
+- Introduced VotingFileClassifier with multi-signal analysis
+- Added GroupExplanation type with detailed reasoning
+- Created PreferenceMemory system for learning from corrections
+- Extended FileGroup interface to include explanation data
+- **v1.5.1**: PreferenceMemory now actively influences decision-making through weight adjustments
 
-### 🎨 用户体验优化 (UX Improvements)
-- 优化了文本选择的交互逻辑，确保只在聊天容器内的选择才会触发自动填入
-- 改进了输入框焦点管理，选中文本后自动获得焦点
+### 📚 Documentation
+- Added SMART_STAGE_GOVERNANCE.md with detailed feature explanation
+- Added GOVERNED_AI_WHITEPAPER.md technical documentation
+- Updated README with Smart Stage governance features
+- Documented confidence threshold behavior
 
----
+## [v1.4.0] - YYYY-MM-DD
 
-## [1.0.1] - 2026-01-21
-
-### ✨ 核心功能增强 (Core Enhancements)
-- **上下文感知 (Context Awareness)**: 
-  - 实现了基于 VS Code API 的 `read_file` 和 `list_files` 执行器。
-  - 优化了对话启动逻辑：未选中代码时自动注入工作区文件列表，让 Agent 能“看见”整个项目。
-  - 完善了 `ToolExecutor` 对 VS Code 环境的深度适配。
-
-### 🎨 界面与体验 (UI & UX)
-- **Premium UI 重构**: 
-  - 引入玻璃拟态 (Glassmorphism) 视觉系统。
-  - 支持完整的 Markdown 渲染（包含代码块、列表等）。
-  - 新增动态渐变装饰线与平滑的消息淡入动画。
-  - 增加了“正在输入”动画指示器 (Typing Indicator)。
-  - 优化了输入框，支持多行自适应伸缩。
-- **操作栏增强**: 
-  - 在侧边栏顶部增加了“清除聊天”与“应用建议”按钮。
-  - 修复了按钮图标不可见的问题。
-
-### 🛠 稳定性与治理 (Stability & Governance)
-- **路径解析修复**: 解决了插件环境下 `process.cwd()` 导致的 `policy.yaml` 和 WASM 加载失败问题。
-- **Git 初始化**: 为项目配置了标准的 `.gitignore` 规则，并完成了向 GitHub 仓库的初始清理提交。
-
-### 📝 文档 (Documentation)
-- 重写并完善了 `README.md`，提供了更清晰的安装、开发与治理策略说明。
-
+### ✨ New Features
+- Initial release of Yuangs AI Agent
+- Basic AI chat functionality
+- WASM sandbox for secure command execution
+- Policy engine with configurable rules
+- Smart diff application
+- File and symbol reference system
 ````
 
 [⬆ 回到目录](#toc)
@@ -3070,6 +3283,881 @@ v1.2 版本通过以下三大功能，构建了完整的 AI Git Review/Commit �
 - [ ] 添加更多的质量检查指标
 - [ ] 支持自定义安全策略
 - [ ] 添加性能优化（增量扫描）
+````
+
+[⬆ 回到目录](#toc)
+
+## 📄 docs/FILE_CONTEXT_FIX_V2.md
+
+````markdown
+# @文件机制完整诊断与修复方案
+
+## 问题诊断（基于实际代码分析）
+
+### 🔴 核心问题 1：双重解析导致竞争条件
+
+**位置：** `ChatViewProvider.handleAgentTask()` + `VSCodeAgentRuntime.runChat()`
+
+**问题流程：**
+```
+1. ChatViewProvider.handleAgentTask()
+   ├─ 解析 @ 文件 (line 503-508)
+   ├─ 调用 autoLoadFileToContext()
+   └─ 调用 this._runtime.runChat()
+       │
+2. VSCodeAgentRuntime.runChat()
+   ├─ 调用 contextAdapter.collectContext()
+   ├─ 调用 contextAdapter.resolveUserReferences()  ← 重复解析！
+   └─ 触发 onContextInitialized()                 ← 可能太晚
+```
+
+**根本原因：**
+- `handleAgentTask()` 已经解析并加载了 @ 文件
+- 但 `runChat()` 里的 `resolveUserReferences()` **再次解析**相同的 @ 文件
+- 这导致：
+  1. 重复添加相同文件到上下文
+  2. 异步竞争：AI 可能开始生成时，文件还在加载中
+  3. 没有等待所有文件加载完成就触发 `onContextInitialized()`
+
+---
+
+### 🔴 核心问题 2：@ 文件解析后立即发送给 AI（不等待完成）
+
+**位置：** `ChatViewProvider.handleAgentTask()` line 511-560
+
+```typescript
+// 1. 解析并开始加载 @ 文件
+const fileRefs = userInput.match(/@([^\s]+)/g);
+if (fileRefs) {
+    for (const ref of fileRefs) {
+        await this.autoLoadFileToContext(filePath);  // ← 异步加载
+    }
+}
+
+// 2. 立即调用 runChat，不等待所有文件加载完成
+await this._runtime.runChat(
+    userInput,
+    onChunk,
+    this._currentModel,
+    () => {
+        // ← 这个回调可能在 AI 已经开始生成后才触发
+        this.sendContextToUI(contextManager);
+    },
+    signal
+);
+```
+
+**问题：**
+- `autoLoadFileToContext()` 内部调用了 `addContextItemAsync()`
+- 但没有 `await` 等待所有文件真正添加到上下文
+- AI 可能开始生成时，文件内容还在异步队列中
+
+---
+
+### 🔴 核心问题 3：VSCodeContextAdapter.resolveUserReferences() 的静默失败
+
+**位置：** `src/vscode/core/contextAdapter.ts` line 23-77
+
+```typescript
+try {
+    await vscode.workspace.fs.stat(fileUri);
+    exists = true;
+} catch {
+    // 2. 尝试模糊匹配 (简化的，实际可能需要更复杂的查找)
+    const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 1);
+    if (files.length > 0) {
+        fileUri = files[0];
+        exists = true;
+    }
+}
+
+if (exists) {
+    try {
+        // ← 添加成功，但用户看不到
+    } catch (e) {
+        console.warn(`⚠️ Failed to read referenced file ${relPath}: ${e}`);
+        // ← 只是警告，用户不知道
+    }
+} else {
+    console.warn(`⚠️ Referenced file not found: ${relPath}`);
+    vscode.window.showWarningMessage(`Yuangs AI: Could not find referenced file '${relPath}'. Please check the path.`);
+    // ← 这个提示只在找不到文件时出现，但在读取失败时没有提示
+}
+```
+
+**问题：**
+- 文件读取失败时只有 console.warn
+- 用户完全不知道文件加载失败了
+- AI 自然看不到文件内容
+
+---
+
+### 🔴 核心问题 4：ChatViewProvider.autoLoadFileToContext() 的静默失败
+
+**位置：** `ChatViewProvider.ts` line 748-775
+
+```typescript
+private async autoLoadFileToContext(relativePath: string) {
+    try {
+        // ... 加载逻辑 ...
+    } catch (e) {
+        console.warn(`[ChatViewProvider] Failed to auto-load @ reference: ${relativePath}`, e);
+        // ← 只是 warn，不告诉用户
+    }
+}
+```
+
+**问题：**
+- 完全静默失败
+- 用户输入 `@文件名` 但没有任何反馈
+- AI 说"看不到文件"，用户不知道为什么
+
+---
+
+### 🔴 核心问题 5：文件路径匹配过于简单
+
+**位置：** 两个地方都使用简单的路径拼接
+
+```typescript
+// ChatViewProvider.autoLoadFileToContext()
+const fullPath = path.isAbsolute(relativePath)
+    ? relativePath
+    : path.join(workspaceFolder.uri.fsPath, relativePath);
+
+if (fs.existsSync(fullPath) && fs.lstatSync(fullPath).isFile()) {
+    // ← 只检查文件是否存在，不处理路径错误
+}
+```
+
+**问题场景：**
+- 用户输入：`@ChatViewProvider.ts`
+- 但文件在：`src/vscode/provider/ChatViewProvider.ts`
+- 结果：找不到文件，静默失败
+
+---
+
+### 🔴 核心问题 6：Context 初始化回调触发时机错误
+
+**位置：** `VSCodeAgentRuntime.runChat()` line 61-70
+
+```typescript
+if (onContextInitialized && (diff.added.length > 0 || diff.changed.length > 0)) {
+    console.log(`[VSCodeRuntime] Context diff detected: +${diff.added.length} ~${diff.changed.length}`);
+    onContextInitialized();
+}
+```
+
+**问题：**
+- 这个回调只在 context 有变化时触发
+- 但它不等待所有 @ 文件异步加载完成
+- 可能触发时，文件还在 `addContextItemAsync()` 队列中
+
+---
+
+## 修复方案
+
+### ✅ 修复 1：移除 ChatViewProvider 中的 @ 解析，统一由 VSCodeContextAdapter 处理
+
+**原因：**
+- 避免双重解析
+- 统一逻辑在一个地方
+- 更容易维护和调试
+
+**修改：**
+```typescript
+// ChatViewProvider.handleAgentTask() - 移除这部分
+// const fileRefs = userInput.match(/@([^\s]+)/g);
+// if (fileRefs) {
+//     for (const ref of fileRefs) {
+//         await this.autoLoadFileToContext(filePath);
+//     }
+// }
+```
+
+---
+
+### ✅ 修复 2：确保 @ 文件在 AI 生成前完全加载
+
+**修改：** `VSCodeAgentRuntime.runChat()`
+
+```typescript
+async runChat(
+    userInput: string,
+    stream?: (chunk: string) => void,
+    model?: string,
+    onContextInitialized?: () => void,
+    abortSignal?: AbortSignal
+) {
+    try {
+      console.log('[VSCodeRuntime] Starting chat execution...');
+      
+      // ✅ 1. 先解析并加载 @ 引用（同步等待）
+      await this.contextAdapter.resolveUserReferences(userInput);
+      
+      // ✅ 2. 等待所有异步上下文项添加完成
+      await this.contextManager.flush();
+      
+      // ✅ 3. 然后收集其他上下文
+      await this.contextAdapter.collectContext();
+      
+      // ✅ 4. 计算 Diff 并通知 UI
+      const buffer = this.runtime.getContextManager().getContextBuffer();
+      const snapshot = snapshotFromBuffer(buffer);
+      const diff = diffContext(this.lastContextSnapshot, snapshot);
+      
+      this.lastContextSnapshot = snapshot;
+
+      // ✅ 5. 确保在 AI 生成前触发回调
+      if (onContextInitialized) {
+          console.log(`[VSCodeRuntime] Context initialized with ${buffer.export().length} items`);
+          onContextInitialized();
+      }
+
+      // ✅ 6. 启动事件监听器
+      this.contextAdapter.setupEventListeners();
+
+      // ✅ 7. 运行 AI（此时所有 @ 文件已加载完成）
+      await this.runtime.run(userInput, 'chat', stream, model, abortSignal);
+
+      console.log('[VSCodeRuntime] Chat execution completed');
+      return this.runtime;
+    } catch (error) {
+      console.error('[VSCodeRuntime] Error running chat:', error);
+      throw error;
+    }
+}
+```
+
+---
+
+### ✅ 修复 3：改进 VSCodeContextAdapter.resolveUserReferences() 的错误处理
+
+**修改：** `src/vscode/core/contextAdapter.ts`
+
+```typescript
+async resolveUserReferences(userInput: string): Promise<void> {
+    const references = userInput.match(/@[^\s]+/g);
+    if (!references) return;
+
+    console.log(`[ContextAdapter] Found references: ${references.join(', ')}`);
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+        vscode.window.showWarningMessage('Yuangs AI: No workspace folder open');
+        return;
+    }
+
+    const loadedFiles: string[] = [];
+    const failedFiles: { path: string, reason: string }[] = [];
+
+    for (const ref of references) {
+      const relPath = ref.substring(1);
+      
+      // ✅ 改进的文件查找逻辑
+      let fileUri: vscode.Uri | null = null;
+      let reason = '';
+      
+      try {
+        // 尝试 1: 直接路径
+        fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relPath);
+        await vscode.workspace.fs.stat(fileUri);
+      } catch (e) {
+        // 尝试 2: 模糊搜索整个工作区
+        try {
+            const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 5);
+            if (files.length > 0) {
+                // 找到多个文件时，选择最匹配的
+                fileUri = files[0];
+                console.log(`[ContextAdapter] Found ${files.length} matches for ${relPath}, using first one`);
+            } else {
+                reason = 'File not found in workspace';
+            }
+        } catch (searchError) {
+            reason = 'Search failed';
+        }
+      }
+
+      if (fileUri) {
+        try {
+          const document = await vscode.workspace.openTextDocument(fileUri);
+          const content = document.getText();
+          
+          await this.contextManager.addContextItemAsync({
+             type: 'file',
+             path: fileUri.fsPath,
+             content: content,
+             semantic: 'source_code',
+             summary: `User referenced file: ${path.basename(fileUri.fsPath)}`,
+             summarized: true,
+             summaryQuality: 1.0, 
+             alias: `@${relPath}`,
+             tags: ['user-referenced', 'explicit', '@reference'],
+             importance: {
+                 id: fileUri.fsPath,
+                 path: fileUri.fsPath,
+                 type: 'file',
+                 useCount: 1,
+                 successCount: 1,
+                 failureCount: 0,
+                 lastUsed: Date.now(),
+                 createdAt: Date.now(),
+                 confidence: 1.0 
+             }
+          });
+          
+          loadedFiles.push(path.basename(fileUri.fsPath));
+          console.log(`[ContextAdapter] ✅ Added referenced file: ${fileUri.fsPath}`);
+          
+        } catch (e) {
+            failedFiles.push({ path: relPath, reason: `Failed to read: ${e}` });
+            console.warn(`[ContextAdapter] ⚠️ Failed to read referenced file ${relPath}: ${e}`);
+        }
+      } else {
+        failedFiles.push({ path: relPath, reason });
+        console.warn(`[ContextAdapter] ⚠️ Referenced file not found: ${relPath}`);
+      }
+    }
+
+    // ✅ 反馈加载结果给用户
+    if (loadedFiles.length > 0) {
+        vscode.window.setStatusBarMessage(
+            `Yuangs AI: Loaded ${loadedFiles.length} file(s): ${loadedFiles.join(', ')}`,
+            5000
+        );
+    }
+    
+    if (failedFiles.length > 0) {
+        const errorMessage = failedFiles
+            .map(f => `"@${f.path}" (${f.reason})`)
+            .join(', ');
+        vscode.window.showWarningMessage(
+            `Yuangs AI: Could not load ${failedFiles.length} file(s): ${errorMessage}. AI may not see these files.`
+        );
+    }
+}
+```
+
+---
+
+### ✅ 修复 4：添加 ContextManager.flush() 方法
+
+**位置：** 需要在 `ContextManager` 中添加
+
+```typescript
+/**
+ * 等待所有异步上下文项添加完成
+ */
+async flush(): Promise<void> {
+    // 等待所有待处理的异步操作完成
+    // 具体实现取决于 ContextManager 的内部结构
+    return Promise.resolve();
+}
+```
+
+---
+
+### ✅ 修复 5：移除 ChatViewProvider.autoLoadFileToContext() 方法
+
+**原因：**
+- 这个方法现在已经不需要了
+- 逻辑统一由 VSCodeContextAdapter 处理
+
+---
+
+## 修复后的完整流程
+
+```
+用户输入: "帮我分析 @ChatViewProvider.ts"
+  ↓
+ChatViewProvider.handleAgentTask()
+  ↓
+VSCodeAgentRuntime.runChat()
+  ↓
+contextAdapter.resolveUserReferences()  ← ✅ 统一处理 @ 引用
+  ├─ 解析 "@ChatViewProvider.ts"
+  ├─ 查找文件（支持模糊匹配）
+  ├─ 读取文件内容
+  ├─ 添加到 contextManager.addContextItemAsync()
+  └─ ✅ 显示加载结果给用户
+  ↓
+contextManager.flush()  ← ✅ 等待所有异步操作完成
+  ↓
+contextAdapter.collectContext()  ← 收集其他上下文
+  ↓
+onContextInitialized()  ← ✅ 触发回调，此时所有文件已加载
+  ↓
+runtime.run()  ← ✅ AI 开始生成，所有文件已在上下文中
+```
+
+---
+
+## 关键改进点
+
+### 1. **单一职责**
+- @ 引用解析只在一个地方处理
+- 避免重复和竞争条件
+
+### 2. **用户反馈**
+- 成功加载：状态栏显示文件名
+- 失败加载：弹出警告消息
+- 用户明确知道哪些文件加载成功/失败
+
+### 3. **时序保证**
+- 在 AI 生成前，所有 @ 文件必须加载完成
+- 使用 `flush()` 等待异步操作
+
+### 4. **错误处理**
+- 所有可能的失败场景都有明确的用户提示
+- 不再静默失败
+
+### 5. **路径匹配**
+- 支持模糊搜索
+- 找到多个匹配时使用第一个
+- 更容错的路径解析
+
+---
+
+## 验证步骤
+
+1. **测试正常场景：**
+   - 输入 `@ChatViewProvider.ts`（文件存在）
+   - 验证状态栏显示加载成功
+   - 验证 AI 能看到文件内容
+
+2. **测试文件不存在：**
+   - 输入 `@NonExistentFile.ts`
+   - 验证弹出警告消息
+   - 验证 AI 明确告知看不到文件
+
+3. **测试模糊匹配：**
+   - 输入 `@Provider.ts`（匹配多个文件）
+   - 验证使用第一个匹配
+   - 验证控制台日志显示匹配数量
+
+4. **测试多个 @ 引用：**
+   - 输入 `@file1.ts @file2.ts @file3.ts`
+   - 验证所有文件都加载成功
+   - 验证 AI 能看到所有文件内容
+
+5. **测试大文件：**
+   - @ 一个大文件
+   - 验证不会超时
+   - 验证 UI 不会卡顿
+
+---
+
+## 总结
+
+这个修复方案解决了以下核心问题：
+
+✅ 消除双重解析导致的竞争条件  
+✅ 确保 @ 文件在 AI 生成前完全加载  
+✅ 提供清晰的用户反馈机制  
+✅ 改进文件路径匹配的容错性  
+✅ 统一 @ 引用处理逻辑  
+✅ 提升系统的可靠性和可维护性
+````
+
+[⬆ 回到目录](#toc)
+
+## 📄 docs/FILE_REFERENCE_DEBUG_GUIDE.md
+
+````markdown
+# 文件 @ 引用问题调试指南
+
+## 问题描述
+无论通过聊天框 @ 引用文件还是通过文件选择器选择，AI 都说看不到文件。
+
+## 已添加的调试日志
+
+为了定位问题，我在以下关键位置添加了详细日志：
+
+### 1. LLMAdapter (`src/engine/agent/llmAdapter.ts`)
+```typescript
+// 显示 ContextBuffer 是否为空
+console.log(`[LLMAdapter] ContextBuffer is NOT EMPTY. Total items: ${contextBuffer.export().length}`);
+
+// 显示每个上下文项的详细信息
+allItems.forEach((item, idx) => {
+  console.log(`[LLMAdapter] Context Item ${idx + 1}:`, {
+    path: item.path,
+    alias: item.alias,
+    type: item.semantic,
+    confidence: item.importance?.confidence,
+    tags: item.tags,
+    contentLength: item.content?.length || 0
+  });
+});
+
+// 显示使用的策略和 token 限制
+console.log(`[LLMAdapter] Using RANKED strategy with 12000 tokens (streaming mode)`);
+
+// 显示生成的提示词长度
+console.log(`[LLMAdapter] Generated context prompt length: ${contextPrompt.length} chars`);
+
+// 如果 ContextBuffer 为空
+console.log(`[LLMAdapter] ContextBuffer is EMPTY - no context will be sent to AI!`);
+```
+
+### 2. ContextBuffer (`src/engine/agent/contextBuffer.ts`)
+```typescript
+// 显示 buildPrompt 调用参数
+console.log(`[ContextBuffer] buildPrompt called with:`, {
+    userInput: userInput?.substring(0, 50) || '(empty)',
+    maxTokens,
+    strategy,
+    totalItems: this.items.length,
+    isEmpty: this.isEmpty()
+});
+
+// 显示排序后的前 5 个项
+console.log(`[ContextBuffer] Items sorted by ${strategy}. Top 5 items:`);
+sortedItems.slice(0, 5).forEach((item, idx) => {
+    console.log(`[ContextBuffer]   ${idx + 1}. ${item.alias || item.path}`, {
+        confidence: item.importance?.confidence,
+        tags: item.tags,
+        contentLength: item.content?.length || 0
+    });
+});
+```
+
+### 3. ContextAdapter (`src/vscode/core/contextAdapter.ts`)
+```typescript
+// 显示找到的引用
+console.log(`[ContextAdapter] Found ${references.length} references (${uniqueRefs.length} unique): ${uniqueRefs.join(', ')}`);
+
+// 显示成功加载的文件
+console.log(`[ContextAdapter] ✅ Added referenced file: ${fileUri.fsPath}`);
+
+// 显示失败加载的文件
+console.log(`[ContextAdapter] ⚠️ Failed to read referenced file ${relPath}: ${e}`);
+```
+
+### 4. ChatViewProvider (`src/vscode/provider/ChatViewProvider.ts`)
+```typescript
+// 文件选择器加载文件
+console.log(`[ChatViewProvider] ✅ File added to context: ${data.path}`);
+
+// 显示上下文信息到 UI
+console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length})`);
+```
+
+## 测试步骤
+
+### 测试 1: 通过 @ 引用文件
+
+1. 打开 VS Code 开发者工具（View > Toggle Developer Tools）
+2. 切换到 Console 标签页
+3. 打开 Yuangs AI 聊天面板
+4. 输入：`@package.json 这个项目有哪些依赖？`
+5. 提交问题
+6. **观察控制台日志**
+
+**期望看到的日志：**
+```
+[ContextAdapter] Found 1 references (1 unique): @package.json
+[ContextAdapter] ✅ Added referenced file: /path/to/package.json
+[LLMAdapter] ContextBuffer is NOT EMPTY. Total items: 1
+[LLMAdapter] Context Item 1: {
+  path: "/path/to/package.json",
+  alias: "package.json",
+  type: "source_code",
+  confidence: 1.0,
+  tags: ["user-referenced", "explicit"],
+  contentLength: 1234
+}
+[ContextBuffer] buildPrompt called with: { ... }
+[ContextBuffer] Items sorted by ranked. Top 5 items:
+[ContextBuffer]   1. package.json { confidence: 1.0, ... }
+[LLMAdapter] Using RANKED strategy with 12000 tokens (streaming mode)
+[LLMAdapter] Generated context prompt length: 2345 chars
+```
+
+**如果看到的日志不同，记录下来并分析。**
+
+### 测试 2: 通过文件选择器选择文件
+
+1. 打开 VS Code 开发者工具
+2. 切换到 Console 标签页
+3. 打开 Yuangs AI 聊天面板
+4. 点击文件选择器图标
+5. 选择一个文件（如 `package.json`）
+6. **观察控制台日志**
+
+**期望看到的日志：**
+```
+[ChatViewProvider] ✅ File added to context: package.json
+[ContextAdapter] Found 0 references (0 unique): 
+[LLMAdapter] ContextBuffer is NOT EMPTY. Total items: 1
+[LLMAdapter] Context Item 1: {
+  path: "/path/to/package.json",
+  alias: "package.json",
+  type: "source_code",
+  confidence: 1.0,
+  tags: ["user-selected", "explicit", "file-panel"],
+  contentLength: 1234
+}
+...
+```
+
+### 测试 3: 同时使用两种方式
+
+1. 先通过文件选择器选择 `package.json`
+2. 然后在输入框输入：`@tsconfig.json 请解释这个配置`
+3. 提交问题
+4. **观察控制台日志**
+
+**期望看到 2 个上下文项：**
+- 一个来自文件选择器（tags: `["user-selected", "explicit", "file-panel"]`）
+- 一个来自 @ 引用（tags: `["user-referenced", "explicit"]`）
+
+## 常见问题诊断
+
+### 问题 A: 日志显示 "ContextBuffer is EMPTY"
+
+**可能原因：**
+- ContextBuffer 在 AI 调用前被清空
+- Runtime 实例不是同一个，导致 ContextBuffer 不共享
+
+**检查：**
+```typescript
+// 在 src/vscode/core/runtime.ts 中
+// 确认同一个 runtime 实例被复用
+if (!this._runtime) {
+    this._runtime = new VSCodeAgentRuntime();  // ← 这行只在 _runtime 为 null 时执行
+}
+```
+
+### 问题 B: 日志显示文件已加载，但 AI 说看不到
+
+**可能原因：**
+- 上下文被截断（token 限制）
+- 排序策略导致文件不在重要位置
+- 文件内容被摘要，只保留了摘要
+
+**检查：**
+1. 查看日志中的 `contentLength`
+2. 查看 `Generated context prompt length`
+3. 查看排序后的前 5 个项是否包含目标文件
+
+### 问题 C: 日志中文件存在，但 confidence 很低
+
+**可能原因：**
+- importance 对象未正确设置
+- confidence 值被意外覆盖
+
+**检查：**
+在日志中查找 `confidence: 1.0`，@ 引用的文件应该有这个值。
+
+## 如何收集调试信息
+
+1. **复制完整控制台日志**
+   - 打开开发者工具
+   - 右键点击控制台 → "Save as..." 保存为文件
+   - 或手动复制相关日志片段
+
+2. **记录用户输入**
+   - 记录了什么问题
+   - @ 引用或选择了哪个文件
+   - AI 的具体回答
+
+3. **截图上下文面板**
+   - 如果上下文面板显示了文件，截图保存
+
+## 根据日志定位问题的流程图
+
+```
+开始测试
+    ↓
+查看日志: 文件是否加载到 ContextBuffer？
+    ↓ 是
+查看日志: ContextBuffer 是否为空？
+    ↓ 否
+查看日志: buildPrompt 是否被调用？
+    ↓ 是
+查看日志: 生成的 context prompt 长度？
+    ↓ 合理（> 1000 字符）
+查看日志: 排序后的前 5 项是否包含目标文件？
+    ↓ 是
+问题可能在 AI 提示词构造或发送
+    ↓ 否
+问题在排序或 token 限制
+```
+
+## 预期的修复效果
+
+根据之前的修复，应该看到：
+
+1. ✅ 文件被正确加载到 ContextBuffer
+2. ✅ ContextBuffer 不为空
+3. ✅ buildPrompt 使用 `ranked` 策略
+4. ✅ @ 引用的文件有 `confidence: 1.0`（最高优先级）
+5. ✅ 文件出现在排序后的前 5 项中
+6. ✅ AI 能够读取并分析文件内容
+
+## 如果问题仍然存在
+
+如果按照上述步骤测试后问题仍然存在：
+
+1. **保存完整的控制台日志**
+2. **记录具体的测试步骤和期望结果**
+3. **提供以下信息：**
+   - 使用的文件路径
+   - 使用的命令（@ 引用还是文件选择器）
+   - 完整的日志输出
+   - AI 的具体回答
+
+然后我们可以根据日志进一步定位问题。
+````
+
+[⬆ 回到目录](#toc)
+
+## 📄 docs/FILE_REFERENCE_FIX_V3.md
+
+````markdown
+# File @Reference Fix - Version 3
+
+## Problem Description
+
+When users @mention files in the chat dialog (e.g., `@package.json`), the AI still cannot read them even though the file content is loaded into the context buffer.
+
+## Root Cause Analysis
+
+The issue was in `src/engine/agent/llmAdapter.ts` in the `think()` method. When streaming is enabled (which happens in UI mode), the context building logic had two problems:
+
+### Problem 1: Wrong Sorting Strategy
+```typescript
+// BEFORE (wrong)
+if (onChunk) {
+  contextPrompt = contextBuffer.buildPrompt('', {
+    strategy: 'recent',  // ❌ Sorts by timestamp, not importance
+    maxTokens: 4000
+  });
+}
+```
+
+- Used `'recent'` strategy which sorts context items by `lastUsed` timestamp
+- This meant @referenced files (with high importance: 1.0) could be outranked by more recent but less important items
+- The AI might not see the @referenced file content at all if it was pushed beyond the token limit
+
+### Problem 2: Insufficient Token Limit
+```typescript
+// BEFORE (wrong)
+maxTokens: 4000  // ❌ Too low, cuts off important content
+```
+
+- Only 4000 tokens (~16,000 characters) allowed in streaming mode
+- This is easily exceeded by:
+  - System prompts
+  - Active editor content
+  - Git diff
+  - Diagnostics
+  - Multiple @referenced files
+
+## The Fix
+
+```typescript
+// AFTER (fixed)
+if (onChunk) {
+  contextPrompt = contextBuffer.buildPrompt('', {
+    strategy: 'ranked',  // ✅ Sorts by importance score
+    maxTokens: 12000     // ✅ 3x more space for context
+  });
+}
+```
+
+### Change 1: Use 'ranked' Strategy
+- Sorts context items by computed importance score
+- @referenced files have `importance.confidence = 1.0` (highest)
+- These files will always appear at the top of the context
+- The AI is guaranteed to see user @referenced files first
+
+### Change 2: Increase Token Limit
+- Increased from 4000 to 12000 tokens (48,000 characters)
+- Provides 3x more space for context
+- Ensures @referenced files are included even with other context items present
+- Still balanced to avoid excessive context that slows down AI
+
+## How @References Get High Importance
+
+In `src/vscode/core/contextAdapter.ts`:
+
+```typescript
+await this.contextManager.addContextItemAsync({
+  type: 'file',
+  path: fileUri.fsPath,
+  content: content,
+  // ... other fields
+  importance: {
+    id: fileUri.fsPath,
+    path: fileUri.fsPath,
+    type: 'file',
+    useCount: 1,
+    successCount: 1,
+    failureCount: 0,
+    lastUsed: Date.now(),
+    confidence: 1.0  // ✅ Highest possible importance
+  },
+  tags: ['user-referenced', 'explicit']  // ✅ Explicitly tagged
+});
+```
+
+## Why This Works
+
+### Before Fix
+1. User types: `@package.json What dependencies are installed?`
+2. File loaded into context buffer with `confidence: 1.0`
+3. **BUT**: Context built with `strategy: 'recent'` and `maxTokens: 4000`
+4. Recent but less important items (active editor, diagnostics) might be included first
+5. **Result**: @package.json might be cut off or buried in context
+
+### After Fix
+1. User types: `@package.json What dependencies are installed?`
+2. File loaded into context buffer with `confidence: 1.0`
+3. Context built with `strategy: 'ranked'` and `maxTokens: 12000`
+4. Items sorted by importance: @references (1.0) > active editor (0.9) > selection (1.0) > ...
+5. **Result**: @package.json appears at top of context, AI definitely sees it
+
+## Testing
+
+To verify the fix works:
+
+1. Open a file in VS Code
+2. Open the Yuangs AI chat panel
+3. Type: `@package.json What dependencies are installed?`
+4. The AI should be able to read and analyze the package.json file
+5. Check the developer console for logs showing the file was loaded:
+   ```
+   [ContextAdapter] ✅ Added referenced file: /path/to/package.json
+   ```
+
+## Performance Impact
+
+- Minimal: The 'ranked' strategy was already used in non-streaming mode
+- Slightly increased token usage (4000 → 12000 in streaming)
+- Trade-off: Better context accuracy vs. slightly higher API costs
+- Considered acceptable given the critical importance of user @references
+
+## Related Files
+
+- `src/engine/agent/llmAdapter.ts` - **Modified**
+- `src/vscode/core/contextAdapter.ts` - Loads @references with high importance
+- `src/engine/agent/contextBuffer.ts` - Provides `buildPrompt()` with ranking logic
+- `src/vscode/core/runtime.ts` - Orchestrates context loading before AI call
+
+## Previous Attempts
+
+- **v1**: Added `resolveUserReferences()` but had async timing issues
+- **v2**: Fixed async timing with `flush()` calls, improved duplicate handling
+- **v3** (this fix): Addresses context building strategy and token limits
+
+## Conclusion
+
+The fix ensures that user @referenced files are always prioritized in the AI's context by:
+1. Using the 'ranked' strategy to sort by importance
+2. Providing sufficient token space to include @references
+3. Maintaining backward compatibility with existing functionality
+
+This is a targeted fix that addresses the core issue without requiring major refactoring.
 ````
 
 [⬆ 回到目录](#toc)
@@ -10116,48 +11204,6 @@ MIT License - 详见 LICENSE 文件
 
 [⬆ 回到目录](#toc)
 
-## 📄 docs/todo.md
-
-````markdown
-你现在这个系统，已经非常接近一个 "可审计 AI 操作系统" 了。
-
-──────────────────── (耗时: 34.61s) ────────────────────
-
-## 📊 最新评估 (2026-01-22)
-
-**总体完成度**: **92% - A** ✅
-
-### 核心模块评分
-
-- ✅ 治理系统: 100% (A+)
-- ✅ 可审计性: 95% (A+)
-- ✅ 核心架构: 95% (A+)
-- ✅ AI 能力: 90% (A)
-- ✅ 文档完善: 90% (A)
-- ✅ 开发者工具: 85% (A)
-
-### 关键成就
-
-- ✅ 13/13 核心演示全部验证通过
-- ✅ Code Change Governance 系统完整
-- ✅ Phase 2 (Explainability & Governance) 完成
-- ✅ Human-in-the-loop 机制完善
-- ✅ 完整的回放与解释系统
-
-### 里程碑状态
-
-- [x] Phase 1: 核心框架
-- [x] Phase 2: Explainability & Governance
-- [ ] Phase 3: 高级治理与项目级智能
-
-**详细评估报告**: `functionality-assessment.md`
-
-──────────────────── (耗时: 34.61s) ────────────────────
-
-````
-
-[⬆ 回到目录](#toc)
-
 ## 📄 docs/v1.3-v1.4-implementation-summary.md
 
 ````markdown
@@ -10880,6 +11926,14 @@ v1.3-v1.4 已实现：
 ---
 
 **祝您编码愉快！** 🎉
+````
+
+[⬆ 回到目录](#toc)
+
+## 📄 git_reviews.md
+
+````markdown
+
 ````
 
 [⬆ 回到目录](#toc)
@@ -16049,10 +17103,6 @@ v1.3-v1.4 已实现：
   },
   "license": "MIT",
   "main": "./dist/vscode/extension.js",
-  "activationEvents": [
-    "onView:yuangs.chatView",
-    "onCommand:yuangs.askAI"
-  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -16267,7 +17317,6 @@ v1.3-v1.4 已实现：
     "zod": "^3.22.4"
   }
 }
-
 ````
 
 [⬆ 回到目录](#toc)
@@ -23717,10 +24766,29 @@ export class ContextBuffer {
     buildPrompt(userInput: string, options: BuildPromptOptions = {}): string {
         const { maxTokens, strategy = 'ranked' } = options;
 
-        if (this.isEmpty()) return userInput;
+        console.log(`[ContextBuffer] buildPrompt called with:`, {
+            userInput: userInput?.substring(0, 50) || '(empty)',
+            maxTokens,
+            strategy,
+            totalItems: this.items.length,
+            isEmpty: this.isEmpty()
+        });
+
+        if (this.isEmpty()) {
+            console.log(`[ContextBuffer] ContextBuffer is EMPTY, returning userInput only`);
+            return userInput;
+        }
 
         // 根据策略排序items
         const sortedItems = this.sortItemsByStrategy([...this.items], strategy);
+        console.log(`[ContextBuffer] Items sorted by ${strategy}. Top 5 items:`);
+        sortedItems.slice(0, 5).forEach((item, idx) => {
+            console.log(`[ContextBuffer]   ${idx + 1}. ${item.alias || item.path}`, {
+                confidence: item.importance?.confidence,
+                tags: item.tags,
+                contentLength: item.content?.length || 0
+            });
+        });
 
         // 如果指定了maxTokens，我们需要截断内容以满足限制
         let filteredItems = sortedItems;
@@ -24379,6 +25447,9 @@ export class ContextManager {
   private contextBuffer: ContextBuffer;
   private contextBank: ContextBank;
   private maxHistorySize = 50;
+  
+  // ✅ 跟踪所有异步添加操作的 Promise
+  private pendingAdds: Set<Promise<void>> = new Set();
 
   constructor(initialContext?: GovernanceContext) {
     this.contextBuffer = new ContextBuffer();
@@ -24482,7 +25553,15 @@ export class ContextManager {
   }
 
   async addContextItemAsync(item: Omit<import('./contextBuffer').ContextItem, 'tokens'>) {
-    await this.contextBuffer.addAsync(item);
+    // ✅ 创建 Promise 并跟踪它
+    const p = this.contextBuffer.addAsync(item);
+    this.pendingAdds.add(p);
+    
+    try {
+      await p;
+    } finally {
+      this.pendingAdds.delete(p);
+    }
   }
 
   buildContextPrompt(userInput: string, options?: import('./contextBuffer').BuildPromptOptions) {
@@ -24593,6 +25672,23 @@ export class ContextManager {
   clear(): void {
     this.messages = [];
     this.contextBuffer.clear();
+  }
+
+  /**
+   * 等待所有异步上下文项添加完成
+   * 
+   * ✅ 真正等待所有 pending 的异步操作
+   * 即使未来 addAsync() 变为真正的异步（摘要、embedding等），
+   * 此方法也能确保所有操作完成后再继续。
+   */
+  async flush(): Promise<void> {
+    if (this.pendingAdds.size === 0) {
+      return;
+    }
+    
+    console.log(`[ContextManager] Flushing ${this.pendingAdds.size} pending add operations...`);
+    await Promise.all(Array.from(this.pendingAdds));
+    console.log('[ContextManager] All add operations completed');
   }
 }
 
@@ -26365,33 +27461,58 @@ export class LLMAdapter {
         const userInput = messages[messages.length - 1]?.content || '';
         const dslContextItems = await contextBuffer.getDSLContextForInput(userInput);
 
+        console.log(`[LLMAdapter] ContextBuffer is NOT EMPTY. Total items: ${contextBuffer.export().length}`);
+        console.log(`[LLMAdapter] DSL context items: ${dslContextItems.length}`);
+
+        // 打印所有上下文项的摘要
+        const allItems = contextBuffer.export();
+        allItems.forEach((item, idx) => {
+          console.log(`[LLMAdapter] Context Item ${idx + 1}:`, {
+            path: item.path,
+            alias: item.alias,
+            type: item.semantic,
+            confidence: item.importance?.confidence,
+            tags: item.tags,
+            contentLength: item.content?.length || 0
+          });
+        });
+
         let contextPrompt: string;
 
         if (dslContextItems.length > 0) {
           // 如果有 DSL 查询结果，使用 buildContextPromptWithReferences 来构建提示
+          console.log(`[LLMAdapter] Using DSL-based context prompt`);
           contextPrompt = await buildContextPromptWithReferences(contextBuffer, userInput);
         } else {
-          // 区分流式传输和非流式传输，流式传输时使用更简洁的策略以提高性能
-          if (onChunk) {
-            // 流式传输时使用最近的上下文，减少复杂度和渲染抖动
-            contextPrompt = contextBuffer.buildPrompt('', {
-              strategy: 'recent',  // 使用最近策略，更稳定
-              maxTokens: 4000      // 减少token数量，降低渲染负担
-            });
-          } else {
-            // 非流式传输时使用完整的排名策略
-            contextPrompt = contextBuffer.buildPrompt('', {
-              strategy: 'ranked',  // 使用排名策略
-              maxTokens: 16000     // 设置最大token限制
-            });
-          }
+        // 区分流式传输和非流式传输
+        // ✅ 修复：流式传输也使用 ranked 策略，确保 @references 优先级最高
+        if (onChunk) {
+          // 流式传输时使用排名策略，确保用户 @ 引用的文件优先显示
+          // 适当增加 token 限制，避免重要内容被截断
+          console.log(`[LLMAdapter] Using RANKED strategy with 12000 tokens (streaming mode)`);
+          contextPrompt = contextBuffer.buildPrompt('', {
+            strategy: 'ranked',  // 使用排名策略，按重要性排序
+            maxTokens: 12000     // 增加token限制，确保 @references 内容完整
+          });
+        } else {
+          // 非流式传输时使用完整的排名策略
+          console.log(`[LLMAdapter] Using RANKED strategy with 16000 tokens (non-streaming mode)`);
+          contextPrompt = contextBuffer.buildPrompt('', {
+            strategy: 'ranked',  // 使用排名策略
+            maxTokens: 16000     // 设置最大token限制
+          });
         }
+        }
+
+        console.log(`[LLMAdapter] Generated context prompt length: ${contextPrompt.length} chars`);
 
         // 将ContextBuffer内容作为system消息添加到消息列表开头
         fullMessages = [
           { role: 'system', content: contextPrompt },
           ...fullMessages
         ];
+      } else {
+        console.log(`[LLMAdapter] ContextBuffer is EMPTY - no context will be sent to AI!`);
       }
     }
 
@@ -31178,8 +32299,10 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
 
   provideCodeActions(
     document: vscode.TextDocument,
-    range: vscode.Range
-  ): vscode.CodeAction[] {
+    range: vscode.Range,
+    context: vscode.CodeActionContext,
+    token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.CodeAction[]> {
 
     // Only show actions when text is selected
     if (range.isEmpty) return [];
@@ -31189,35 +32312,46 @@ export class YuangsCodeActionProvider implements vscode.CodeActionProvider {
 
     const actions: vscode.CodeAction[] = [];
 
+    // Filter actions based on the requested kind if specified
+    const only = context.only;
+    const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
+    const shouldIncludeRefactor = !only || only.contains(vscode.CodeActionKind.Refactor);
+
     // Send to Yuangs action
-    actions.push(this.createAction(
-      '📤 发送到 Yuangs',
-      'yuangs.sendSelection',
-      selectedText,
-      document,
-      range,
-      vscode.CodeActionKind.QuickFix
-    ));
+    if (shouldIncludeQuickFix) {
+      actions.push(this.createAction(
+        '📤 发送到 Yuangs',
+        'yuangs.sendSelection',
+        selectedText,
+        document,
+        range,
+        vscode.CodeActionKind.QuickFix
+      ));
+    }
 
     // Explain code action
-    actions.push(this.createAction(
-      '🧠 解释这段代码',
-      'yuangs.explainSelection',
-      selectedText,
-      document,
-      range,
-      vscode.CodeActionKind.QuickFix
-    ));
+    if (shouldIncludeQuickFix) {
+      actions.push(this.createAction(
+        '🧠 解释这段代码',
+        'yuangs.explainSelection',
+        selectedText,
+        document,
+        range,
+        vscode.CodeActionKind.QuickFix
+      ));
+    }
 
     // Optimize code action
-    actions.push(this.createAction(
-      '⚡ 优化这段代码',
-      'yuangs.optimizeSelection',
-      selectedText,
-      document,
-      range,
-      vscode.CodeActionKind.Refactor
-    ));
+    if (shouldIncludeRefactor) {
+      actions.push(this.createAction(
+        '⚡ 优化这段代码',
+        'yuangs.optimizeSelection',
+        selectedText,
+        document,
+        range,
+        vscode.CodeActionKind.Refactor
+      ));
+    }
 
     return actions;
   }
@@ -31550,45 +32684,103 @@ import * as path from 'path';
  */
 export class VSCodeContextAdapter {
   private contextManager: ContextManager;
+  private onFileLoadedCallback?: (fileName: string) => void;
 
-  constructor(contextManager: ContextManager) {
+  constructor(contextManager: ContextManager, onFileLoadedCallback?: (fileName: string) => void) {
     console.log('[ContextAdapter] Initializing...');
     this.contextManager = contextManager;
+    this.onFileLoadedCallback = onFileLoadedCallback;
+  }
+
+  /**
+   * 设置文件加载回调
+   */
+  setOnFileLoadedCallback(callback: (fileName: string) => void): void {
+    this.onFileLoadedCallback = callback;
+  }
+
+  /**
+   * 清理文件加载回调（生命周期管理）
+   */
+  clearFileLoadedCallback(): void {
+    this.onFileLoadedCallback = undefined;
+    console.log('[ContextAdapter] File loaded callback cleared');
   }
 
   /**
    * 解析用户输入中的引用 (@filename) 并加载到上下文
+   * ✅ 改进版：添加去重、性能优化和更好的用户反馈
    */
   async resolveUserReferences(userInput: string): Promise<void> {
-    const references = userInput.match(/@[^\s]+/g);
-    if (!references) return;
+    console.log(`[ContextAdapter] 🔍 Parsing user input for @ references: "${userInput.substring(0, 100)}"`);
+    
+    // 改进正则表达式：支持路径中的特殊字符，如 . / - _
+    const references = userInput.match(/@[a-zA-Z0-9_\-./\\]+/g);
+    
+    if (!references) {
+      console.log(`[ContextAdapter] ❌ No @ references found in input`);
+      return;
+    }
 
-    console.log(`[ContextAdapter] Found references: ${references.join(', ')}`);
+    // ✅ 去重：防止同一文件被多次引用
+    const uniqueRefs = [...new Set(references)];
+    
+    console.log(`[ContextAdapter] ✅ Found ${references.length} references (${uniqueRefs.length} unique): ${uniqueRefs.join(', ')}`);
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (!workspaceFolder) return;
+    if (!workspaceFolder) {
+      vscode.window.showWarningMessage('Yuangs AI: No workspace folder open');
+      return;
+    }
 
-    for (const ref of references) {
+    // ✅ 跟踪已解析的文件路径，防止重复加载
+    const resolvedPaths = new Set<string>();
+    const loadedFiles: string[] = [];
+    const failedFiles: string[] = [];
+
+    for (const ref of uniqueRefs) {
       // 移除 @ 前缀
       const relPath = ref.substring(1);
+      console.log(`[ContextAdapter] 📄 Processing reference: "${relPath}"`);
+      
+      // ✅ 性能优化：只在文件名不含路径分隔符时才进行模糊搜索
+      const useFuzzySearch = !relPath.includes('/') && !relPath.includes('\\');
       
       // 尝试找到文件
-      // 1. 直接匹配
-      let fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relPath);
-      let exists = false;
+      let fileUri: vscode.Uri | null = null;
       
+      // 1. 先尝试直接路径匹配
       try {
-        await vscode.workspace.fs.stat(fileUri);
-        exists = true;
-      } catch {
-        // 2. 尝试模糊匹配 (简化的，实际可能需要更复杂的查找)
-        const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 1);
-        if (files.length > 0) {
-          fileUri = files[0];
-          exists = true;
+        fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relPath);
+        const stat = await vscode.workspace.fs.stat(fileUri);
+        console.log(`[ContextAdapter] ✅ Direct path match found: ${fileUri.fsPath}`);
+      } catch (directPathError) {
+        console.log(`[ContextAdapter] ⚠️ Direct path failed for "${relPath}": ${directPathError}`);
+        
+        // 2. 只在文件名时才进行模糊搜索（避免扫描整个 workspace）
+        if (useFuzzySearch) {
+          try {
+            const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 5);
+            if (files.length > 0) {
+              fileUri = files[0];
+              console.log(`[ContextAdapter] 🔍 Fuzzy search found ${files.length} match(es) for "${relPath}", using: ${fileUri.fsPath}`);
+            } else {
+              console.log(`[ContextAdapter] ❌ Fuzzy search found 0 matches for "${relPath}"`);
+            }
+          } catch (searchError) {
+            console.warn(`[ContextAdapter] ⚠️ Fuzzy search failed for "${relPath}":`, searchError);
+          }
         }
       }
 
-      if (exists) {
+      if (fileUri) {
+        // ✅ 去重检查：防止同一文件被多次加载
+        const fileFsPath = fileUri.fsPath;
+        if (resolvedPaths.has(fileFsPath)) {
+          console.log(`[ContextAdapter] ⚠️ Skipping duplicate file: ${fileFsPath}`);
+          continue;
+        }
+        resolvedPaths.add(fileFsPath);
+
         try {
           const document = await vscode.workspace.openTextDocument(fileUri);
           const content = document.getText();
@@ -31603,7 +32795,6 @@ export class VSCodeContextAdapter {
              summaryQuality: 1.0, 
              alias: `@${relPath}`,
              tags: ['user-referenced', 'explicit'],
-             // 强制高重要性
              importance: {
                  id: fileUri.fsPath,
                  path: fileUri.fsPath,
@@ -31616,14 +32807,45 @@ export class VSCodeContextAdapter {
                  confidence: 1.0 
              }
           });
-          console.log(`[ContextAdapter] ✅ Added referenced file: ${fileUri.fsPath}`);
+          
+          loadedFiles.push(path.basename(fileUri.fsPath));
+          console.log(`[ContextAdapter] ✅ Added referenced file to context: ${fileUri.fsPath} (${content.length} chars)`);
+          
+          // ✅ 触发 UI 回调，通知前端文件加载成功
+          if (this.onFileLoadedCallback) {
+            try {
+              this.onFileLoadedCallback(path.basename(fileUri.fsPath));
+            } catch (callbackError) {
+              // 隔离 UI 层异常，避免影响核心文件加载流程
+              console.warn(`[ContextAdapter] ⚠️ File loaded callback failed: ${callbackError}`);
+            }
+          }
+          
         } catch (e) {
           console.warn(`[ContextAdapter] ⚠️ Failed to read referenced file ${relPath}: ${e}`);
+          failedFiles.push(relPath);
         }
       } else {
         console.warn(`[ContextAdapter] ⚠️ Referenced file not found: ${relPath}`);
-        vscode.window.showWarningMessage(`Yuangs AI: Could not find referenced file '${relPath}'. Please check the path.`);
+        failedFiles.push(relPath);
       }
+    }
+
+    // ✅ 批量反馈加载结果（避免多个弹窗打扰用户）
+    if (loadedFiles.length > 0) {
+      const msg = loadedFiles.length === 1 
+        ? `Loaded file: ${loadedFiles[0]}`
+        : `Loaded ${loadedFiles.length} files: ${loadedFiles.join(', ')}`;
+      vscode.window.setStatusBarMessage(`Yuangs AI: ${msg}`, 5000);
+      console.log(`[ContextAdapter] ✅ Successfully loaded: ${msg}`);
+    }
+    
+    if (failedFiles.length > 0) {
+      const errorMsg = failedFiles.length === 1
+        ? `Could not load: "${failedFiles[0]}"`
+        : `Could not load ${failedFiles.length} files: ${failedFiles.map(f => `"${f}"`).join(', ')}`;
+      // ✅ 使用非 modal 的 toast，不打断用户输入流
+      vscode.window.showWarningMessage(`Yuangs AI: ${errorMsg}`, { modal: false });
     }
   }
 
@@ -31765,7 +32987,7 @@ export class VSCodeContextAdapter {
           path: `${repository.rootUri.fsPath}/git-diff`,
           content: diff,
           semantic: 'evidence',
-          summary: 'Current Git diff showing changes in the repository',
+          summary: 'Current Git diff showing changes in repository',
           summarized: true,
           summaryQuality: 0.8,
           alias: 'git-diff',
@@ -31889,7 +33111,6 @@ export class VSCodeContextAdapter {
     });
   }
 }
-
 ````
 
 [⬆ 回到目录](#toc)
@@ -32218,122 +33439,6 @@ export class VSCodeExecutorAdapter {
         error: `Failed to search in workspace: ${error}`
       };
     }
-  }
-}
-
-````
-
-[⬆ 回到目录](#toc)
-
-## 📄 src/vscode/core/runtime.ts
-
-````typescript
-import { snapshotFromBuffer, diffContext, ContextSnapshot } from '../../engine/agent/contextDiff';
-import { AgentRuntime } from '../../engine/agent/AgentRuntime';
-import { VSCodeContextAdapter } from './contextAdapter';
-
-/**
- * VS Code Agent Runtime 包装器
- * 将 AgentRuntime 与 VS Code 环境连接
- * 
- * 职责：
- * - 初始化 AgentRuntime
- * - 通过 VSCodeContextAdapter 收集 VS Code 上下文
- * - 调用底层 AgentRuntime 执行任务
- */
-export class VSCodeAgentRuntime {
-  private runtime: AgentRuntime;
-  private contextAdapter: VSCodeContextAdapter;
-  private lastContextSnapshot: ContextSnapshot | null = null;
-
-  constructor() {
-    console.log('[VSCodeRuntime] Initializing...');
-    // 初始化 AgentRuntime，传入初始上下文
-    this.runtime = new AgentRuntime({
-      history: [],
-      input: undefined
-    });
-
-    // 初始化 VS Code 上下文适配器
-    this.contextAdapter = new VSCodeContextAdapter(this.runtime.getContextManager());
-    console.log('[VSCodeRuntime] Initialized with context adapter');
-  }
-
-  /**
-   * 运行聊天模式
-   * @param userInput 用户输入
-   * @param stream 流式输出回调
-   * @param model 模型名称（可选）
-   * @param onContextInitialized 上下文初始化回调
-   * @param abortSignal 取消信号
-   */
-  async runChat(
-    userInput: string,
-    stream?: (chunk: string) => void,
-    model?: string,
-    onContextInitialized?: () => void,
-    abortSignal?: AbortSignal
-  ) {
-    try {
-      console.log('[VSCodeRuntime] Starting chat execution...');
-      
-      // 通过 ContextAdapter 收集 VS Code 环境中的上下文
-      await this.contextAdapter.collectContext();
-      
-      // 解析用户输入中的引用
-      await this.contextAdapter.resolveUserReferences(userInput);
-      
-      // 计算 Diff 并决定是否更新 UI
-      const buffer = this.runtime.getContextManager().getContextBuffer();
-      const snapshot = snapshotFromBuffer(buffer);
-      const diff = diffContext(this.lastContextSnapshot, snapshot);
-      
-      this.lastContextSnapshot = snapshot;
-
-      // 只有在新增或内容变化时才通知 UI (On-Demand Push)
-      if (onContextInitialized && (diff.added.length > 0 || diff.changed.length > 0)) {
-          console.log(`[VSCodeRuntime] Context diff detected: +${diff.added.length} ~${diff.changed.length}`);
-          onContextInitialized();
-      } else if (!this.lastContextSnapshot && onContextInitialized) {
-          // 第一次运行时，如果有内容也通知
-          if (!buffer.isEmpty()) {
-               onContextInitialized();
-          }
-      }
-
-      // 启动 VS Code 事件监听器
-      this.contextAdapter.setupEventListeners();
-
-      // 运行 AgentRuntime（传递取消信号）
-      await this.runtime.run(userInput, 'chat', stream, model, abortSignal);
-
-      console.log('[VSCodeRuntime] Chat execution completed');
-      return this.runtime;
-    } catch (error) {
-      console.error('[VSCodeRuntime] Error running chat:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 获取上下文管理器
-   */
-  getContextManager() {
-    return this.runtime.getContextManager();
-  }
-
-  /**
-   * 获取执行记录器
-   */
-  getExecutionRecorder() {
-    return this.runtime.getExecutionRecorder();
-  }
-
-  /**
-   * 获取底层 AgentRuntime 实例
-   */
-  getRuntime() {
-    return this.runtime;
   }
 }
 
@@ -33975,6 +35080,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         console.log(`[ChatViewProvider] Current model: ${this._currentModel}`);
         // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
         this.loadHistory();
+
+        // ✅ 初始化时创建 runtime 并设置回调（避免每次请求重复设置）
+        this._runtime = new VSCodeAgentRuntime();
+        const contextAdapter = this._runtime.getContextAdapter();
+        contextAdapter.setOnFileLoadedCallback((fileName: string) => {
+            this._view?.webview.postMessage({
+                type: 'success',
+                value: `📄 Referenced file: ${fileName}`
+            });
+            console.log(`[ChatViewProvider] UI notified of loaded file: ${fileName}`);
+        });
+        console.log('[ChatViewProvider] File loaded callback initialized');
     }
 
     /**
@@ -34310,11 +35427,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             console.warn('[ChatViewProvider] No webview available');
             return;
         }
-
-        // 如果有正在运行的任务，先取消它
-        if (this._abortController) {
-            this._abortController.abort();
+        if (!this._runtime) {
+            console.warn('[ChatViewProvider] No runtime available');
+            return;
         }
+
+        // 保存 view 引用以避免后续 null 检查
+        const view = this._view!;
 
         // 创建新的 AbortController
         this._abortController = new AbortController();
@@ -34395,28 +35514,21 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             };
 
-            // 使用 VSCodeAgentRuntime 替代原始的 AgentRuntime
-            // 复用已存在的 runtime 实例，确保上下文一致
-            if (!this._runtime) {
-                this._runtime = new VSCodeAgentRuntime();
-            }
+            // ✅ 修复：直接传递原始 userInput，让 VSCodeAgentRuntime 和 LLMAdapter 处理上下文
+            // VSCodeAgentRuntime.runChat() 会：
+            // 1. 调用 resolveUserReferences() 解析 @ 引用
+            // 2. 调用 flush() 等待所有异步上下文添加完成
+            // 3. 调用 collectContext() 收集其他上下文
+            // 4. LLMAdapter.think() 会从 ContextBuffer 构建上下文提示
+            
             const contextManager = this._runtime.getContextManager();
-
-            // 1. 预处理：扫描用户输入中的 @引用并自动加载
-            const fileRefs = userInput.match(/@([^\s]+)/g);
-            if (fileRefs) {
-                for (const ref of fileRefs) {
-                    const filePath = ref.substring(1); // 去掉 @
-                    await this.autoLoadFileToContext(filePath);
-                }
-            }
 
             let fullAiResponse = '';
             await this._runtime.runChat(
-                userInput,
+                userInput,  // ✅ 传递原始输入，让底层处理上下文
                 (chunk: string) => {
                     fullAiResponse += chunk;
-                    this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
+                    this._view!.webview.postMessage({ type: 'aiChunk', value: chunk });
                 },
                 this._currentModel, // 使用当前选中的模型
                 () => {
@@ -34435,19 +35547,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 this._messages.push({ role: 'assistant', content: fullAiResponse });
             }
             this._saveHistory();
-            this._view?.webview.postMessage({ type: 'done' });
+            this._view!.webview.postMessage({ type: 'done' });
             (GovernanceService as any).adjudicate = originalAdjudicate;
 
         } catch (error: any) {
             // 检查是否是取消操作
             if (signal.aborted) {
                 console.log('[ChatViewProvider] Task was aborted');
-                this._view?.webview.postMessage({
+                this._view!.webview.postMessage({
                     type: 'error',
                     value: 'Generation stopped by user'
                 });
             } else {
-                this._view.webview.postMessage({ type: 'error', value: error.message });
+                this._view!.webview.postMessage({ type: 'error', value: error.message });
             }
         } finally {
             // 清理 AbortController
@@ -34489,10 +35601,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this._view.webview.postMessage({
                 type: 'contextUpdate',
                 value: [...high, ...medium, ...low], // 暂时保持扁平列表以兼容现有UI，后续可升级为分组显示
-                groups: { high, medium, low } // 同时发送分组数据供未来使用
+                groups: { high, medium, low }, // 同时发送分组数据供未来使用
+                count: items.length // 发送总数到UI
             });
 
-            console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length})`);
+            console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length}) Total(${items.length})`);
         } catch (error) {
             console.error('[ChatViewProvider] Error sending context to UI:', error);
         }
@@ -35067,7 +36180,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
 function getNonce() {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567899';
     for (let i = 0; i < 32; i++) {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
@@ -35133,6 +36246,15 @@ export class ProactiveCodeActionProvider implements vscode.CodeActionProvider {
     );
 
     if (proactiveDiagnostics.length === 0) {
+      return actions;
+    }
+
+    // 检查请求的代码操作类型
+    const only = context.only;
+    const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
+
+    // 如果只请求了其他类型的操作（如 refactor），则不返回任何操作
+    if (!shouldIncludeQuickFix) {
       return actions;
     }
 
@@ -35794,6 +36916,15 @@ class ReviewCodeActionProvider implements vscode.CodeActionProvider {
     token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.CodeAction[]> {
     const actions: vscode.CodeAction[] = [];
+
+    // 检查请求的代码操作类型
+    const only = context.only;
+    const shouldIncludeQuickFix = !only || only.contains(vscode.CodeActionKind.QuickFix);
+
+    // 如果只请求了其他类型的操作（如 refactor），则不返回任何操作
+    if (!shouldIncludeQuickFix) {
+      return actions;
+    }
 
     // 查找相关的 diagnostics
     for (const diagnostic of context.diagnostics) {
@@ -39181,11 +40312,36 @@ function hideContextPanel() {
 
     // 处理文件点击
     function handleFileClick(filePath) {
-      // 移除系统消息，直接读取文件
+      // 读取文件内容并添加到上下文，然后询问AI关于该文件的内容
       vscode.postMessage({
         type: "readFile",
         path: filePath,
       });
+
+      // 自动发送一个关于该文件的问题给AI
+      const question = `请分析这个文件: ${filePath}`;
+      addMessage(question, "user");
+
+      // 关闭文件面板以便用户可以看到AI回复
+      filesPanel.classList.remove("open");
+
+      vscode.postMessage({ type: "ask", value: question });
+      userInput.value = "";
+      userInput.style.height = "auto";
+      currentAiMessageElement = null;
+      currentAiRawText = "";
+      userInput.disabled = true;
+      sendBtn.style.display = "none";
+      stopBtn.classList.add("visible");
+
+      // 添加加载指示器
+      const loader = document.createElement("div");
+      loader.id = "ai-loader";
+      loader.className = "message ai-message system-message";
+      loader.innerHTML =
+        '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+      chatContainer.appendChild(loader);
+      scrollToBottom();
     }
 
     // 获取文件语言（辅助函数）
@@ -45010,6 +46166,6 @@ console.log('');
 
 ---
 ### 📊 最终统计汇总
-- **文件总数:** 189
-- **代码总行数:** 43386
-- **物理总大小:** 1330.73 KB
+- **文件总数:** 191
+- **代码总行数:** 44530
+- **物理总大小:** 1366.49 KB
