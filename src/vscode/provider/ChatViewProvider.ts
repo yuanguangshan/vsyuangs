@@ -480,9 +480,37 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             }
             const contextManager = this._runtime.getContextManager();
 
+            // 获取上下文内容并缝合到用户输入中
+            const contextBuffer = contextManager.getContextBuffer();
+            const contextItems = contextBuffer.export();
+
+            // 构建上下文XML格式
+            let contextXml = '';
+            if (contextItems.length > 0) {
+                contextXml = '<context_items>\n';
+                for (const item of contextItems) {
+                    contextXml += `  <item type="${item.type}" path="${item.path}" semantic="${item.semantic}">\n`;
+                    contextXml += `    <summary>${item.summary || ''}</summary>\n`;
+                    contextXml += `    <content>\n${item.content || ''}\n    </content>\n`;
+                    contextXml += `  </item>\n`;
+                }
+                contextXml += '</context_items>\n\n';
+            }
+
+            // 获取当前活动编辑器内容
+            let activeFileXml = '';
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                const doc = editor.document;
+                activeFileXml = `<current_active_file path="${doc.fileName}">\n${doc.getText()}\n</current_active_file>\n\n`;
+            }
+
+            // 缝合：上下文 + 当前文件 + 用户问题
+            const finalPrompt = `${contextXml}${activeFileXml}User Request: ${userInput}`;
+
             let fullAiResponse = '';
             await this._runtime.runChat(
-                userInput,
+                finalPrompt,
                 (chunk: string) => {
                     fullAiResponse += chunk;
                     this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
@@ -558,10 +586,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this._view.webview.postMessage({
                 type: 'contextUpdate',
                 value: [...high, ...medium, ...low], // 暂时保持扁平列表以兼容现有UI，后续可升级为分组显示
-                groups: { high, medium, low } // 同时发送分组数据供未来使用
+                groups: { high, medium, low }, // 同时发送分组数据供未来使用
+                count: items.length // 发送总数到UI
             });
 
-            console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length})`);
+            console.log(`[ChatViewProvider] Sent context: High(${high.length}) Med(${medium.length}) Low(${low.length}) Total(${items.length})`);
         } catch (error) {
             console.error('[ChatViewProvider] Error sending context to UI:', error);
         }
