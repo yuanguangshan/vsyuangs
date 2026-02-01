@@ -2580,11 +2580,36 @@
 
     // 处理文件点击
     function handleFileClick(filePath) {
-      // 移除系统消息，直接读取文件
+      // 读取文件内容并添加到上下文，然后询问AI关于该文件的内容
       vscode.postMessage({
         type: "readFile",
         path: filePath,
       });
+
+      // 自动发送一个关于该文件的问题给AI
+      const question = `请分析这个文件: ${filePath}`;
+      addMessage(question, "user");
+
+      // 关闭文件面板以便用户可以看到AI回复
+      filesPanel.classList.remove("open");
+
+      vscode.postMessage({ type: "ask", value: question });
+      userInput.value = "";
+      userInput.style.height = "auto";
+      currentAiMessageElement = null;
+      currentAiRawText = "";
+      userInput.disabled = true;
+      sendBtn.style.display = "none";
+      stopBtn.classList.add("visible");
+
+      // 添加加载指示器
+      const loader = document.createElement("div");
+      loader.id = "ai-loader";
+      loader.className = "message ai-message system-message";
+      loader.innerHTML =
+        '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+      chatContainer.appendChild(loader);
+      scrollToBottom();
     }
 
     // 获取文件语言（辅助函数）
