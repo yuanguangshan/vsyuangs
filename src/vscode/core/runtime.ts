@@ -1,5 +1,6 @@
 import { snapshotFromBuffer, diffContext, ContextSnapshot } from '../../engine/agent/contextDiff';
 import { AgentRuntime } from '../../engine/agent/AgentRuntime';
+import { ContextManager } from '../../engine/agent/contextManager';
 import { VSCodeContextAdapter } from './contextAdapter';
 
 /**
@@ -86,8 +87,15 @@ export class VSCodeAgentRuntime {
   /**
    * 获取上下文管理器
    */
-  getContextManager() {
+  getContextManager(): ContextManager {
     return this.runtime.getContextManager();
+  }
+
+  /**
+   * 获取上下文适配器
+   */
+  getContextAdapter(): VSCodeContextAdapter {
+    return this.contextAdapter;
   }
 
   /**

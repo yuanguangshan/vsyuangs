@@ -14,10 +14,27 @@ import * as path from 'path';
  */
 export class VSCodeContextAdapter {
   private contextManager: ContextManager;
+  private onFileLoadedCallback?: (fileName: string) => void;
 
-  constructor(contextManager: ContextManager) {
+  constructor(contextManager: ContextManager, onFileLoadedCallback?: (fileName: string) => void) {
     console.log('[ContextAdapter] Initializing...');
     this.contextManager = contextManager;
+    this.onFileLoadedCallback = onFileLoadedCallback;
+  }
+
+  /**
+   * 设置文件加载回调
+   */
+  setOnFileLoadedCallback(callback: (fileName: string) => void): void {
+    this.onFileLoadedCallback = callback;
+  }
+
+  /**
+   * 清理文件加载回调（生命周期管理）
+   */
+  clearFileLoadedCallback(): void {
+    this.onFileLoadedCallback = undefined;
+    console.log('[ContextAdapter] File loaded callback cleared');
   }
 
   /**
@@ -123,6 +140,16 @@ export class VSCodeContextAdapter {
           
           loadedFiles.push(path.basename(fileUri.fsPath));
           console.log(`[ContextAdapter] ✅ Added referenced file to context: ${fileUri.fsPath} (${content.length} chars)`);
+          
+          // ✅ 触发 UI 回调，通知前端文件加载成功
+          if (this.onFileLoadedCallback) {
+            try {
+              this.onFileLoadedCallback(path.basename(fileUri.fsPath));
+            } catch (callbackError) {
+              // 隔离 UI 层异常，避免影响核心文件加载流程
+              console.warn(`[ContextAdapter] ⚠️ File loaded callback failed: ${callbackError}`);
+            }
+          }
           
         } catch (e) {
           console.warn(`[ContextAdapter] ⚠️ Failed to read referenced file ${relPath}: ${e}`);

@@ -53,6 +53,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         console.log(`[ChatViewProvider] Current model: ${this._currentModel}`);
         // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
         this.loadHistory();
+
+        // ✅ 初始化时创建 runtime 并设置回调（避免每次请求重复设置）
+        this._runtime = new VSCodeAgentRuntime();
+        const contextAdapter = this._runtime.getContextAdapter();
+        contextAdapter.setOnFileLoadedCallback((fileName: string) => {
+            this._view?.webview.postMessage({
+                type: 'success',
+                value: `📄 Referenced file: ${fileName}`
+            });
+            console.log(`[ChatViewProvider] UI notified of loaded file: ${fileName}`);
+        });
+        console.log('[ChatViewProvider] File loaded callback initialized');
     }
 
     /**
@@ -389,6 +401,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             return;
         }
 
+        // 保存 view 引用以避免后续 null 检查
+        const view = this._view;
+
         // 如果有正在运行的任务，先取消它
         if (this._abortController) {
             this._abortController.abort();
@@ -473,11 +488,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             };
 
-            // 使用 VSCodeAgentRuntime 替代原始的 AgentRuntime
-            // 复用已存在的 runtime 实例，确保上下文一致
-            if (!this._runtime) {
-                this._runtime = new VSCodeAgentRuntime();
-            }
+            // 使用已初始化的 VSCodeAgentRuntime 实例
             const contextManager = this._runtime.getContextManager();
 
             // 获取上下文内容并缝合到用户输入中
@@ -486,7 +497,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
             // 构建上下文XML格式
             let contextXml = '';
-            if (contextItems.length > 0) {
+            if (contextItems.length >0) {
                 contextXml = '<context_items>\n';
                 for (const item of contextItems) {
                     contextXml += `  <item type="${item.type}" path="${item.path}" semantic="${item.semantic}">\n`;
@@ -513,7 +524,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 finalPrompt,
                 (chunk: string) => {
                     fullAiResponse += chunk;
-                    this._view?.webview.postMessage({ type: 'aiChunk', value: chunk });
+                    if (view.webview) {
+                        view.webview.postMessage({ type: 'aiChunk', value: chunk });
+                    }
                 },
                 this._currentModel, // 使用当前选中的模型
                 () => {
@@ -525,7 +538,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             );
 
             // 发送上下文信息到UI（但不自动弹出面板）
-            this.sendContextToUI(contextManager);
+            if (view.webview) {
+                this.sendContextToUI(contextManager);
+            }
 
             // 只保存有意义的 AI 回复，过滤空内容
             if (fullAiResponse && fullAiResponse.trim()) {
