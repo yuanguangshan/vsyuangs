@@ -47,34 +47,32 @@ export class VSCodeAgentRuntime {
     try {
       console.log('[VSCodeRuntime] Starting chat execution...');
       
-      // 通过 ContextAdapter 收集 VS Code 环境中的上下文
-      await this.contextAdapter.collectContext();
-      
-      // 解析用户输入中的引用
+      // ✅ 1. 先解析并加载 @ 引用（同步等待）
       await this.contextAdapter.resolveUserReferences(userInput);
       
-      // 计算 Diff 并决定是否更新 UI
+      // ✅ 2. 等待所有异步上下文项添加完成
+      await this.runtime.getContextManager().flush();
+      
+      // ✅ 3. 然后收集其他上下文
+      await this.contextAdapter.collectContext();
+      
+      // ✅ 4. 计算 Diff 并通知 UI
       const buffer = this.runtime.getContextManager().getContextBuffer();
       const snapshot = snapshotFromBuffer(buffer);
       const diff = diffContext(this.lastContextSnapshot, snapshot);
       
       this.lastContextSnapshot = snapshot;
 
-      // 只有在新增或内容变化时才通知 UI (On-Demand Push)
-      if (onContextInitialized && (diff.added.length > 0 || diff.changed.length > 0)) {
-          console.log(`[VSCodeRuntime] Context diff detected: +${diff.added.length} ~${diff.changed.length}`);
+      // ✅ 5. 确保在 AI 生成前触发回调（不管是否有变化）
+      if (onContextInitialized) {
+          console.log(`[VSCodeRuntime] Context initialized with ${buffer.export().length} items`);
           onContextInitialized();
-      } else if (!this.lastContextSnapshot && onContextInitialized) {
-          // 第一次运行时，如果有内容也通知
-          if (!buffer.isEmpty()) {
-               onContextInitialized();
-          }
       }
 
-      // 启动 VS Code 事件监听器
+      // ✅ 6. 启动事件监听器
       this.contextAdapter.setupEventListeners();
 
-      // 运行 AgentRuntime（传递取消信号）
+      // ✅ 7. 运行 AI（此时所有 @ 文件已加载完成）
       await this.runtime.run(userInput, 'chat', stream, model, abortSignal);
 
       console.log('[VSCodeRuntime] Chat execution completed');

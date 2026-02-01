@@ -22,37 +22,65 @@ export class VSCodeContextAdapter {
 
   /**
    * 解析用户输入中的引用 (@filename) 并加载到上下文
+   * ✅ 改进版：添加去重、性能优化和更好的用户反馈
    */
   async resolveUserReferences(userInput: string): Promise<void> {
     const references = userInput.match(/@[^\s]+/g);
     if (!references) return;
 
-    console.log(`[ContextAdapter] Found references: ${references.join(', ')}`);
+    // ✅ 去重：防止同一文件被多次引用
+    const uniqueRefs = [...new Set(references)];
+    
+    console.log(`[ContextAdapter] Found ${references.length} references (${uniqueRefs.length} unique): ${uniqueRefs.join(', ')}`);
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-    if (!workspaceFolder) return;
+    if (!workspaceFolder) {
+      vscode.window.showWarningMessage('Yuangs AI: No workspace folder open');
+      return;
+    }
 
-    for (const ref of references) {
+    // ✅ 跟踪已解析的文件路径，防止重复加载
+    const resolvedPaths = new Set<string>();
+    const loadedFiles: string[] = [];
+    const failedFiles: string[] = [];
+
+    for (const ref of uniqueRefs) {
       // 移除 @ 前缀
       const relPath = ref.substring(1);
       
-      // 尝试找到文件
-      // 1. 直接匹配
-      let fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relPath);
-      let exists = false;
+      // ✅ 性能优化：只在文件名不含路径分隔符时才进行模糊搜索
+      const useFuzzySearch = !relPath.includes('/') && !relPath.includes('\\');
       
+      // 尝试找到文件
+      let fileUri: vscode.Uri | null = null;
+      
+      // 1. 先尝试直接路径匹配
       try {
+        fileUri = vscode.Uri.joinPath(workspaceFolder.uri, relPath);
         await vscode.workspace.fs.stat(fileUri);
-        exists = true;
-      } catch {
-        // 2. 尝试模糊匹配 (简化的，实际可能需要更复杂的查找)
-        const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 1);
-        if (files.length > 0) {
-          fileUri = files[0];
-          exists = true;
+      } catch (directPathError) {
+        // 2. 只在文件名时才进行模糊搜索（避免扫描整个 workspace）
+        if (useFuzzySearch) {
+          try {
+            const files = await vscode.workspace.findFiles(`**/${relPath}`, '**/node_modules/**', 5);
+            if (files.length > 0) {
+              fileUri = files[0];
+              console.log(`[ContextAdapter] Fuzzy search found ${files.length} match(es) for "${relPath}", using first`);
+            }
+          } catch (searchError) {
+            console.warn(`[ContextAdapter] Fuzzy search failed for "${relPath}":`, searchError);
+          }
         }
       }
 
-      if (exists) {
+      if (fileUri) {
+        // ✅ 去重检查：防止同一文件被多次加载
+        const fileFsPath = fileUri.fsPath;
+        if (resolvedPaths.has(fileFsPath)) {
+          console.log(`[ContextAdapter] ⚠️ Skipping duplicate file: ${fileFsPath}`);
+          continue;
+        }
+        resolvedPaths.add(fileFsPath);
+
         try {
           const document = await vscode.workspace.openTextDocument(fileUri);
           const content = document.getText();
@@ -67,7 +95,6 @@ export class VSCodeContextAdapter {
              summaryQuality: 1.0, 
              alias: `@${relPath}`,
              tags: ['user-referenced', 'explicit'],
-             // 强制高重要性
              importance: {
                  id: fileUri.fsPath,
                  path: fileUri.fsPath,
@@ -80,14 +107,35 @@ export class VSCodeContextAdapter {
                  confidence: 1.0 
              }
           });
+          
+          loadedFiles.push(path.basename(fileUri.fsPath));
           console.log(`[ContextAdapter] ✅ Added referenced file: ${fileUri.fsPath}`);
+          
         } catch (e) {
           console.warn(`[ContextAdapter] ⚠️ Failed to read referenced file ${relPath}: ${e}`);
+          failedFiles.push(relPath);
         }
       } else {
         console.warn(`[ContextAdapter] ⚠️ Referenced file not found: ${relPath}`);
-        vscode.window.showWarningMessage(`Yuangs AI: Could not find referenced file '${relPath}'. Please check the path.`);
+        failedFiles.push(relPath);
       }
+    }
+
+    // ✅ 批量反馈加载结果（避免多个弹窗打扰用户）
+    if (loadedFiles.length > 0) {
+      const msg = loadedFiles.length === 1 
+        ? `Loaded file: ${loadedFiles[0]}`
+        : `Loaded ${loadedFiles.length} files: ${loadedFiles.join(', ')}`;
+      vscode.window.setStatusBarMessage(`Yuangs AI: ${msg}`, 5000);
+      console.log(`[ContextAdapter] ✅ Successfully loaded: ${msg}`);
+    }
+    
+    if (failedFiles.length > 0) {
+      const errorMsg = failedFiles.length === 1
+        ? `Could not load: "${failedFiles[0]}"`
+        : `Could not load ${failedFiles.length} files: ${failedFiles.map(f => `"${f}"`).join(', ')}`;
+      // ✅ 使用非 modal 的 toast，不打断用户输入流
+      vscode.window.showWarningMessage(`Yuangs AI: ${errorMsg}`, { modal: false });
     }
   }
 
@@ -229,7 +277,7 @@ export class VSCodeContextAdapter {
           path: `${repository.rootUri.fsPath}/git-diff`,
           content: diff,
           semantic: 'evidence',
-          summary: 'Current Git diff showing changes in the repository',
+          summary: 'Current Git diff showing changes in repository',
           summarized: true,
           summaryQuality: 0.8,
           alias: 'git-diff',

@@ -9,6 +9,9 @@ export class ContextManager {
   private contextBuffer: ContextBuffer;
   private contextBank: ContextBank;
   private maxHistorySize = 50;
+  
+  // ✅ 跟踪所有异步添加操作的 Promise
+  private pendingAdds: Set<Promise<void>> = new Set();
 
   constructor(initialContext?: GovernanceContext) {
     this.contextBuffer = new ContextBuffer();
@@ -112,7 +115,15 @@ export class ContextManager {
   }
 
   async addContextItemAsync(item: Omit<import('./contextBuffer').ContextItem, 'tokens'>) {
-    await this.contextBuffer.addAsync(item);
+    // ✅ 创建 Promise 并跟踪它
+    const p = this.contextBuffer.addAsync(item);
+    this.pendingAdds.add(p);
+    
+    try {
+      await p;
+    } finally {
+      this.pendingAdds.delete(p);
+    }
   }
 
   buildContextPrompt(userInput: string, options?: import('./contextBuffer').BuildPromptOptions) {
@@ -223,5 +234,22 @@ export class ContextManager {
   clear(): void {
     this.messages = [];
     this.contextBuffer.clear();
+  }
+
+  /**
+   * 等待所有异步上下文项添加完成
+   * 
+   * ✅ 真正等待所有 pending 的异步操作
+   * 即使未来 addAsync() 变为真正的异步（摘要、embedding等），
+   * 此方法也能确保所有操作完成后再继续。
+   */
+  async flush(): Promise<void> {
+    if (this.pendingAdds.size === 0) {
+      return;
+    }
+    
+    console.log(`[ContextManager] Flushing ${this.pendingAdds.size} pending add operations...`);
+    await Promise.all(Array.from(this.pendingAdds));
+    console.log('[ContextManager] All add operations completed');
   }
 }

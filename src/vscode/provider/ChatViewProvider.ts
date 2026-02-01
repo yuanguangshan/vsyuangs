@@ -480,15 +480,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             }
             const contextManager = this._runtime.getContextManager();
 
-            // 1. 预处理：扫描用户输入中的 @引用并自动加载
-            const fileRefs = userInput.match(/@([^\s]+)/g);
-            if (fileRefs) {
-                for (const ref of fileRefs) {
-                    const filePath = ref.substring(1); // 去掉 @
-                    await this.autoLoadFileToContext(filePath);
-                }
-            }
-
             let fullAiResponse = '';
             await this._runtime.runChat(
                 userInput,
