@@ -239,6 +239,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                             const contextManager = this._runtime.getContextManager();
 
                             // 将文件内容添加到上下文
+                            const relativePath = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : path.basename(uri.fsPath);
+
                             await contextManager.addContextItemAsync({
                                 type: 'file',
                                 path: uri.fsPath,
@@ -247,7 +249,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                                 summary: `User selected file: ${path.basename(uri.fsPath)}`,
                                 summarized: true,
                                 summaryQuality: 1.0,
-                                alias: path.basename(uri.fsPath),
+                                alias: relativePath, // 使用相对路径 (e.g., "src/components/Button.tsx")
                                 tags: ['user-selected', 'explicit', 'file-panel'],
                                 importance: {
                                     id: uri.fsPath,
@@ -943,12 +945,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 if (!this._runtime) this._runtime = new VSCodeAgentRuntime();
                 const contextManager = this._runtime.getContextManager();
 
+                const relativePathForAlias = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, fullPath) : path.basename(fullPath);
+
                 await contextManager.addContextItemAsync({
                     type: 'file',
                     path: fullPath,
                     content: content,
                     semantic: 'source_code',
-                    alias: path.basename(fullPath),
+                    alias: relativePathForAlias,
                     importance: {
                         id: path.basename(fullPath) + '-' + Date.now(), // 生成唯一ID
                         path: fullPath,

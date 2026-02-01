@@ -74,7 +74,8 @@ export class DSLParser {
     // 按空格分割查询字符串
     const parts = queryString.trim().split(/\s+/);
 
-    for (const part of parts) {
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
       if (part.startsWith('@') || part.startsWith('#')) {
         // 处理路径引用
         if (part.startsWith('@!')) {
@@ -82,11 +83,21 @@ export class DSLParser {
           continue;
         } else if (part.startsWith('#')) {
           // 目录引用
-          query.path = part.substring(1);
+          // Check if next part exists and doesn't start with special chars - if so, combine them
+          if (i + 1 < parts.length && !parts[i + 1].startsWith('@') && !parts[i + 1].startsWith('#') && !parts[i + 1].includes(':')) {
+            query.path = parts[++i]; // Use the next part as the path
+          } else {
+            query.path = part.substring(1);
+          }
           query.type = 'directory';
         } else {
           // 文件引用
-          query.path = part.substring(1);
+          // Check if next part exists and doesn't start with special chars - if so, combine them
+          if (i + 1 < parts.length && !parts[i + 1].startsWith('@') && !parts[i + 1].startsWith('#') && !parts[i + 1].includes(':')) {
+            query.path = parts[++i]; // Use the next part as the path
+          } else {
+            query.path = part.substring(1);
+          }
           query.type = 'file';
         }
       } else if (part.includes(':')) {
@@ -182,9 +193,30 @@ export class DSLQueryEngine {
 
   private applyFilters(items: ContextItem[], query: DSLQuery): ContextItem[] {
     return items.filter(item => {
-      // 路径匹配
-      if (query.path && item.path !== query.path) {
-        return false;
+      // 路径匹配（修复版）
+      if (query.path) {
+        const qPath = query.path;
+        const iPath = item.path;
+
+        // 1. 尝试绝对路径精确匹配
+        const exactMatch = iPath === qPath;
+
+        // 2. 尝试 Alias 匹配 (移除 @ 前缀比较)
+        const cleanAlias = item.alias ? item.alias.replace(/^@/, '') : '';
+        const aliasMatch = item.alias === qPath || cleanAlias === qPath;
+
+        // 3. 尝试相对路径/后缀匹配 (智能匹配)
+        // 如果 query.path 是 "utils.ts"，它应该匹配 "/.../src/utils.ts"
+        const suffixMatch = qPath && (
+          iPath.endsWith(qPath) ||
+          iPath.endsWith('/' + qPath) ||
+          iPath.endsWith('\\' + qPath)
+        ) || false;
+
+        // 只要满足任意一个条件，就算匹配成功
+        if (!exactMatch && !aliasMatch && !suffixMatch) {
+          return false;
+        }
       }
 
       // 路径模式匹配 (简化版 glob)
