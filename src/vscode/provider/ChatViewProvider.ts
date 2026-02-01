@@ -487,40 +487,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 }
             };
 
-            // 使用已初始化的 VSCodeAgentRuntime 实例
+            // ✅ 修复：直接传递原始 userInput，让 VSCodeAgentRuntime 和 LLMAdapter 处理上下文
+            // VSCodeAgentRuntime.runChat() 会：
+            // 1. 调用 resolveUserReferences() 解析 @ 引用
+            // 2. 调用 flush() 等待所有异步上下文添加完成
+            // 3. 调用 collectContext() 收集其他上下文
+            // 4. LLMAdapter.think() 会从 ContextBuffer 构建上下文提示
+            
             const contextManager = this._runtime.getContextManager();
-
-            // 获取上下文内容并缝合到用户输入中
-            const contextBuffer = contextManager.getContextBuffer();
-            const contextItems = contextBuffer.export();
-
-            // 构建上下文XML格式
-            let contextXml = '';
-            if (contextItems.length >0) {
-                contextXml = '<context_items>\n';
-                for (const item of contextItems) {
-                    contextXml += `  <item type="${item.type}" path="${item.path}" semantic="${item.semantic}">\n`;
-                    contextXml += `    <summary>${item.summary || ''}</summary>\n`;
-                    contextXml += `    <content>\n${item.content || ''}\n    </content>\n`;
-                    contextXml += `  </item>\n`;
-                }
-                contextXml += '</context_items>\n\n';
-            }
-
-            // 获取当前活动编辑器内容
-            let activeFileXml = '';
-            const editor = vscode.window.activeTextEditor;
-            if (editor) {
-                const doc = editor.document;
-                activeFileXml = `<current_active_file path="${doc.fileName}">\n${doc.getText()}\n</current_active_file>\n\n`;
-            }
-
-            // 缝合：上下文 + 当前文件 + 用户问题
-            const finalPrompt = `${contextXml}${activeFileXml}User Request: ${userInput}`;
 
             let fullAiResponse = '';
             await this._runtime.runChat(
-                finalPrompt,
+                userInput,  // ✅ 传递原始输入，让底层处理上下文
                 (chunk: string) => {
                     fullAiResponse += chunk;
                     this._view!.webview.postMessage({ type: 'aiChunk', value: chunk });
