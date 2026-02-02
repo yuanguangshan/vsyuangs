@@ -21,3 +21,4 @@ logs/
 .sisyphus
 .weaver
 .vscode
+.ai/context.json
