@@ -421,64 +421,81 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             (GovernanceService as any).adjudicate = async (action: any) => {
                 let details = '';
                 let summary = '';
+                let engineWarning = '';
+                let valueScore = 1.0;
+
+                // 🌟 集成 Trusted-Engine 深度审计 (Day 24 Integration)
+                try {
+                    const { TrustedGuard, parseUnifiedDiff } = require('trusted-agent-engine');
+                    const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath || process.cwd();
+                    
+                    let files: string[] = [];
+                    let diff = '';
+                    if (action.type === 'code_diff' && action.payload?.diff) {
+                        diff = action.payload.diff;
+                        const analysis = parseUnifiedDiff(diff);
+                        files = analysis.filesTouched;
+                    }
+
+                    const proposal = {
+                        id: action.id,
+                        timestamp: Date.now(),
+                        author: 'vsyuangs-agent',
+                        reasoning: action.reasoning,
+                        files: files,
+                        diff: diff
+                    };
+
+                    const decision = await TrustedGuard.evaluate(root, proposal);
+                    valueScore = decision.valueScore;
+                    
+                    if (!decision.allowed) {
+                        engineWarning = `\n\n⚠️ 【治理阻断预警】\n${decision.violations.map((v: any) => `• ${v.description}`).join('\n')}`;
+                    }
+                    if (decision.anomalyReport?.isAnomaly) {
+                        engineWarning += `\n🚨 【异常感知】: ${decision.anomalyReport.reasons.join('; ')}`;
+                    }
+                } catch (e) {
+                    console.warn('[Governance] TrustedGuard audit skipped:', e);
+                }
 
                 if (action.type === 'tool_call') {
                     const toolName = action.payload.tool_name;
                     const params = action.payload.parameters;
-
-                    // For skill creation, provide a concise summary
+                    // ... (existing tool info logic)
                     if (toolName === 'skill_create' && params) {
                         summary = `📋 Create New Skill: ${params.name || 'Unnamed Skill'}`;
                         details = `\n📝 Description: ${params.description || 'No description'}`;
-
-                        // Truncate long descriptions to avoid overflow
-                        if (details.length > 300) {
-                            details = details.substring(0, 300) + '...';
-                        }
-
+                        if (details.length > 300) details = details.substring(0, 300) + '...';
                         details += `\n\n💡 Use when: ${params.whenToUse || 'Not specified'}`;
-
-                        // Show success rate if available
-                        if (params.confidence) {
-                            details += `\n📊 Confidence: ${(params.confidence * 100).toFixed(1)}%`;
-                        }
+                        if (params.confidence) details += `\n📊 Confidence: ${(params.confidence * 100).toFixed(1)}%`;
                     } else {
-                        // For other tools, show basic info
                         details = `\nTool: ${toolName}`;
                         const paramsStr = JSON.stringify(params, null, 2);
-                        // Truncate long parameter strings
-                        if (paramsStr.length > 200) {
-                            details += `\nParams: ${paramsStr.substring(0, 200)}...`;
-                        } else {
-                            details += `\nParams: ${paramsStr}`;
-                        }
+                        details += `\nParams: ${paramsStr.length > 200 ? paramsStr.substring(0, 200) + '...' : paramsStr}`;
                     }
                 } else if (action.type === 'shell_cmd') {
                     details = `\nCommand: ${action.payload.command}`;
                 }
 
-                // Truncate reasoning to fit on screen
                 let reasoning = action.reasoning || 'No reason provided';
-                const maxReasoningLength = 200;
-                if (reasoning.length > maxReasoningLength) {
-                    reasoning = reasoning.substring(0, maxReasoningLength) + '...';
-                }
+                if (reasoning.length > 200) reasoning = reasoning.substring(0, 200) + '...';
 
-                const message = `${summary || `Agent wants to execute ${action.type}`}${details}\n\nReason: ${reasoning}`;
+                const valueLabel = `✨ 项目价值对齐度: ${(valueScore * 100).toFixed(0)}%`;
+                const message = `${summary || `Agent wants to execute ${action.type}`}${details}\n\n${valueLabel}${engineWarning}\n\nReason: ${reasoning}`;
 
-                // Auto-approve skill creation requests
+                // Auto-approve skill creation (Low risk policy)
                 if (action.type === 'tool_call' && action.payload.tool_name === 'skill_create') {
-                    console.log('[Governance] Auto-approving skill creation:', action.payload.parameters?.name);
                     return { status: 'approved', by: 'auto-policy', timestamp: Date.now() };
                 }
 
                 const choice = await vscode.window.showInformationMessage(
                     message,
                     { modal: true },
-                    'Approve', 'Reject'
+                    'Approve (主人授权)', 'Reject (拒绝执行)'
                 );
 
-                if (choice === 'Approve') {
+                if (choice === 'Approve (主人授权)') {
                     return { status: 'approved', by: 'human', timestamp: Date.now() };
                 } else {
                     return { status: 'rejected', by: 'human', reason: 'User Denied via VS Code UI', timestamp: Date.now() };
