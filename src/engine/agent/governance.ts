@@ -59,12 +59,49 @@ export class GovernanceService {
       return { status: 'rejected', by: 'policy', reason: logicResult.reason || 'Policy Denied', timestamp: Date.now() };
     }
 
+    // 🌟 3. 集成 Trusted AI Agent Engine (Day 24)
+    try {
+      // 动态导入，避免编译时强耦合
+      const { TrustedGuard, parseUnifiedDiff } = require('trusted-agent-engine');
+      const root = process.cwd();
+      
+      let files: string[] = [];
+      let diff = '';
+      if (action.type === 'code_diff' && action.payload?.diff) {
+        diff = action.payload.diff;
+        const analysis = parseUnifiedDiff(diff);
+        files = analysis.filesTouched;
+      }
+
+      const proposal = {
+        id: action.id,
+        timestamp: Date.now(),
+        author: 'vsyuangs-agent',
+        reasoning: action.reasoning,
+        files: files,
+        diff: diff
+      };
+
+      const decision = await TrustedGuard.evaluate(root, proposal);
+      if (!decision.allowed) {
+        return { 
+          status: 'rejected', 
+          by: 'policy', 
+          reason: `Trusted-Engine Rejected: ${decision.violations.map((v: any) => v.description).join('; ')}`, 
+          timestamp: Date.now() 
+        };
+      }
+      console.log(`[Trusted-Engine] Valued at: ${decision.valueScore}`);
+    } catch (e) {
+      console.warn('[Governance] Trusted-Engine integration failed or not found, skipping deeper audit:', e);
+    }
+
     if (logicResult.effect === 'allow') {
       this.ledger.record(action.type);
       return { status: 'approved', by: 'policy', timestamp: Date.now() };
     }
 
-    // 3. 人工干预兜底 (模拟)
+    // 4. 人工干预兜底 (模拟)
     return { status: 'approved', by: 'human', timestamp: Date.now() };
   }
 }

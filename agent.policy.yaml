@@ -1,0 +1,32 @@
+# vsyuangs 治理政策
+meta:
+  mode: monitor
+
+scopes:
+  - id: "src-vscode"
+    allow: ["src/vscode/**"]
+  - id: "test"
+    allow: ["test/**"]
+  - id: "docs"
+    allow: ["README.md", "docs/**"]
+
+risks:
+  - id: "critical-engine"
+    level: "high"
+    match: ["src/engine/agent/governance/sandbox/**"]
+  - id: "secret-env"
+    level: "high"
+    match: ["**/.env*", "**/*.key"]
+
+rules:
+  - id: "scope-enforcement"
+    description: "禁止非法越权修改"
+    check: "engine.isScoped(payload.files)"
+    action: "block"
+    valueId: "security"
+
+  - id: "high-risk-human-gate"
+    description: "检测到高风险变更，需要确认"
+    condition: "engine.riskLevel === 'high'"
+    action: "require_human"
+    valueId: "security"

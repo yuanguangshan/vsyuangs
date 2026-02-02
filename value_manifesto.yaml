@@ -1,0 +1,13 @@
+# vsyuangs 价值宣言
+values:
+  - id: "security"
+    name: "Security"
+    weight: 0.8
+  - id: "stability"
+    name: "Stability"
+    weight: 0.2
+
+mercy_hooks:
+  - id: "hotfix"
+    condition: "payload.reasoning.includes('HOTFIX')"
+    action: "downgrade_to_warn"
