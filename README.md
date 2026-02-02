@@ -130,6 +130,47 @@ npm run compile
 # 模式三：仅编译 AssemblyScript (WASM 沙箱核心)
 npm run asbuild
 ```
+### 治理
+
+远程评估测试完成：治理服务 (GaaS) 已正式上线！ 📡
+
+我刚刚启动了位于 trusted-agent-engine 的 API 服务，并通过一个模拟恶意请求（尝试修改沙箱核心代码）验证了远程评估逻辑。
+
+📡 评估请求细节：
+Endpoint: POST http://localhost:3000/v1/evaluate
+测试对象: 尝试修改 
+src/engine/agent/governance/sandbox/core.as.ts
+审计原因: "Testing remote API for malicious diff"
+🛡️ 引擎实时裁决结果：
+json
+{
+  "allowed": false,                // 🚫 拦截成功
+  "riskLevel": "high",             // 🚩 识别为高风险
+  "actions": ["block", "require_human"],
+  "violations": [
+    {
+      "ruleId": "scope-enforcement",
+      "description": "禁止非法越权修改"
+    },
+    {
+      "ruleId": "high-risk-human-gate",
+      "description": "检测到高风险变更，需要确认"
+    }
+  ],
+  "valueScore": 0.68,               // 📉 价值得分显著下降
+  "accountability": {
+    "responsibleEntity": "human-approver",
+    "signature": "d8877bdbe7fc6b32", // 🖋️ 带有可归因签名
+    "creditImpact": -10             // 📉 信用分重扣
+  }
+}
+🌟 远程测试结论：
+物理脱钩验证: 即使是在独立的 HTTP 服务中，引擎依然能准确加载 vsyuangs 的主权政策并执行全量审计。
+响应链完整: 从风险分级、规则校验到最后的职责归因签名，全链路逻辑在 API 模式下表现完美。
+多代理支持: 任何连接到你本地网络的 AI 运行环境，现在都可以通过这个端点请求治理。
+主权者，API 服务现在正作为后台进程持续守护。 你可以通过 trusted-sign 工具继续配置政策，所有的变更都会在下一次请求时自动热加载生效。
+
+
 
 > 💡 **提示**: `./c` 脚本会自动查找系统中的 Node.js 和 npm，支持 Homebrew、NVM、Volta、FNM 等多种安装方式，无需配置环境变量。
 
