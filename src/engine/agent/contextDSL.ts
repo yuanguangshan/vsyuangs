@@ -113,8 +113,8 @@ export class DSLParser {
 
           case 'semantic':
             if (value === 'source_code' || value === 'log' || value === 'config' ||
-                value === 'decision' || value === 'evidence' || value === 'documentation' ||
-                value === 'test' || value === 'requirement') {
+              value === 'decision' || value === 'evidence' || value === 'documentation' ||
+              value === 'test' || value === 'requirement') {
               query.semantic = value;
             }
             break;
@@ -164,7 +164,7 @@ export class DSLParser {
  * 根据查询条件过滤和排序 ContextItem
  */
 export class DSLQueryEngine {
-  constructor(private contextItems: ContextItem[]) {}
+  constructor(private contextItems: ContextItem[]) { }
 
   /**
    * 执行 DSL 查询
@@ -208,7 +208,7 @@ export class DSLQueryEngine {
         const rawAlias = item.alias || '';
         const normAlias = normalize(rawAlias);
         const cleanAlias = normAlias.replace(/^@/, '');
-        
+
         const aliasMatch = normAlias === qPath || cleanAlias === qPath;
 
         // 3. 尝试相对路径/后缀匹配 (智能匹配)
@@ -381,8 +381,9 @@ export class ExtendedContextProtocol {
    * 解析包含 DSL 的用户输入
    */
   static parseUserInput(input: string): { dslQueries: string[]; plainText: string } {
-    // 提取 DSL 查询（以 @ 或 # 开头的部分）
-    const dslRegex = /[@#][^{}`]+|"[^"]*"|'[^']*'/g;
+    // 提取 DSL 查询（以 @ 或 # 开头的部分，改进正则以更好地处理结束边界）
+    // 修改正则：[@#] 后面匹配非空白字符，或者匹配引号内的内容
+    const dslRegex = /[@#](?:(?:"[^"]+")|(?:'[^']+')|(?:[^\s]+))/g;
     const dslMatches: string[] = [];
     let plainText = input;
 
@@ -391,13 +392,30 @@ export class ExtendedContextProtocol {
       dslMatches.push(match[0]);
     }
 
+    // ✅ 清理 DSL 查询：移除外层引号
+    const cleanDslQueries = dslMatches.map(dsl => {
+      // 移除 @ 或 # 前缀
+      const withoutPrefix = dsl.substring(1);
+      // 如果以引号开头和结尾，移除引号
+      if ((withoutPrefix.startsWith('"') && withoutPrefix.endsWith('"')) ||
+          (withoutPrefix.startsWith("'") && withoutPrefix.endsWith("'"))) {
+        return withoutPrefix.substring(1, withoutPrefix.length - 1);
+      }
+      // 否则直接返回（无引号的情况）
+      return withoutPrefix;
+    });
+
     // 从原文中移除 DSL 部分，得到纯文本
-    for (const dsl of dslMatches) {
-      plainText = plainText.replace(dsl, '').trim();
+    // 按照从后往前的顺序替换，避免索引变化导致的问题，或者使用一个安全的替换策略
+    let tempPlainText = input;
+    const sortedMatches = [...dslMatches].sort((a, b) => b.length - a.length);
+    for (const dsl of sortedMatches) {
+      tempPlainText = tempPlainText.replace(dsl, '');
     }
+    plainText = tempPlainText.replace(/\s+/g, ' ').trim();
 
     return {
-      dslQueries: dslMatches,
+      dslQueries: cleanDslQueries,
       plainText
     };
   }

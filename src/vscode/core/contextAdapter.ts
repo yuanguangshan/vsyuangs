@@ -44,8 +44,9 @@ export class VSCodeContextAdapter {
   async resolveUserReferences(userInput: string): Promise<void> {
     console.log(`[ContextAdapter] 🔍 Parsing user input for @ references: "${userInput.substring(0, 100)}"`);
     
-    // 改进正则表达式：支持路径中的特殊字符，如 . / - _
-    const references = userInput.match(/@[a-zA-Z0-9_\-./\\]+/g);
+    // ✅ 修复正则表达式：支持更多字符包括空格、括号、逗号等
+    // 匹配 @ 后面跟着非空白字符，或者引号内的完整路径
+    const references = userInput.match(/@(?:[^\s@]+|"[^"]+"|'[^']+')/g);
     
     if (!references) {
       console.log(`[ContextAdapter] ❌ No @ references found in input`);

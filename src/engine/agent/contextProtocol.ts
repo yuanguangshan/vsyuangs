@@ -51,20 +51,22 @@ export function parseContextReferences(response: string): ContextProtocolResult 
   }
 
   // 匹配 DSL 查询语法 (例如: type:file importance:>0.5)
-  const dslRegex = /[@#][^{}`]+|"[^"]*"|'[^']*'|[a-z_]+:[^\\s]+/gi;
+  // ✅ 改进正则：路径引用不应包含空格，除非在引号内
+  const dslRegex = /[@#](?:"[^"]+"|'[^']+'|[^\s]+)|"[^"]*"|'[^']*'|[a-z_]+:[^\s]+/gi;
   let dslMatch;
   while ((dslMatch = dslRegex.exec(response)) !== null) {
     const dslPart = dslMatch[0];
 
     // 检查是否是 DSL 查询语法 (包含冒号且不是文件路径)
-    if (dslPart.includes(':') && !dslPart.startsWith('/') && !dslPart.includes('.')) {
+    if (dslPart.includes(':') && !dslPart.startsWith('/') && !dslPart.includes('.') && !dslPart.includes('\\')) {
       // 这可能是 DSL 查询的一部分，暂时跳过，因为我们需要完整的查询
       continue;
     }
 
     // 检查是否是路径引用 (@file 或 #dir)
     if (dslPart.startsWith('@') || dslPart.startsWith('#')) {
-      const path = dslPart.substring(1);
+      // ✅ 修复：支持带空格的引用，例如 @package.json 或 @src/core/types.ts
+      const path = dslPart.substring(1).replace(/['"]/g, '');
       if (!result.referencedItems.some(ref => ref.path === path)) {
         result.referencedItems.push({
           path,
@@ -116,8 +118,8 @@ export function validateContextReferences(references: ContextReference[], availa
   const warnings: string[] = [];
 
   for (const ref of references) {
-    const foundItem = availableItems.find(item => 
-      item.path === ref.path || 
+    const foundItem = availableItems.find(item =>
+      item.path === ref.path ||
       (item.alias && item.alias === ref.path)
     );
 
@@ -197,7 +199,11 @@ export async function buildContextPromptWithReferences(
           ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
           : `[Reference] ${item.type}: ${item.path}`;
 
-        const body = item.summary ?? item.content;
+        // ✅ 修复：对于高置信度或显式引用的项，除非内容被归档，否则优先显示完整 content
+        const isUserReferenced = item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected');
+        const isArchived = item.content?.includes('[ARCHIVED:');
+
+        const body = (isUserReferenced && !isArchived) ? item.content : (item.summary ?? item.content);
 
         return `${title}\n---\n${body}\n---`;
       }).join('\n\n');
@@ -223,7 +229,11 @@ export async function buildContextPromptWithReferences(
           ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
           : `[Reference] ${item.type}: ${item.path}`;
 
-        const body = item.summary ?? item.content;
+        // ✅ 修复：对于显式引用的项，优先显示完整 content
+        const isUserReferenced = item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected');
+        const isArchived = item.content?.includes('[ARCHIVED:');
+
+        const body = (isUserReferenced && !isArchived) ? item.content : (item.summary ?? item.content);
 
         return `${title}\n---\n${body}\n---`;
       }).join('\n\n');
@@ -249,7 +259,11 @@ export async function buildContextPromptWithReferences(
           ? `[Reference] ${item.type}: ${item.alias} (${item.path})`
           : `[Reference] ${item.type}: ${item.path}`;
 
-        const body = item.summary ?? item.content;
+        // ✅ 修复：对于显式引用的项，优先显示完整 content
+        const isUserReferenced = item.tags?.includes('user-referenced') || item.tags?.includes('explicit') || item.tags?.includes('user-selected');
+        const isArchived = item.content?.includes('[ARCHIVED:');
+
+        const body = (isUserReferenced && !isArchived) ? item.content : (item.summary ?? item.content);
 
         return `${title}\n---\n${body}\n---`;
       }).join('\n\n');
@@ -412,13 +426,13 @@ export function analyzeContextLifecycle(
     // 质量评分：结合显式引用和验证结果
     const qualityScore = item.usageStats
       ? (item.usageStats.verifiedUseful + 1) /
-        (item.usageStats.verifiedUseful + item.usageStats.verifiedNotUseful + 2)
+      (item.usageStats.verifiedUseful + item.usageStats.verifiedNotUseful + 2)
       : 0.5; // 默认中等评分
 
     // 相关性评分：结合重要性分数和显式引用次数
     const relevanceScore = item.importance
       ? (computeContextImportance(item.importance) +
-         (item.usageStats ? Math.min(1, item.usageStats.referencedCount / 10) : 0)) / 2
+        (item.usageStats ? Math.min(1, item.usageStats.referencedCount / 10) : 0)) / 2
       : 0.5;
 
     // 生成推荐
