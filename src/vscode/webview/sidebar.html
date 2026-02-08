@@ -2586,6 +2586,14 @@
           updateCurrentModel(currentModel);
           console.log("Models config received:", availableModels);
           break;
+        case "log":
+          // 接收日志消息，显示在日志面板中
+          if (typeof addLogMessage === "function") {
+            addLogMessage(message.value);
+          } else {
+            console.log("[LOG UI]", message.value);
+          }
+          break;
       }
     });
 
@@ -2627,6 +2635,29 @@
       logPanelContent.appendChild(logDiv);
       logPanelContent.scrollTop = logPanelContent.scrollHeight;
       logStats.textContent = `${logEntries.length} entries`;
+    }
+
+    // 处理从扩展接收的日志消息
+    function addLogMessage(logString) {
+      // 尝试解析日志字符串以提取日志级别
+      let level = 'info';
+      let message = logString;
+      
+      // 解析类似 "[INFO] ChatViewProvider: Initializing ChatViewProvider" 的格式
+      const levelMatch = logString.match(/^\[(DEBUG|INFO|WARN|ERROR)\]/i);
+      if (levelMatch) {
+        level = levelMatch[1].toLowerCase();
+        message = logString.replace(/^\[(DEBUG|INFO|WARN|ERROR)\]\s*/i, '');
+      } else {
+        // 解析类似 "INFO ChatViewProvider: Initializing ChatViewProvider" 的格式
+        const levelMatch2 = logString.match(/^(DEBUG|INFO|WARN|ERROR)\s/i);
+        if (levelMatch2) {
+          level = levelMatch2[1].toLowerCase();
+          message = logString.replace(/^(DEBUG|INFO|WARN|ERROR)\s/i, '');
+        }
+      }
+      
+      addLog(level, message);
     }
 
     function escapeHtml(text) {

@@ -9,6 +9,7 @@ import { GitManager } from '../git/GitManager';
 import { DiffParser, DiffApplier } from '../../core/diff';
 import { getDiffGradedApplier } from '../../core/DiffGradedApplier';
 import { getSecurityScanCoordinator } from '../../core/SecurityScanCoordinator';
+import { getComponentLogger, getLogger } from '../../utils/logger';
 
 // 模型配置接口
 interface ModelConfig {
@@ -41,16 +42,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     private _ignoreFilter: IgnoreFilter | null = null;
     private _currentModel: string = 'gpt-4o-mini';
     private _runtime: VSCodeAgentRuntime | null = null;
+    private _logger = getComponentLogger('ChatViewProvider');
+    private _uiCallback?: (message: string) => void;
 
     constructor(
         private readonly _context: vscode.ExtensionContext,
     ) {
-        console.log('[ChatViewProvider] Initializing...');
+        this._logger.info('Initializing ChatViewProvider');
         // Initialize ignore filter for file selection
         this._ignoreFilter = createIgnoreFilter();
+        this._logger.info('Ignore filter initialized', { patternCount: this._ignoreFilter?.getPatterns?.()?.length || 0 });
         // 从 workspaceState 加载保存的模型
         this._currentModel = this._context.workspaceState.get('currentModel', this.getDefaultModel());
-        console.log(`[ChatViewProvider] Current model: ${this._currentModel}`);
+        this._logger.info('Current model loaded', { model: this._currentModel });
         // 优先从文件系统恢复历史记录，否则从 workspaceState 恢复
         this.loadHistory();
 
@@ -62,9 +66,48 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 type: 'success',
                 value: `📄 Referenced file: ${fileName}`
             });
-            console.log(`[ChatViewProvider] UI notified of loaded file: ${fileName}`);
+            this._logger.info('UI notified of loaded file', { fileName });
         });
-        console.log('[ChatViewProvider] File loaded callback initialized');
+        this._logger.info('File loaded callback initialized');
+
+        // ✅ 设置日志UI输出回调
+        this.setupLogUICallback();
+    }
+
+    /**
+     * 设置日志UI输出回调，将日志消息转发到Webview界面
+     */
+    private setupLogUICallback(): void {
+        try {
+            const logger = getLogger();
+            logger.enableUIOutput();
+
+            // 创建UI回调函数
+            const uiCallback = (message: string) => {
+                // 检查webview是否可用
+                if (!this._view || !this._view.webview) {
+                    console.warn('[Logger] Webview not available for UI log output');
+                    return;
+                }
+
+                try {
+                    this._view.webview.postMessage({
+                        type: 'log',
+                        value: message
+                    });
+                } catch (error) {
+                    console.error('[Logger] Failed to post log message to webview:', error);
+                }
+            };
+
+            // 保存回调引用以便后续清理
+            this._uiCallback = uiCallback;
+            logger.setUICallback(uiCallback);
+
+            this._logger.info('Log UI callback initialized');
+        } catch (error) {
+            this._logger.error('Failed to setup log UI callback', { error });
+        }
     }
 
     /**
@@ -428,7 +471,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
                 try {
                     const { TrustedGuard, parseUnifiedDiff } = require('trusted-agent-engine');
                     const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath || process.cwd();
-                    
+
                     let files: string[] = [];
                     let diff = '';
                     if (action.type === 'code_diff' && action.payload?.diff) {
@@ -448,7 +491,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
                     const decision = await TrustedGuard.evaluate(root, proposal);
                     valueScore = decision.valueScore;
-                    
+
                     if (!decision.allowed) {
                         engineWarning = `\n\n⚠️ 【治理阻断预警】\n${decision.violations.map((v: any) => `• ${v.description}`).join('\n')}`;
                     }
@@ -1192,6 +1235,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         htmlSnippet = htmlSnippet.replace(/<script>/g, `<script nonce="${nonce}">`);
 
         return htmlSnippet;
+    }
+
+    /**
+     * 清理日志UI回调
+     */
+    private cleanupLogUICallback(): void {
+        try {
+            const logger = getLogger();
+            if (this._uiCallback) {
+                logger.removeUICallback(this._uiCallback);
+                this._uiCallback = undefined;
+            }
+            logger.disableUIOutput();
+        } catch (error) {
+            console.error('[ChatViewProvider] Failed to cleanup log UI callback:', error);
+        }
+    }
+
+    /**
+     * 清理资源
+     */
+    dispose(): void {
+        this.cleanupLogUICallback();
+        this._abortController = null;
     }
 }
 

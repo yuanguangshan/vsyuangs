@@ -6,9 +6,17 @@ import { explainSelection } from './commands/explainSelection';
 import { optimizeSelection } from './commands/optimizeSelection';
 import { sendToYuangs } from './commands/sendToYuangs';
 import { ChatViewProvider } from './provider/ChatViewProvider';
+import { initializeLogger, LogLevel } from '../utils/logger';
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('Yuangs AI Assistant is now active!');
+    // Initialize logger
+    const logger = initializeLogger(context, {
+        level: LogLevel.DEBUG, // Set to DEBUG for detailed logging
+        outputToConsole: true,
+        outputToFile: true
+    });
+    
+    logger.info('Extension', 'Yuangs AI Assistant is now active!');
 
     // 1. 初始化 Diff 渲染器
     InlineDiffRenderer.init(context);
