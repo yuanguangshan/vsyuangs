@@ -1,13 +1,13 @@
 {
   "availableModels": [
     {
-      "id": "gpt-4o-mini",
-      "name": "GPT-4o Mini",
+      "id": "gpt-5.4-mini",
+      "name": "GPT-5.4 Mini",
       "description": "快速且高效"
     },
     {
-      "id": "glm4.7",
-      "name": "glm4.7",
+      "id": "glm-5.1",
+      "name": "GLM-5.1",
       "description": "平衡性能"
     },
     {

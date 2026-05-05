@@ -15,3 +15,5 @@ c
 build/**
 !build/release.wasm
 !dist/**
+.ai/*
+*.key
